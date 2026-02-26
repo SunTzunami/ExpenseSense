@@ -115,7 +115,9 @@ The multi-agent pipeline is composed of the following key source files:
 
 - **Frontend**: React 18, Vite, Framer Motion, Lucide.
 - **Backend (Analysis)**: FastAPI, Pandas, Plotly.
-- **Local LLM Infrastructure**: Apple MLX framework for optimized inference on Apple Silicon, running models such as `Qwen3-0.6B` (4-bit/8-bit/bf16), `granite-4.0-h-micro` (4-bit), and `Qwen3-1.7B` (4-bit/8-bit), also supports Ollama.
+- **Local LLM Infrastructure**:
+  - **Ollama**: Fully supported out-of-the-box for seamless cross-platform local inference.
+  - **Apple MLX framework**: Optimized for maximum speed on Apple Silicon, evaluating models such as `Qwen3-0.6B` (4-bit/8-bit/bf16), `granite-4.0-h-micro` (4-bit), and `Qwen3-1.7B` (4-bit/8-bit).
 - **In-Browser Execution**: Pyodide (WASM) for standalone client-side analysis.
 
 ## Getting Started
@@ -123,7 +125,9 @@ The multi-agent pipeline is composed of the following key source files:
 ### Prerequisites
 - **Node.js**: v18 or higher.
 - **Python**: v3.10 or higher.
-- **Apple MLX**: Required for localized AI inference on Apple Silicon. Install via `pip install mlx-lm`.
+- **Local LLM Setup** (Choose one):
+  - **Ollama**: Recommended for ease of use and cross-platform compatibility.
+  - **Apple MLX**: Recommended for maximum inference speed on Apple Silicon. Install via `pip install mlx-lm`.
 
 ### Installation
 
