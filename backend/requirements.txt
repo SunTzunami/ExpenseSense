@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pandas
+ollama
+plotly
+python-multipart
+scipy
+mlx-lm
+torch>=2.4.0
