@@ -6,13 +6,15 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.io as pio
-import ollama
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
-from utils.mlx_utils import mlx_model
+
+# Import from our new unified inference layer instead of mlx_utils/ollama
+from experiments.shared.inference import generate
+from experiments.configs.models import get_llamacpp_models
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -49,10 +51,10 @@ class AnalyzeRequest(BaseModel):
     metadata: str
     currency: str
     options: Optional[dict] = None
-    # Provider selection: "ollama" or "mlx"
-    router_provider: Optional[str] = "ollama"
-    specialist_provider: Optional[str] = "ollama"
-    summarizer_provider: Optional[str] = "ollama"
+    # Provider selection: "llamacpp"
+    router_provider: Optional[str] = "llamacpp"
+    specialist_provider: Optional[str] = "llamacpp"
+    summarizer_provider: Optional[str] = "llamacpp"
 
 class AnalyzeResponse(BaseModel):
     result: Optional[str] = None
@@ -80,35 +82,32 @@ def load_prompt_template(filename: str) -> str:
         return ""
 
 def generate_text(provider: str, model: str, messages: List[Dict[str, str]], options: Optional[Dict] = None) -> str:
-    """Unified generator that dispatches to either Ollama or MLX."""
-    # Safety: Auto-detect MLX if model is a path or clearly an MLX identifier
-    is_mlx_identifier = os.path.isabs(model) or "mlx" in model.lower()
+    """Unified generator using our shared inference module."""
+    logger.info(f"Generating via {provider}: {model}")
+    temp = options.get('temperature', 0.0) if options else 0.0
     
-    if provider == "mlx" or is_mlx_identifier:
-        logger.info(f"Generating via MLX: {model}")
-        temp = options.get('temperature', 0.0) if options else 0.0
-        return mlx_model.chat(model, messages, temperature=temp)
-    else:
-        logger.info(f"Generating via Ollama: {model}")
-        response = ollama.chat(model=model, messages=messages, options=options)
-        return response['message']['content'].strip()
+    # We use our unified dispatch
+    response_text, elapsed, err = generate(
+        backend=provider,
+        model_id=model,
+        messages=messages,
+        temperature=temp,
+        enable_thinking=False
+    )
+    
+    if err:
+        logger.error(f"Inference error: {err}")
+        return ""
+    return response_text
 
-@app.get("/models/ollama")
-async def list_ollama_models():
+@app.get("/models/llamacpp")
+async def list_local_models():
+    """Return available llama.cpp models dynamically found in experiments/configs/models.py"""
     try:
-        models = ollama.list()
-        return {"models": [m['name'] for m in models['models']]}
-    except Exception as e:
-        logger.error(f"Error listing Ollama models: {e}")
-        return {"models": []}
-
-@app.get("/models/mlx")
-async def list_mlx_models():
-    try:
-        models = mlx_model.list_available_models()
+        models = get_llamacpp_models()
         return {"models": models}
     except Exception as e:
-        logger.error(f"Error listing MLX models: {e}")
+        logger.error(f"Error listing Llama.cpp models: {e}")
         return {"models": []}
 
 @app.get("/health")
@@ -123,7 +122,7 @@ async def analyze_stream(request: AnalyzeRequest):
     def _sse_event(event: str, data: dict) -> str:
         return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
-    def generate():
+    def generate_fn():
         try:
             # 1. Load data into DataFrame
             logger.info(f"--- New Streaming Analysis Request ---")
@@ -286,7 +285,6 @@ async def analyze_stream(request: AnalyzeRequest):
 
                 logger.info("Requesting natural language summary from LLM...")
                 summary_template = load_prompt_template("summary_prompt.txt")
-                # summary_prompt = summary_template.format(result=result, request=request)
                 target_model = request.chat_model if request.chat_model else request.model
 
                 logger.info(f"Summarizing with {target_model} via {request.summarizer_provider}...")
@@ -317,7 +315,7 @@ async def analyze_stream(request: AnalyzeRequest):
             logger.error(f"Streaming analysis failed: {str(e)}")
             yield _sse_event("error", {"error": str(e)})
 
-    return StreamingResponse(generate(), media_type="text/event-stream")
+    return StreamingResponse(generate_fn(), media_type="text/event-stream")
 
 
 if __name__ == "__main__":

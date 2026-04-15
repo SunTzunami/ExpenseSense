@@ -1,9 +1,8 @@
 fastapi
 uvicorn
 pandas
-ollama
+llama-cpp-python
 plotly
 python-multipart
 scipy
-mlx-lm
 torch>=2.4.0

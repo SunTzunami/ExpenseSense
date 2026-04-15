@@ -145,9 +145,9 @@ export async function runPython(code, data, optionsArg = {}) {
                 model,
                 router_model: routerModel,
                 chat_model: chatModel,
-                router_provider: optionsArg.routerProvider || 'ollama',
-                specialist_provider: optionsArg.specialistProvider || 'ollama',
-                summarizer_provider: optionsArg.summarizerProvider || 'ollama',
+                router_provider: optionsArg.routerProvider || 'llamacpp',
+                specialist_provider: optionsArg.specialistProvider || 'llamacpp',
+                summarizer_provider: optionsArg.summarizerProvider || 'llamacpp',
                 options
             })
         });
@@ -345,9 +345,9 @@ export async function runPythonStream(code, data, optionsArg = {}, onStatus = nu
                 model,
                 router_model: routerModel,
                 chat_model: chatModel,
-                router_provider: optionsArg.routerProvider || 'ollama',
-                specialist_provider: optionsArg.specialistProvider || 'ollama',
-                summarizer_provider: optionsArg.summarizerProvider || 'ollama',
+                router_provider: optionsArg.routerProvider || 'llamacpp',
+                specialist_provider: optionsArg.specialistProvider || 'llamacpp',
+                summarizer_provider: optionsArg.summarizerProvider || 'llamacpp',
                 options
             })
         });

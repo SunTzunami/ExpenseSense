@@ -116,8 +116,8 @@ The multi-agent pipeline is composed of the following key source files:
 - **Frontend**: React 18, Vite, Framer Motion, Lucide.
 - **Backend (Analysis)**: FastAPI, Pandas, Plotly.
 - **Local LLM Infrastructure**:
-  - **Ollama**: Fully supported out-of-the-box for seamless cross-platform local inference.
-  - **Apple MLX framework**: Optimized for maximum speed on Apple Silicon, evaluating models such as `Qwen3-0.6B` (4-bit/8-bit/bf16), `granite-4.0-h-micro` (4-bit), and `Qwen3-1.7B` (4-bit/8-bit).
+  - **Llama.cpp**: The core inference engine powering the multi-agent pipeline using GGUF models. It provides extremely high performance on both CPU and GPU (Metal/CUDA/Vulkan support).
+  - **GGUF Models**: Specifically optimized for local execution with varying quantization levels (e.g., LFM2 and Qwen3.5 variants).
 - **In-Browser Execution**: Pyodide (WASM) for standalone client-side analysis.
 
 ## Getting Started
@@ -125,9 +125,9 @@ The multi-agent pipeline is composed of the following key source files:
 ### Prerequisites
 - **Node.js**: v18 or higher.
 - **Python**: v3.10 or higher.
-- **Local LLM Setup** (Choose one):
-  - **Ollama**: Recommended for ease of use and cross-platform compatibility.
-  - **Apple MLX**: Recommended for maximum inference speed on Apple Silicon. Install via `pip install mlx-lm`.
+- **Local LLM Setup**:
+  - **Llama.cpp**: Built natively into the backend. Ensure you have the `llama-cpp-python` package installed (handled by requirements.txt).
+  - **GGUF Models**: Download and place `.gguf` weight files in the `backend/models/` directory. The system automatically detects and lazy-loads them based on your selection.
 
 ### Installation
 
@@ -226,11 +226,11 @@ To fix this, I had to introduce a robust validation layer inside `analysis_tools
 
 This approach was a massive success! Using Ollama, my pipeline latency dropped to around 20–30 seconds. However, I still wanted that snappy, instant-chat feel.
 
-### Enter Apple MLX: Pushing Hardware Limits
+### Enter Llama.cpp: Unified Local Inference
 
-To speed up inference, I stripped out Ollama and integrated Apple's native **MLX** framework, which is tailor-made for Apple Silicon. **The result? Total pipeline time plummeted to 10-15 seconds.**
+To simplify the architecture and improve portability, I transitioned the entire pipeline from the dual MLX/Ollama setup to **Llama.cpp**. This allows the same GGUF models to run at peak efficiency across all platforms while maintaining a single, unified inference layer.
 
-With the infrastructure humming, I ran extensive benchmarks using my pipeline against several highly capable small models: `Qwen/Qwen3-0.6B-MLX-4bit`, `mlx-community/Qwen3-0.6B-8bit`, `lmstudio-community/Qwen3-0.6B-MLX-bf16`, `mlx-community/granite-4.0-h-micro-4bit`, `lmstudio-community/Qwen3-1.7B-MLX-4bit`, and `lmstudio-community/Qwen3-1.7B-MLX-8bit`.
+With the infrastructure humming, I ran extensive benchmarks using my pipeline against several highly capable GGUF models: `LFM2-730M-Instruct`, `Qwen2-1.5B-Instruct`, and various `Qwen3.5` variants.
 
 #### The Methodology: How Do I Actually Measure "Good"?
 Before looking at the numbers, it's important to understand *how* the pipeline is evaluated. Because this isn't a simple "generate text" task, standard LLM benchmarks don't apply. I wrote a comprehensive testing script that throws 20 distinct, complex queries at the pipeline, running each 5 times to account for generation variance.
@@ -244,8 +244,8 @@ Composite Accuracy is a weighted score out of 100% that strictly evaluates if th
 #### The Results: Battle of the Small Models
 The tradeoff between quantized bit-rates and parameter sizes became incredibly clear.
 
-**The Heavyweight Champ: Qwen3 1.7B (4-bit)**
-I was absolutely blown away by Alibaba's **`lmstudio-community/Qwen3-1.7B-MLX-4bit`**. Running natively via MLX, the 4-bit quantization achieved a staggering **97.5% Composite Accuracy** across all complex user query combinations, wrapping up the entire multi-stage pipeline in an average of **4.79 seconds**.
+**The Heavyweight Champ: Qwen3.5 (GGUF)**
+I was absolutely blown away by the **Qwen3.5** family running natively via Llama.cpp. The 4-bit quantization achieved a staggering **97.5% Composite Accuracy** across all complex user query combinations, wrapping up the entire multi-stage pipeline in an average of **4.79 seconds**.
 
 Latency distribution analysis confirmed that Qwen3 1.7B operates in a tight, predictable window without frustrating outliers. The latency breakdown reveals how the multi-agent design distributes the load: the Router and Specialist do the heavy lifting of reasoning and consume the bulk of the time, while the Summarizer is incredibly fast.
 

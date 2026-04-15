@@ -11,7 +11,7 @@ export default function SettingsPanel({
     routerProvider, setRouterProvider,
     specialistProvider, setSpecialistProvider,
     summarizerProvider, setSummarizerProvider,
-    ollamaConnected, backendConnected
+    backendConnected
 }) {
     return (
         <AnimatePresence>
@@ -104,9 +104,9 @@ export default function SettingsPanel({
                             <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Providers</h4>
 
                             <div className="flex flex-col gap-3">
-                                <ProviderSelectorSmall label="Router" value={routerProvider} onChange={setRouterProvider} ollamaOk={ollamaConnected} backendOk={backendConnected} />
-                                <ProviderSelectorSmall label="Specialist" value={specialistProvider} onChange={setSpecialistProvider} ollamaOk={ollamaConnected} backendOk={backendConnected} />
-                                <ProviderSelectorSmall label="Summarizer" value={summarizerProvider} onChange={setSummarizerProvider} ollamaOk={ollamaConnected} backendOk={backendConnected} />
+                                <ProviderSelectorSmall label="Router" value={routerProvider} onChange={setRouterProvider} backendOk={backendConnected} />
+                                <ProviderSelectorSmall label="Specialist" value={specialistProvider} onChange={setSpecialistProvider} backendOk={backendConnected} />
+                                <ProviderSelectorSmall label="Summarizer" value={summarizerProvider} onChange={setSummarizerProvider} backendOk={backendConnected} />
                             </div>
                         </div>
                     </div>
