@@ -60,6 +60,15 @@ class AnalyzeResponse(BaseModel):
     code: Optional[str] = None
     error: Optional[str] = None
 
+def is_japanese_only(text: str) -> bool:
+    """Returns True if the text contains Japanese characters and NO English letters."""
+    import re
+    # Japanese character ranges: Hiragana, Katakana, Kanji
+    has_japanese = bool(re.search(r"[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]", text))
+    # English/Roman letter range
+    has_english = bool(re.search(r"[a-zA-Z]", text))
+    return has_japanese and not has_english
+
 def load_prompt_template(filename: str) -> str:
     try:
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -140,6 +149,10 @@ async def analyze_stream(request: AnalyzeRequest):
             from utils.tool_prompts import get_tool_prompt
 
             current_date_str = datetime.now().strftime("%Y-%m-%d")
+            
+            # --- LANGUAGE DETECTION ---
+            detected_lang = "ja" if is_japanese_only(request.prompt) else "en"
+            logger.info(f"Detected language: {detected_lang}")
 
             # --- STAGE 1: ROUTER ---
             target_router = request.router_model if request.router_model else request.model
@@ -183,7 +196,8 @@ async def analyze_stream(request: AnalyzeRequest):
             system_prompt = tool_prompt_template.format(
                 metadata=request.metadata,
                 current_date=current_date_str,
-                function_definition=tool_prompt_template
+                function_definition=tool_prompt_template,
+                lang=detected_lang
             )
             logger.info(f"System prompt for Specialist:\n{system_prompt}")
 

@@ -28,32 +28,34 @@ Today: {current_date}
 {examples}
 
 ## Rules
-1. Output ONLY the function call. Format: `fig, result = {tool_name}(df, ...)`
+1. Output ONLY the function call. Format: `fig, result = {tool_name}(df, ..., lang='{lang}')`
 2. Use EXACT category names from the metadata above.
 3. If user's category isn't an exact match, pick the closest category from the list shared earlier (e.g. "futsal" → "futsal game").
 4. If a word like "Starbucks" is NOT in category metadata, still pass it as `category` — the backend searches remarks automatically.
 5. NO markdown, NO explanation, NO comments.
+6. **MANDATORY**: ALWAYS include `lang='{lang}'` in the function call.
 """
 
 TOOL_PROMPTS = {
     "plot_time_series": {
         "function_definition": """
-### plot_time_series(df, category=None, year=None, start_year=None, end_year=None, months=None)
+### plot_time_series(df, category=None, year=None, start_year=None, end_year=None, months=None, lang='en')
 Use when: user asks about trends, spending over time, or date ranges.
 
 - `months=N`: last N months from today
 - `year=YYYY`: full calendar year
 - `start_year=YYYY, end_year=YYYY`: year range
 - `year=YYYY, month=M`: single month (note: not a standalone param here, pass both)
+- `lang`: 'en' or 'ja'
 """,
         "examples": """
 Today is 2025-06-15.
 
 Q: "How much did I spend on futsal for the past 6 months?"
-fig, result = plot_time_series(df, category='futsal game', months=6)
+fig, result = plot_time_series(df, category='futsal game', months=6, lang='en')
 
 Q: "Show me food spending from 2023 to 2025"
-fig, result = plot_time_series(df, category='Food', start_year=2023, end_year=2025)
+fig, result = plot_time_series(df, category='Food', start_year=2023, end_year=2025, lang='en')
 
 Q: "Gym expenses in 2024?"
 fig, result = plot_time_series(df, category='gym', year=2024)
@@ -62,30 +64,32 @@ fig, result = plot_time_series(df, category='gym', year=2024)
 
     "plot_distribution": {
         "function_definition": """
-### plot_distribution(df, category=None, year=None, month=None)
+### plot_distribution(df, category=None, year=None, month=None, lang='en')
 Use when: user asks for breakdown, distribution, or pie chart.
 
 - `year=YYYY, month=M`: specific month
 - `year=YYYY`: full year
 - No time filter: all time
+- `lang`: 'en' or 'ja'
 """,
         "examples": """
 Q: "Show me a breakdown of my food expenses in 2024"
-fig, result = plot_distribution(df, category='Food', year=2024)
+fig, result = plot_distribution(df, category='Food', year=2024, lang='en')
 
 Q: "Pie chart of all expenses in Jan 2025"
-fig, result = plot_distribution(df, year=2025, month=1)
+fig, result = plot_distribution(df, year=2025, month=1, lang='en')
 """
     },
 
     "plot_comparison_bars": {
         "function_definition": """
-### plot_comparison_bars(df, category=None, y1=None, m1=None, d1=None, y2=None, m2=None, d2=None)
+### plot_comparison_bars(df, category=None, y1=None, m1=None, d1=None, y2=None, m2=None, d2=None, lang='en')
 Use when: comparing two specific periods.
 
 - Two years: `y1=2024, y2=2025`
 - Two months: `y1=2024, m1=12, y2=2025, m2=12`
 - Two dates: `y1=2024, m1=7, d1=21, y2=2025, m2=7, d2=21`
+- `lang`: 'en' or 'ja'
 """,
         "examples": """
 Q: "Compare food spending in 2024 vs 2025"
@@ -98,13 +102,14 @@ fig, result = plot_comparison_bars(df, category='dining', y1=2024, m1=1, y2=2025
 
     "calculate_total": {
         "function_definition": """
-### calculate_total(df, category=None, remarks=None, year=None, month=None, day=None, start_year=None, end_year=None)
+### calculate_total(df, category=None, remarks=None, year=None, month=None, day=None, start_year=None, end_year=None, lang='en')
 Use when: asking for total sums.
 
 - `year, month, day`: specific date
 - `year, month`: specific month
 - `year`: full year
 - `start_year, end_year`: year range
+- `lang`: 'en' or 'ja'
 """,
         "examples": """
 Q: "How much did I spend on groceries in Dec 2024?"
@@ -117,11 +122,12 @@ fig, result = calculate_total(df, start_year=2023, end_year=2025)
 
     "calculate_statistics": {
         "function_definition": """
-### calculate_statistics(df, category=None, y1=None, m1=None, y2=None, m2=None, compare=False)
+### calculate_statistics(df, category=None, y1=None, m1=None, y2=None, m2=None, compare=False, lang='en')
 Use when: asking for averages, mean, median, or comparing statistically.
 
 - Single period: `y1=YYYY` (and optionally `m1=M`)
 - Comparison: `y1=YYYY, y2=YYYY, compare=True`
+- `lang`: 'en' or 'ja'
 """,
         "examples": """
 Q: "Average dining expense in 2024?"
@@ -134,11 +140,12 @@ fig, result = calculate_statistics(df, category='Food', y1=2024, y2=2025, compar
 
     "get_top_expenses": {
         "function_definition": """
-### get_top_expenses(df, n=10, category=None, year=None, month=None, min_amount=None)
+### get_top_expenses(df, n=10, category=None, year=None, month=None, min_amount=None, lang='en')
 Use when: asking for biggest or largest expenses.
 
 - `n`: how many to return (default 10)
 - `min_amount`: only include expenses above this value
+- `lang`: 'en' or 'ja'
 """,
         "examples": """
 Q: "What were my biggest expenses in Dec 2024?"
@@ -160,6 +167,7 @@ def get_tool_prompt(tool_name):
         tool_name=tool_name,
         metadata="{metadata}",
         current_date="{current_date}",
+        lang="{lang}",
         function_definition=tool_data["function_definition"],
         examples=tool_data["examples"]
     )
