@@ -1,3 +1,5 @@
+# analysis_tools.py having the tools being used
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -51,9 +53,9 @@ TRANSLATIONS = {
         'spending_over_time': 'Spending Over Time',
         'others': 'Others',
         'distribution': 'Distribution',
-        'increase': 'increase',
-        'decrease': 'decrease',
-        'no_change': 'no change',
+        'increase': 'increased',
+        'decrease': 'decreased',
+        'no_change': 'had no change',
         'week_of': 'Week of',
         'summary': 'Summary',
         'max': 'Max',
@@ -65,36 +67,11 @@ TRANSLATIONS = {
         'comparison': 'Comparison',
         'insufficient_data': 'Insufficient data to compare',
         'change': 'Change',
-    },
-    'ja': {
-        'date': '日付',
-        'amount': '金額 (¥)',
-        'total': '合計',
-        'average': '平均',
-        'count': '件数',
-        'trend': 'トレンド',
-        'spending_over_time': '支出の推移',
-        'others': 'その他',
-        'distribution': '支出の内訳',
-        'increase': '増加',
-        'decrease': '減少',
-        'no_change': '変化なし',
-        'week_of': '週:',
-        'summary': '概要',
-        'max': '最高額',
-        'category': 'カテゴリー',
-        'daily_total': '日次合計',
-        'weekly_total': '週次合計',
-        '4_week_trend': '4週間平均',
-        '7_day_average': '7日間平均',
-        'comparison': '比較',
-        'insufficient_data': '比較するためのデータが不足しています',
-        'change': '変化率',
     }
 }
 
 def t(key, lang='en'):
-    return TRANSLATIONS.get(lang, TRANSLATIONS['en']).get(key, key)
+    return TRANSLATIONS['en'].get(key, key)
 
 # Mapping specific keywords to broad groups (from categoryMapping.js)
 CATEGORY_MAPPINGS = {
@@ -112,7 +89,7 @@ CATEGORY_MAPPINGS = {
     'nomikai': 'Entertainment', 'education': 'Education'
 }
 
-def get_shared_layout(title_text, lang='en'):
+def get_shared_layout(title_text):
     return dict(
         title=dict(
             text=title_text,
@@ -126,14 +103,14 @@ def get_shared_layout(title_text, lang='en'):
             showgrid=False,
             color=THEME['label_color'],
             tickfont=dict(family=THEME['font_family']),
-            title=dict(text=t('date', lang), font=dict(family=THEME['font_family']))
+            title=dict(text=t('date'), font=dict(family=THEME['font_family']))
         ),
         yaxis=dict(
             showgrid=True,
             gridcolor=THEME['grid_color'],
             color=THEME['label_color'],
             tickfont=dict(family=THEME['font_family']),
-            title=dict(text=t('amount', lang), font=dict(family=THEME['font_family']))
+            title=dict(text=t('amount'), font=dict(family=THEME['font_family']))
         ),
         legend=dict(
             orientation='h',
@@ -195,7 +172,7 @@ def auto_validate(func):
 
 @auto_validate
 def plot_time_series(df, category=None, major_category=None, remarks=None, year=None, month=None, 
-                     start_year=None, end_year=None, months=None, title=None, lang='en'):
+                     start_year=None, start_month=None, end_year=None, end_month=None, months=None, title=None):
     """
     Shows spending trends over time with IMPROVED VISUALIZATION:
     - Automatic grouping based on data density (daily/weekly/monthly)
@@ -222,6 +199,9 @@ def plot_time_series(df, category=None, major_category=None, remarks=None, year=
     now = pd.Timestamp.now()
     
     # Time filtering
+    if month and not year:
+        year = now.year
+        
     if year and month:
         start_date = pd.Timestamp(year=int(year), month=int(month), day=1)
         end_date = start_date + pd.offsets.MonthEnd(0)
@@ -233,9 +213,11 @@ def plot_time_series(df, category=None, major_category=None, remarks=None, year=
         data = data[data['Date'].dt.year == int(year)]
         range_start, range_end = start_date, end_date
     elif start_year and end_year:
-        start_date = pd.Timestamp(year=int(start_year), month=1, day=1)
-        end_date = pd.Timestamp(year=int(end_year), month=12, day=31)
-        data = data[(data['Date'].dt.year >= int(start_year)) & (data['Date'].dt.year <= int(end_year))]
+        s_m = int(start_month) if start_month else 1
+        e_m = int(end_month) if end_month else 12
+        start_date = pd.Timestamp(year=int(start_year), month=s_m, day=1)
+        end_date = pd.Timestamp(year=int(end_year), month=e_m, day=1) + pd.offsets.MonthEnd(0)
+        data = data[(data['Date'] >= start_date) & (data['Date'] <= end_date)]
         range_start, range_end = start_date, end_date
     elif months:
         cutoff = now - pd.DateOffset(months=int(months))
@@ -254,11 +236,9 @@ def plot_time_series(df, category=None, major_category=None, remarks=None, year=
         data = data[data['remarks'].str.contains(remarks, case=False, na=False)]
         label = f"'{remarks}'"
     else:
-        label = t('total', lang)
+        label = t('total')
     
     if data.empty:
-        if lang == 'ja':
-            return None, f"{label}のデータが指定された期間で見つかりませんでした。"
         return None, f"No spending data found for {label} in the specified period."
     
     data = data.sort_values('Date')
@@ -326,12 +306,12 @@ def plot_time_series(df, category=None, major_category=None, remarks=None, year=
             x=weekly['Week'],
             y=weekly['sum'],
             mode='lines',
-            name=t('weekly_total', lang),
+            name=t('weekly_total'),
             line=dict(color=THEME['primary'], width=3),
             fill='tozeroy',
             fillcolor=THEME['primary_fill'],
             customdata=weekly['count'],
-            hovertemplate=f'<b>{t("week_of", lang)} %{{x|%Y-%m-%d}}</b><br>{t("total", lang)}: ¥%{{y:,.0f}}<br>{t("count", lang)}: %{{customdata}}<extra></extra>'
+            hovertemplate=f'<b>{t("week_of")} %{{x|%Y-%m-%d}}</b><br>{t("total")}: ¥%{{y:,.0f}}<br>{t("count")}: %{{customdata}}<extra></extra>'
         ))
         
         # 4-week moving average for trend
@@ -341,7 +321,7 @@ def plot_time_series(df, category=None, major_category=None, remarks=None, year=
                 x=weekly['Week'],
                 y=weekly['MA4'],
                 mode='lines',
-                name=t('4_week_trend', lang),
+                name=t('4_week_trend'),
                 line=dict(color=THEME['secondary'], width=2, dash='dot'),
                 hovertemplate='<b>%{x|%Y-%m-%d}</b><br>Trend: ¥%{y:,.0f}<extra></extra>'
             ))
@@ -364,13 +344,13 @@ def plot_time_series(df, category=None, major_category=None, remarks=None, year=
             x=daily['Date'],
             y=daily['Expense'],
             mode='lines+markers',
-            name=t('daily_total', lang),
+            name=t('daily_total'),
             line=dict(color=THEME['primary'], width=2),
             marker=dict(size=6, color=THEME['primary']),
             fill='tozeroy',
             fillcolor=THEME['primary_fill'],
             customdata=daily['count'],
-            hovertemplate='<b>%{x|%Y-%m-%d}</b><br>¥%{y:,.0f}<br>'+t('count', lang)+': %{customdata}<extra></extra>'
+            hovertemplate='<b>%{x|%Y-%m-%d}</b><br>¥%{y:,.0f}<br>'+t('count')+': %{customdata}<extra></extra>'
         ))
         
         # 7-day moving average
@@ -380,171 +360,192 @@ def plot_time_series(df, category=None, major_category=None, remarks=None, year=
                 x=daily['Date'],
                 y=daily['MA7'],
                 mode='lines',
-                name=t('7_day_average', lang),
+                name=t('7_day_average'),
                 line=dict(color=THEME['secondary'], width=2, dash='dash'),
                 hovertemplate='<b>%{x|%Y-%m-%d}</b><br>Avg: ¥%{y:,.0f}<extra></extra>'
             ))
     
     fig.update_layout(
-        **get_shared_layout(title or f"{label} {t('spending_over_time', lang)}", lang),
-        xaxis_title=t('date', lang),
-        yaxis_title=t('amount', lang),
+        **get_shared_layout(title or f"{label} {t('spending_over_time')}"),
+        xaxis_title=t('date'),
+        yaxis_title=t('amount'),
         hovermode='x unified',
         showlegend=True
     )
     fig.update_yaxes(tickprefix='¥')
     
-    msg = f"{t('spending_over_time', lang)} for {label}: ¥{total_spent:,.0f} (n={num_transactions}) | " \
-          f"{t('average', lang)}: ¥{avg_transaction:,.0f} | {t('max', lang)}: ¥{max_transaction:,.0f}"
+    msg = f"You've spent a total of ¥{total_spent:,.0f} across {num_transactions} transactions for {label}. The chart below shows how this spending has trended over time."
     
     return fig, msg
 
 @auto_validate
-def plot_distribution(df, year=None, month=None, major_category=None, category=None, remarks=None, title=None, lang='en'):
+def plot_distribution(
+    df,
+    year=None,
+    month=None,
+    start_year=None,
+    start_month=None,
+    end_year=None,
+    end_month=None,
+    months=None,
+    major_category=None,
+    category=None,
+    remarks=None,
+    title=None,
+    ignore_rent=False
+):
     """
-    Shows spending distribution with IMPROVED VISUALIZATION:
-    - Clearer labels with absolute values
-    - Better handling of small categories
-    - Summary statistics in center of donut
-    
-    If category is specified: 
-      - If it's a major category: shows sub-categories within it
-      - If it's a specific category: shows breakdown by remarks/transactions
-    If remarks is specified: shows breakdown by category for transactions matching those remarks
-    Otherwise: shows distribution across all major categories
-    
-    Time filters:
+    Shows spending distribution with flexible time filtering (aligned with plot_time_series).
+
+    Time filters (use ONE):
     - year + month: specific month
     - year: entire year
+    - start_year + end_year: year range
+    - months: last X months from today
     - (none): all time
+    
+    ignore_rent: if True, excludes "Housing and Utilities" expenses
     """
+
     data = df.copy()
     data['Date'] = pd.to_datetime(data['Date'])
-    
-    # Time filtering
+
+    if ignore_rent:
+        data = data[data['major category'] != 'Housing and Utilities']
+
+    now = pd.Timestamp.now()
+    range_start, range_end = None, None
+
+    # ---- TIME FILTERING (UPGRADED) ----
+    if month and not year:
+        year = now.year
+
     if year and month:
-        data = data[(data['Date'].dt.year == int(year)) & (data['Date'].dt.month == int(month))]
+        start_date = pd.Timestamp(year=int(year), month=int(month), day=1)
+        end_date = start_date + pd.offsets.MonthEnd(0)
+        data = data[
+            (data['Date'].dt.year == int(year)) &
+            (data['Date'].dt.month == int(month))
+        ]
+        range_start, range_end = start_date, end_date
         time_label = f"{year}-{month:02d}"
+
     elif year:
+        start_date = pd.Timestamp(year=int(year), month=1, day=1)
+        end_date = pd.Timestamp(year=int(year), month=12, day=31)
         data = data[data['Date'].dt.year == int(year)]
+        range_start, range_end = start_date, end_date
         time_label = str(year)
+
+    elif start_year and end_year:
+        s_m = int(start_month) if start_month else 1
+        e_m = int(end_month) if end_month else 12
+        start_date = pd.Timestamp(year=int(start_year), month=s_m, day=1)
+        end_date = pd.Timestamp(year=int(end_year), month=e_m, day=1) + pd.offsets.MonthEnd(0)
+        data = data[(data['Date'] >= start_date) & (data['Date'] <= end_date)]
+        range_start, range_end = start_date, end_date
+        if start_year == end_year and s_m == e_m:
+            time_label = f"{start_year}/{s_m:02d}"
+        else:
+            time_label = f"{start_year}/{s_m:02d} - {end_year}/{e_m:02d}"
+
+    elif months:
+        cutoff = now - pd.DateOffset(months=int(months))
+        data = data[data['Date'] >= cutoff]
+        range_start, range_end = cutoff, now
+        time_label = f"Last {months} months"
+
     else:
-        time_label = "全期間" if lang == 'ja' else "All Time"
-    
-    # Category filtering and determine grouping logic
+        time_label = "All Time"
+
+    # ---- CATEGORY / GROUPING LOGIC ----
     if remarks:
-        # Filter by remarks and show category distribution
         data = data[data['remarks'].str.contains(remarks, case=False, na=False)]
         group_by = 'category'
-        if lang == 'ja':
-            default_title = f"'{remarks}' のカテゴリー内訳 - {time_label}"
-            filter_label = f"備考に '{remarks}' を含む"
-        else:
-            default_title = f"Categories for '{remarks}' - {time_label}"
-            filter_label = f"remarks containing '{remarks}'"
+        default_title = f"Categories for '{remarks}' - {time_label}"
+        filter_label = f"remarks containing '{remarks}'"
+
     elif category:
-        # Filter by specific category and show breakdown by remarks or subcategory
         data = data[data['category'].str.lower() == category.lower()]
-        # For specific categories, show individual transaction remarks if available
-        # Otherwise fall back to just showing the category itself
         if data['remarks'].notna().any():
             group_by = 'remarks'
-            if lang == 'ja':
-                default_title = f"{category} の取引詳細 - {time_label}"
-            else:
-                default_title = f"{category} Transactions - {time_label}"
+            default_title = f"{category} Transactions - {time_label}"
         else:
             group_by = 'category'
-            if lang == 'ja':
-                default_title = f"{category} の内訳 - {time_label}"
-            else:
-                default_title = f"{category} Breakdown - {time_label}"
-        filter_label = f"カテゴリー '{category}'" if lang == 'ja' else f"category '{category}'"
+            default_title = f"{category} Breakdown - {time_label}"
+        filter_label = f"category '{category}'"
+
     elif major_category:
-        # Filter by major category and show sub-categories
         data = data[data['major category'].str.lower() == major_category.lower()]
         group_by = 'category'
-        if lang == 'ja':
-            default_title = f"{major_category} の内訳 - {time_label}"
-            filter_label = f"主要カテゴリー '{major_category}'"
-        else:
-            default_title = f"{major_category} Breakdown - {time_label}"
-            filter_label = f"major category '{major_category}'"
+        default_title = f"{major_category} Breakdown - {time_label}"
+        filter_label = f"major category '{major_category}'"
+
     else:
-        # No filter: show all major categories
         group_by = 'major category'
-        if lang == 'ja':
-            default_title = f"支出の内訳 - {time_label}"
-            filter_label = "全支出"
-        else:
-            default_title = f"Spending Distribution - {time_label}"
-            filter_label = "all expenses"
-    
+        label_suffix = " (excluding rent)" if ignore_rent else ""
+        default_title = f"{t('distribution')}{label_suffix} - {time_label}"
+        filter_label = f"all expenses{label_suffix}"
+
     if data.empty:
-        if lang == 'ja':
-            return None, f"{time_label}の{filter_label}に関するデータが見つかりませんでした。"
         return None, f"No data found for {filter_label} in {time_label}."
-    
-    # Group and sort
+
+    # ---- GROUPING ----
     grouped = data.groupby(group_by)['Expense'].sum().reset_index()
     grouped = grouped.sort_values('Expense', ascending=False)
-    
-    # IMPROVED: Combine small categories into "Others"
+
     total = grouped['Expense'].sum()
-    threshold = total * 0.03  # Categories less than 3% go into "Others"
-    
+    threshold = total * 0.03
+
+    # ---- HANDLE SMALL CATEGORIES ----
     if group_by == 'remarks' and len(grouped) > 10:
-        # For remarks, limit to top 10
         top_items = grouped.head(10)
         others_sum = grouped.tail(len(grouped) - 10)['Expense'].sum()
         if others_sum > 0:
-            others_row = pd.DataFrame({group_by: [t('others', lang)], 'Expense': [others_sum]})
+            others_row = pd.DataFrame({group_by: [t('others')], 'Expense': [others_sum]})
             grouped = pd.concat([top_items, others_row], ignore_index=True)
         else:
             grouped = top_items
+
     elif len(grouped) > 12:
-        # For categories, group small ones into "Others"
         main_items = grouped[grouped['Expense'] >= threshold]
         small_items = grouped[grouped['Expense'] < threshold]
         if len(small_items) > 0:
             others_sum = small_items['Expense'].sum()
-            others_row = pd.DataFrame({group_by: [t('others', lang)], 'Expense': [others_sum]})
+            others_row = pd.DataFrame({group_by: [t('others')], 'Expense': [others_sum]})
             grouped = pd.concat([main_items, others_row], ignore_index=True)
-    
-    # Calculate percentages
+
     grouped['Percentage'] = (grouped['Expense'] / total * 100).round(1)
-    
-    # IMPROVED: Custom text showing both label and amount
-    custom_text = [f"{row[group_by]}<br>¥{row['Expense']:,.0f}" 
-                   for _, row in grouped.iterrows()]
-    
-    # Determine colors: use major category colors for major categories, 
-    # generate distinct colors for subcategories/remarks
+
+    custom_text = [
+        f"{row[group_by]}<br>¥{row['Expense']:,.0f}"
+        for _, row in grouped.iterrows()
+    ]
+
+    # ---- COLORS ----
     if group_by == 'major category':
-        # Use defined major category colors
         slice_colors = [CATEGORY_COLORS.get(label, THEME['primary']) for label in grouped[group_by]]
     else:
-        # Generate distinct colors for subcategories or remarks
         slice_colors = generate_subcategory_colors(grouped[group_by].tolist())
-    
+
+    # ---- PLOT ----
     fig = go.Figure(data=[go.Pie(
         labels=grouped[group_by],
         values=grouped['Expense'],
         text=custom_text,
         textposition='inside',
-        textinfo='percent',  # Show only percentage inside
+        textinfo='percent',
         insidetextorientation='radial',
         hovertemplate='<b>%{label}</b><br>¥%{value:,.0f} (%{percent})<extra></extra>',
-        hole=0.5,  # Larger hole for donut chart
+        hole=0.5,
         marker=dict(
             colors=slice_colors,
             line=dict(color='rgba(15, 23, 42, 0.9)', width=2)
         ),
-        sort=False  # Keep our sort order
+        sort=False
     )])
-    
-    # Get base layout and override legend settings
-    layout = get_shared_layout(title or default_title, lang)
+
+    layout = get_shared_layout(title or default_title)
     layout['legend'] = dict(
         orientation='v',
         y=0.5,
@@ -553,22 +554,24 @@ def plot_distribution(df, year=None, month=None, major_category=None, category=N
         font=dict(color=THEME['label_color'], family=THEME['font_family'], size=11)
     )
     layout['margin'] = dict(t=80, b=80, l=50, r=100)
-    
+
     fig.update_layout(**layout, showlegend=True)
-    
-    # Add a slight pull to the largest slice if it's significant
+
     if not grouped.empty and grouped.iloc[0]['Percentage'] > 30:
         pulls = [0.05 if i == 0 else 0 for i in range(len(grouped))]
         fig.update_traces(pull=pulls)
-    
-    msg = f"{t('distribution', lang)} for {filter_label}: ¥{total:,.0f} (n={len(data)} across {len(grouped)} items)"
-    
-    return fig, msg
+
+    msg = f"Your spending breakdown for {filter_label} totals ¥{total:,.0f} across {len(data)} transactions. " \
+          f"The largest category here is {grouped.iloc[0][group_by]}, accounting for {grouped.iloc[0]['Percentage']:.1f}% of the total."
+
+    return fig, msg 
 
 @auto_validate
 def plot_comparison_bars(df, category=None, major_category=None, remarks=None, 
                          y1=None, m1=None, d1=None, y2=None, m2=None, d2=None, 
-                         show_avg=True, title=None, lang='en'):
+                         sm1=None, em1=None, sm2=None, em2=None,
+                         ey1=None, ey2=None,
+                         show_avg=True, title=None):
     """
     Compares spending between two periods with IMPROVED VISUALIZATION:
     - Percentage change indicators
@@ -581,6 +584,8 @@ def plot_comparison_bars(df, category=None, major_category=None, remarks=None,
     - Two years: y1=2024, y2=2025
     - Two months: y1=2024, m1=12, y2=2025, m2=12 (Dec 2024 vs Dec 2025)
     - Two specific dates: y1=2024, m1=7, d1=21, y2=2025, m2=7, d2=21 (21 July 2024 vs 21 July 2025)
+    - Two ranges: y1=2024, sm1=1, em1=6, y2=2025, sm2=1, em2=6 (Jan-Jun 2024 vs Jan-Jun 2025)
+    - Cross-year ranges: y1=2024, sm1=11, ey1=2025, em1=1 (Nov 24 - Jan 25)
     
     If category specified: shows breakdown within that category (or subcategories of a major category)
     Otherwise: shows breakdown by major categories
@@ -590,8 +595,38 @@ def plot_comparison_bars(df, category=None, major_category=None, remarks=None,
     data = df.copy()
     data['Date'] = pd.to_datetime(data['Date'])
     
+    # Basic validation for comparison parameters
+    if y1 is None or y2 is None:
+        return None, "Comparison requires two years (y1 and y2). Please specify which periods you want to compare."
+    
     # Determine comparison type and ensure chronological order
-    if d1 and d2:
+    if sm1 and em1 and sm2 and em2:
+        # Month range comparison
+        eff_ey1 = ey1 if ey1 is not None else y1
+        eff_ey2 = ey2 if ey2 is not None else y2
+        date1_start = pd.Timestamp(year=int(y1), month=int(sm1), day=1)
+        date1_end = pd.Timestamp(year=int(eff_ey1), month=int(em1), day=1) + pd.offsets.MonthEnd(0)
+        date2_start = pd.Timestamp(year=int(y2), month=int(sm2), day=1)
+        date2_end = pd.Timestamp(year=int(eff_ey2), month=int(em2), day=1) + pd.offsets.MonthEnd(0)
+        
+        data1 = data[(data['Date'] >= date1_start) & (data['Date'] <= date1_end)]
+        data2 = data[(data['Date'] >= date2_start) & (data['Date'] <= date2_end)]
+        
+        p1_start_str = f"{y1}/{int(sm1):02d}"
+        p1_end_str = f"{eff_ey1}/{int(em1):02d}"
+        p2_start_str = f"{y2}/{int(sm2):02d}"
+        p2_end_str = f"{eff_ey2}/{int(em2):02d}"
+        
+        period1 = f"{p1_start_str}-{p1_end_str}" if y1 != eff_ey1 or sm1 != em1 else p1_start_str
+        period2 = f"{p2_start_str}-{p2_end_str}" if y2 != eff_ey2 or sm2 != em2 else p2_start_str
+        
+        # Swap if period 2 starts earlier than period 1
+        if date2_start < date1_start:
+            data1, data2 = data2, data1
+            period1, period2 = period2, period1
+            date1_start, date2_start = date2_start, date1_start # For consistency if needed below
+            
+    elif d1 and d2:
         # Specific date comparison
         date1 = pd.Timestamp(year=int(y1), month=int(m1), day=int(d1))
         date2 = pd.Timestamp(year=int(y2), month=int(m2), day=int(d2))
@@ -611,8 +646,8 @@ def plot_comparison_bars(df, category=None, major_category=None, remarks=None,
         date2 = pd.Timestamp(year=int(y2), month=int(m2), day=1)
         data1 = data[(data['Date'].dt.year == int(y1)) & (data['Date'].dt.month == int(m1))]
         data2 = data[(data['Date'].dt.year == int(y2)) & (data['Date'].dt.month == int(m2))]
-        period1 = f"{y1}-{m1:02d}"
-        period2 = f"{y2}-{m2:02d}"
+        period1 = f"{y1}-{int(m1):02d}"
+        period2 = f"{y2}-{int(m2):02d}"
         
         # Swap if date2 is earlier than date1
         if date2 < date1:
@@ -653,7 +688,7 @@ def plot_comparison_bars(df, category=None, major_category=None, remarks=None,
         label = 'All Categories'
     
     if data1.empty or data2.empty:
-        return None, f"{t('insufficient_data', lang)} {period1} and {period2}."
+        return None, f"{t('insufficient_data')} {period1} and {period2}."
     
     # Aggregate data
     if show_avg:
@@ -679,7 +714,7 @@ def plot_comparison_bars(df, category=None, major_category=None, remarks=None,
             rows=2, cols=1, 
             shared_xaxes=False,  # Changed from True to False to show categories on both plots
             vertical_spacing=0.15,
-            subplot_titles=(f"{t('total', lang)} (¥)", f"{t('average', lang)} (¥)")
+            subplot_titles=(f"{t('total')} (¥)", f"{t('average')} (¥)")
         )
         
         # Row 1: Totals
@@ -693,7 +728,7 @@ def plot_comparison_bars(df, category=None, major_category=None, remarks=None,
             legendgroup='group1',
             cliponaxis=False,
             customdata=[count1.get(c, 0) for c in all_cats],
-            hovertemplate='<b>%{x}</b><br>'+period1+f' {t("total", lang)}: ¥%{{y:,.0f}}<br>{t("count", lang)}: %{{customdata}}<extra></extra>'
+            hovertemplate='<b>%{x}</b><br>'+period1+f' {t("total")}: ¥%{{y:,.0f}}<br>{t("count")}: %{{customdata}}<extra></extra>'
         ), row=1, col=1)
         
         fig.add_trace(go.Bar(
@@ -706,7 +741,7 @@ def plot_comparison_bars(df, category=None, major_category=None, remarks=None,
             legendgroup='group2',
             cliponaxis=False,
             customdata=[count2.get(c, 0) for c in all_cats],
-            hovertemplate='<b>%{x}</b><br>'+period2+f' {t("total", lang)}: ¥%{{y:,.0f}}<br>{t("count", lang)}: %{{customdata}}<extra></extra>'
+            hovertemplate='<b>%{x}</b><br>'+period2+f' {t("total")}: ¥%{{y:,.0f}}<br>{t("count")}: %{{customdata}}<extra></extra>'
         ), row=1, col=1)
         
         # Row 2: Averages
@@ -721,7 +756,7 @@ def plot_comparison_bars(df, category=None, major_category=None, remarks=None,
             showlegend=False,
             cliponaxis=False,
             customdata=[count1.get(c, 0) for c in all_cats],
-            hovertemplate='<b>%{x}</b><br>'+period1+f' {t("average", lang)}: ¥%{{y:,.0f}}<br>{t("count", lang)}: %{{customdata}}<extra></extra>'
+            hovertemplate='<b>%{x}</b><br>'+period1+f' {t("average")}: ¥%{{y:,.0f}}<br>{t("count")}: %{{customdata}}<extra></extra>'
         ), row=2, col=1)
         
         fig.add_trace(go.Bar(
@@ -735,13 +770,13 @@ def plot_comparison_bars(df, category=None, major_category=None, remarks=None,
             showlegend=False,
             cliponaxis=False,
             customdata=[count2.get(c, 0) for c in all_cats],
-            hovertemplate='<b>%{x}</b><br>'+period2+f' {t("average", lang)}: ¥%{{y:,.0f}}<br>{t("count", lang)}: %{{customdata}}<extra></extra>'
+            hovertemplate='<b>%{x}</b><br>'+period2+f' {t("average")}: ¥%{{y:,.0f}}<br>{t("count")}: %{{customdata}}<extra></extra>'
         ), row=2, col=1)
         
         fig.update_yaxes(range=[0, max_total * 1.35], tickprefix='¥', row=1, col=1)
         fig.update_yaxes(range=[0, max_avg * 1.35], tickprefix='¥', row=2, col=1)
-        fig.update_xaxes(title_text=t('category', lang), row=1, col=1)
-        fig.update_xaxes(title_text=t('category', lang), row=2, col=1)
+        fig.update_xaxes(title_text=t('category'), row=1, col=1)
+        fig.update_xaxes(title_text=t('category'), row=2, col=1)
         
         fig.update_layout(height=650)
     else:
@@ -758,7 +793,7 @@ def plot_comparison_bars(df, category=None, major_category=None, remarks=None,
             marker_color=THEME['primary'],
             cliponaxis=False,
             customdata=[count1.get(c, 0) for c in all_cats],
-            hovertemplate='<b>%{x}</b><br>'+period1+f': ¥%{{y:,.0f}}<br>{t("count", lang)}: %{{customdata}}<extra></extra>'
+            hovertemplate='<b>%{x}</b><br>'+period1+f': ¥%{{y:,.0f}}<br>{t("count")}: %{{customdata}}<extra></extra>'
         ))
         
         fig.add_trace(go.Bar(
@@ -771,14 +806,14 @@ def plot_comparison_bars(df, category=None, major_category=None, remarks=None,
             marker_color=THEME['secondary'],
             cliponaxis=False,
             customdata=[count2.get(c, 0) for c in all_cats],
-            hovertemplate='<b>%{x}</b><br>'+period2+f': ¥%{{y:,.0f}}<br>{t("count", lang)}: %{{customdata}}<extra></extra>'
+            hovertemplate='<b>%{x}</b><br>'+period2+f': ¥%{{y:,.0f}}<br>{t("count")}: %{{customdata}}<extra></extra>'
         ))
         fig.update_yaxes(range=[0, max_val * 1.25], tickprefix='¥')
     
     fig.update_layout(
-        **get_shared_layout(title or f"{label}: {period1} vs {period2}", lang),
-        xaxis_title=t('category', lang) if not show_avg else None,
-        yaxis_title=t('amount', lang),
+        **get_shared_layout(title or f"{label}: {period1} vs {period2}"),
+        xaxis_title=t('category') if not show_avg else None,
+        yaxis_title=t('amount'),
         barmode='group',
         bargap=0.25,
         bargroupgap=0.1,
@@ -802,20 +837,19 @@ def plot_comparison_bars(df, category=None, major_category=None, remarks=None,
         change_pct = 100 if total2 > 0 else 0
 
     change_direction = (
-        t('increase', lang) if change_pct > 0
-        else t('decrease', lang) if change_pct < 0
-        else t('no_change', lang)
+        t('increase') if change_pct > 0
+        else t('decrease') if change_pct < 0
+        else t('no_change')
     )
 
     
-    msg = f"{t('comparison', lang)}: {period1} (¥{total1:,.0f}) vs {period2} (¥{total2:,.0f}) | " \
-          f"{t('change', lang)}: {abs(change_pct):.1f}% {change_direction}"
+    msg = f"Comparing your **{label}** spending in {period1} (¥{total1:,.0f}) to {period2} (¥{total2:,.0f}), it **{change_direction}** by **{abs(change_pct):.1f}%**."
     
     return fig, msg
 
 @auto_validate
-def calculate_total(df, category=None, major_category=None, year=None, month=None, day=None,
-                    start_year=None, end_year=None, remarks=None, lang='en'):
+def calculate_total(df, category=None, major_category=None, remarks=None, year=None, month=None, day=None,
+                    start_year=None, start_month=None, end_year=None, end_month=None, months=None):
     """
     Calculates total spending with transaction count and average per transaction.
     
@@ -824,16 +858,18 @@ def calculate_total(df, category=None, major_category=None, year=None, month=Non
     - year + month: specific month
     - year: entire year
     - start_year + end_year: year range
+    - months: last X months from today
     - (none): all time
-    
-    Category filters (use ONE):
-    - category: specific category OR broad category
-    - remarks: search in transaction remarks
     """
     data = df.copy()
     data['Date'] = pd.to_datetime(data['Date'])
     
+    now = pd.Timestamp.now()
+    
     # Time filtering
+    if month and not year:
+        year = now.year
+
     if year and month and day:
         specific_date = pd.Timestamp(year=int(year), month=int(month), day=int(day))
         data = data[data['Date'].dt.date == specific_date.date()]
@@ -845,8 +881,19 @@ def calculate_total(df, category=None, major_category=None, year=None, month=Non
         data = data[data['Date'].dt.year == int(year)]
         time_label = str(year)
     elif start_year and end_year:
-        data = data[(data['Date'].dt.year >= int(start_year)) & (data['Date'].dt.year <= int(end_year))]
-        time_label = f"{start_year}-{end_year}"
+        s_m = int(start_month) if start_month else 1
+        e_m = int(end_month) if end_month else 12
+        start_date = pd.Timestamp(year=int(start_year), month=s_m, day=1)
+        end_date = pd.Timestamp(year=int(end_year), month=e_m, day=1) + pd.offsets.MonthEnd(0)
+        data = data[(data['Date'] >= start_date) & (data['Date'] <= end_date)]
+        if start_year == end_year and s_m == e_m:
+            time_label = f"{start_year}/{s_m:02d}"
+        else:
+            time_label = f"from {start_year}/{s_m:02d} to {end_year}/{e_m:02d}"
+    elif months:
+        cutoff = now - pd.DateOffset(months=int(months))
+        data = data[data['Date'] >= cutoff]
+        time_label = f"the past {months} month" if int(months) == 1 else f"the past {months} months"
     else:
         time_label = "all time"
     
@@ -861,144 +908,27 @@ def calculate_total(df, category=None, major_category=None, year=None, month=Non
         data = data[data['remarks'].str.contains(remarks, case=False, na=False)]
         label = f"'{remarks}'"
     else:
-        label = t('total', lang)
+        label = t('total')
     
     if data.empty:
-        if lang == 'ja':
-            return None, f"{time_label}の{label}に関する取引が見つかりませんでした。"
         return None, f"No transactions found for {label} in {time_label}."
     
     total = data['Expense'].sum()
     count = len(data)
     avg_per_transaction = total / count
     
-    if lang == 'ja':
-        msg = f"{time_label}の{label}: ¥{total:,.0f} ({t('count', lang)}={count}, {t('average', lang)} ¥{avg_per_transaction:,.0f})"
-    else:
-        msg = f"{label} in {time_label}: ¥{total:,.0f} (n={count}, avg ¥{avg_per_transaction:,.0f})"
+    msg = f"Based on your records, you spent a total of ¥{total:,.0f} on {label} in {time_label}. This covers {count} transactions with an average of ¥{avg_per_transaction:,.0f} each."
     
     return None, msg
 
-@auto_validate
-def calculate_statistics(df, category=None, major_category=None, remarks=None,
-                        y1=None, m1=None, d1=None, y2=None, m2=None, d2=None, compare=False, lang='en'):
-    """
-    Calculates spending statistics: mean, median, std deviation.
-    If compare=True and two periods specified: runs t-test to check if difference is significant.
-    
-    Single period analysis: provide category + y1 (and optionally m1, d1)
-    Comparison: provide y1, y2 (and optionally m1, m2, d1, d2) + set compare=True
-    
-    For specific date comparison: y1=2024, m1=7, d1=21, y2=2025, m2=7, d2=21, compare=True
-    """
-    data = df.copy()
-    data['Date'] = pd.to_datetime(data['Date'])
-    
-    if compare and y1 and y2:
-        # Comparison mode
-        if d1 and d2:
-            # Specific date comparison
-            date1 = pd.Timestamp(year=int(y1), month=int(m1), day=int(d1))
-            date2 = pd.Timestamp(year=int(y2), month=int(m2), day=int(d2))
-            data1 = data[data['Date'].dt.date == date1.date()]
-            data2 = data[data['Date'].dt.date == date2.date()]
-            period1 = date1.strftime('%Y-%m-%d')
-            period2 = date2.strftime('%Y-%m-%d')
-        elif m1 and m2:
-            data1 = data[(data['Date'].dt.year == int(y1)) & (data['Date'].dt.month == int(m1))]
-            data2 = data[(data['Date'].dt.year == int(y2)) & (data['Date'].dt.month == int(m2))]
-            period1 = f"{y1}-{m1:02d}"
-            period2 = f"{y2}-{m2:02d}"
-        else:
-            data1 = data[data['Date'].dt.year == int(y1)]
-            data2 = data[data['Date'].dt.year == int(y2)]
-            period1 = str(y1)
-            period2 = str(y2)
-        
-        # Apply category filter
-        if category:
-            data1 = data1[data1['category'].str.lower() == category.lower()]
-            data2 = data2[data2['category'].str.lower() == category.lower()]
-            label = category
-        elif major_category:
-            data1 = data1[data1['major category'].str.lower() == major_category.lower()]
-            data2 = data2[data2['major category'].str.lower() == major_category.lower()]
-            label = major_category
-        elif remarks:
-            data1 = data1[data1['remarks'].str.contains(remarks, case=False, na=False)]
-            data2 = data2[data2['remarks'].str.contains(remarks, case=False, na=False)]
-            label = f"'{remarks}'"
-        else:
-            label = "Total"
-        
-        if len(data1) < 2 or len(data2) < 2:
-            if lang == 'ja':
-                return None, f"{label}の統計的比較のためのデータが不足しています。"
-            return None, f"Insufficient data for statistical comparison of {label}."
-        
-        s1 = data1['Expense']
-        s2 = data2['Expense']
-        
-        # T-test
-        t_stat, p_value = stats.ttest_ind(s1, s2, equal_var=False, nan_policy='omit')
-        
-        # Effect size (Cohen's d)
-        pooled_std = np.sqrt(((len(s1)-1)*s1.std()**2 + (len(s2)-1)*s2.std()**2) / (len(s1)+len(s2)-2))
-        cohens_d = (s1.mean() - s2.mean()) / pooled_std if pooled_std > 0 else 0
-        
-        sig = "統計的に有意" if p_value < 0.05 else "統計的に有意ではない" if lang == 'ja' else "statistically significant" if p_value < 0.05 else "not statistically significant"
-        effect = "大きい" if abs(cohens_d) > 0.8 else "中程度" if abs(cohens_d) > 0.5 else "小さい" if lang == 'ja' else "large" if abs(cohens_d) > 0.8 else "medium" if abs(cohens_d) > 0.5 else "small"
-        
-        if lang == 'ja':
-            msg = f"{label} - {period1}: {t('average', lang)} ¥{s1.mean():,.0f} (n={len(s1)}), "
-            msg += f"{period2}: {t('average', lang)} ¥{s2.mean():,.0f} (n={len(s2)}) | "
-            msg += f"差異は{sig}です (p={p_value:.4f}), 効果量: {effect} (d={cohens_d:.3f})"
-        else:
-            msg = f"{label} - {period1}: mean ¥{s1.mean():,.0f} (n={len(s1)}), "
-            msg += f"{period2}: mean ¥{s2.mean():,.0f} (n={len(s2)}) | "
-            msg += f"Difference is {sig} (p={p_value:.4f}), effect size: {effect} (d={cohens_d:.3f})"
-        
-        return None, msg
-    
-    else:
-        # Single period statistics
-        if y1 and m1:
-            data = data[(data['Date'].dt.year == int(y1)) & (data['Date'].dt.month == int(m1))]
-            time_label = f"{y1}-{m1:02d}"
-        elif y1:
-            data = data[data['Date'].dt.year == int(y1)]
-            time_label = str(y1)
-        else:
-            time_label = "全期間" if lang == 'ja' else "all time"
-        
-        if category:
-            data = data[data['category'].str.lower() == category.lower()]
-            label = category
-        elif major_category:
-            data = data[data['major category'].str.lower() == major_category.lower()]
-            label = major_category
-        elif remarks:
-            data = data[data['remarks'].str.contains(remarks, case=False, na=False)]
-            label = f"'{remarks}'"
-        else:
-            label = "Total"
-        
-        if data.empty:
-            if lang == 'ja':
-                return None, f"{time_label}の{label}に関する取引が見つかりませんでした。"
-            return None, f"No transactions found for {label} in {time_label}."
-        
-        mean_val = data['Expense'].mean()
-        median_val = data['Expense'].median()
-        std_val = data['Expense'].std()
-        
-        if lang == 'ja':
-            return None, f"{time_label}の{label}: {t('average', lang)} ¥{mean_val:,.0f}, 中央値 ¥{median_val:,.0f}, 標準偏差 ¥{std_val:,.0f} (n={len(data)})"
-        return None, f"{label} in {time_label}: Mean ¥{mean_val:,.0f}, Median ¥{median_val:,.0f}, Std Dev ¥{std_val:,.0f} (n={len(data)})"
+
 
 @auto_validate
 def get_top_expenses(df, n=10, category=None, major_category=None, remarks=None,
-                    year=None, month=None, min_amount=None, lang='en'):
+                    year=None, month=None, day=None,
+                    start_year=None, start_month=None, 
+                    end_year=None, end_month=None, 
+                    months=None, min_amount=None, ignore_rent=False):
     """
     Returns the top N largest expenses with details.
     Useful for finding biggest spending items.
@@ -1006,17 +936,45 @@ def get_top_expenses(df, n=10, category=None, major_category=None, remarks=None,
     Args:
     - n: number of top expenses to return (default 10)
     - min_amount: only show expenses above this amount
+    - months: last X months from today
+    - ignore_rent: if True, excludes "Housing and Utilities" expenses
     """
     data = df.copy()
     data['Date'] = pd.to_datetime(data['Date'])
     
+    if ignore_rent:
+        data = data[data['major category'] != 'Housing and Utilities']
+    
+    now = pd.Timestamp.now()
+    
     # Time filtering
-    if year and month:
+    if month and not year:
+        year = now.year
+
+    if year and month and day:
+        specific_date = pd.Timestamp(year=int(year), month=int(month), day=int(day))
+        data = data[data['Date'].dt.date == specific_date.date()]
+        time_label = specific_date.strftime('%Y-%m-%d')
+    elif year and month:
         data = data[(data['Date'].dt.year == int(year)) & (data['Date'].dt.month == int(month))]
         time_label = f"{year}-{month:02d}"
     elif year:
         data = data[data['Date'].dt.year == int(year)]
         time_label = str(year)
+    elif start_year and end_year:
+        s_m = int(start_month) if start_month else 1
+        e_m = int(end_month) if end_month else 12
+        start_date = pd.Timestamp(year=int(start_year), month=s_m, day=1)
+        end_date = pd.Timestamp(year=int(end_year), month=e_m, day=1) + pd.offsets.MonthEnd(0)
+        data = data[(data['Date'] >= start_date) & (data['Date'] <= end_date)]
+        if start_year == end_year and s_m == e_m:
+            time_label = f"{start_year}/{s_m:02d}"
+        else:
+            time_label = f"{start_year}/{s_m:02d}-{end_year}/{e_m:02d}"
+    elif months:
+        cutoff = now - pd.DateOffset(months=int(months))
+        data = data[data['Date'] >= cutoff]
+        time_label = f"the past {months} month" if int(months) == 1 else f"the past {months} months"
     else:
         time_label = "all time"
     
@@ -1031,27 +989,23 @@ def get_top_expenses(df, n=10, category=None, major_category=None, remarks=None,
         data = data[data['remarks'].str.contains(remarks, case=False, na=False)]
         label = f"'{remarks}'"
     else:
-        label = "全支出" if lang == 'ja' else "all expenses"
+        label = "all expenses"
     
     # Amount filtering
     if min_amount:
         data = data[data['Expense'] >= float(min_amount)]
     
     if data.empty:
-        if lang == 'ja':
-            return None, f"{time_label}の{label}に関する支出は見つかりませんでした。"
         return None, f"No expenses found for {label} in {time_label}."
     
     # Get top N
     top_data = data.nlargest(n, 'Expense')[['Date', 'Expense', 'category', 'remarks']]
     
-    if lang == 'ja':
-        msg = f"{time_label}の{label}における上位{min(n, len(top_data))}件の支出:\n"
-    else:
-        msg = f"Top {min(n, len(top_data))} expenses for {label} in {time_label}:\n"
+    label_suffix = " (excluding rent)" if ignore_rent else ""
+    msg = f"Here are your top {min(n, len(top_data))} highest expenses for {label}{label_suffix} in {time_label}:\n\n"
     for idx, row in top_data.iterrows():
         date_str = row['Date'].strftime('%Y-%m-%d')
-        remarks_str = f" - {row['rema rks']}" if pd.notna(row['remarks']) else ""
-        msg += f"• {date_str}: ¥{row['Expense']:,.0f} ({row['category']}){remarks_str}\n"
+        remarks_str = f" - {row['remarks']}" if pd.notna(row['remarks']) else ""
+        msg += f"* **{date_str}**: ¥{row['Expense']:,.0f} ({row['category']}){remarks_str}\n"
     
     return None, msg.strip()

@@ -10,7 +10,6 @@ export default function SettingsPanel({
     topK, setTopK,
     routerProvider, setRouterProvider,
     specialistProvider, setSpecialistProvider,
-    summarizerProvider, setSummarizerProvider,
     backendConnected
 }) {
     return (
@@ -106,7 +105,6 @@ export default function SettingsPanel({
                             <div className="flex flex-col gap-3">
                                 <ProviderSelectorSmall label="Router" value={routerProvider} onChange={setRouterProvider} backendOk={backendConnected} />
                                 <ProviderSelectorSmall label="Specialist" value={specialistProvider} onChange={setSpecialistProvider} backendOk={backendConnected} />
-                                <ProviderSelectorSmall label="Summarizer" value={summarizerProvider} onChange={setSummarizerProvider} backendOk={backendConnected} />
                             </div>
                         </div>
                     </div>

@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { User, Database, Bot, Maximize2, Clock } from 'lucide-react';
 import Plotly from 'plotly.js-dist-min';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export function PlotlyChart({ data, isExpanded = false }) {
     const containerRef = useRef(null);
@@ -97,7 +99,11 @@ export default function MessageItem({ msg, setExpandedChart }) {
             <div className={`p-3 rounded-2xl ${msg.role === 'user' ? 'max-w-[85%] bg-indigo-600 text-white' : (msg.fig ? 'w-full max-w-[95%]' : 'max-w-[95%]') + ' bg-slate-800 text-slate-200'} text-sm ${msg.isError ? 'bg-red-500/10 text-red-200 border border-red-500/20' :
                 msg.isSystem ? 'bg-slate-800/50 text-slate-400 italic' : ''
                 }`}>
-                {msg.content}
+                <div className="markdown-content">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {msg.content}
+                    </ReactMarkdown>
+                </div>
 
                 {msg.fig && (
                     <div className="mt-4 bg-black/20 rounded-lg p-2 overflow-hidden border border-white/5 w-full relative group/chart">

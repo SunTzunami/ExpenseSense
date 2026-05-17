@@ -17,7 +17,6 @@ export default function ChatInterface({ data, onClose, visible, currency, onStat
     const [models, setModels] = useState([]);
     const [selectedCodeModel, setSelectedCodeModel] = useState('');
     const [selectedRouterModel, setSelectedRouterModel] = useState('');
-    const [selectedChatModel, setSelectedChatModel] = useState('');
     const [isConnected, setIsConnected] = useState(false);
     const [backendConnected, setBackendConnected] = useState(false);
     const [connectionError, setConnectionError] = useState(null);
@@ -29,7 +28,6 @@ export default function ChatInterface({ data, onClose, visible, currency, onStat
     // Provider State - Locked to llamacpp
     const [routerProvider] = useState('llamacpp');
     const [specialistProvider] = useState('llamacpp');
-    const [summarizerProvider] = useState('llamacpp');
 
     const [llamacppModels, setLlamacppModels] = useState([]);
     const [showChoiceUI, setShowChoiceUI] = useState(false);
@@ -94,9 +92,7 @@ export default function ChatInterface({ data, onClose, visible, currency, onStat
         if (selectedCodeModel) localStorage.setItem('selected_specialist_model', selectedCodeModel);
     }, [selectedCodeModel]);
 
-    useEffect(() => {
-        if (selectedChatModel) localStorage.setItem('selected_chat_model', selectedChatModel);
-    }, [selectedChatModel]);
+
 
     // Live Timer Effect
     useEffect(() => {
@@ -133,11 +129,9 @@ export default function ChatInterface({ data, onClose, visible, currency, onStat
                 } else {
                     const savedRouter = localStorage.getItem('selected_router_model');
                     const savedSpecialist = localStorage.getItem('selected_specialist_model');
-                    const savedChat = localStorage.getItem('selected_chat_model');
 
                     setSelectedRouterModel(availableModels.includes(savedRouter) ? savedRouter : availableModels[0]);
                     setSelectedCodeModel(availableModels.includes(savedSpecialist) ? savedSpecialist : availableModels[0]);
-                    setSelectedChatModel(availableModels.includes(savedChat) ? savedChat : availableModels[0]);
                 }
 
                 try {
@@ -181,10 +175,8 @@ ${allCats.map(c => `- ${c}`).join('\n')}
                 currency: currency,
                 model: selectedCodeModel,
                 routerModel: selectedRouterModel,
-                chatModel: selectedChatModel,
                 routerProvider: 'llamacpp',
                 specialistProvider: 'llamacpp',
-                summarizerProvider: 'llamacpp',
                 options: { temperature, top_p: topP, top_k: topK }
             }, (status) => {
                 setWorkflowStatus(prev => [...prev, { ...status, timestamp: performance.now() }]);
@@ -260,7 +252,6 @@ ${allCats.map(c => `- ${c}`).join('\n')}
                             topK={topK} setTopK={setTopK}
                             routerProvider={routerProvider}
                             specialistProvider={specialistProvider}
-                            summarizerProvider={summarizerProvider}
                             backendConnected={backendConnected}
                         />
 
@@ -291,12 +282,6 @@ ${allCats.map(c => `- ${c}`).join('\n')}
                                             {llamacppModels.map(m => <option key={m} value={m}>{m}</option>)}
                                         </select>
                                     </div>
-                                    <div className="flex flex-col gap-0.5">
-                                        <span className="text-[8px] text-slate-500 uppercase font-bold ml-1">Summary</span>
-                                        <select value={selectedChatModel} onChange={(e) => setSelectedChatModel(e.target.value)} className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-slate-300 outline-none focus:border-primary max-w-[150px] text-[10px]">
-                                            {llamacppModels.map(m => <option key={m} value={m}>{m}</option>)}
-                                        </select>
-                                    </div>
                                 </div>
                             )}
                         </div>
@@ -317,7 +302,7 @@ ${allCats.map(c => `- ${c}`).join('\n')}
                                     <Bot size={48} className="opacity-20" />
                                     <p className="text-sm">Ask questions about your expenses</p>
                                     <div className="grid grid-cols-1 gap-2 w-full">
-                                        {["Plot Food expenses for the past 6 months", "Compare Groceries 2024 vs 2025", "Average spending on dining in 2024?"].map(q => (
+                                        {["How much did I spend in total on gym in 2024?", "Compare Groceries 2024 vs 2025", "What were my top 5 expenses for past month??"].map(q => (
                                             <button key={q} onClick={() => setInput(q)} className="text-xs p-2 bg-slate-800/50 rounded hover:bg-slate-700 text-left transition text-slate-400 hover:text-primary">
                                                 "{q}"
                                             </button>
@@ -371,7 +356,6 @@ ${allCats.map(c => `- ${c}`).join('\n')}
                 showChoiceUI={showChoiceUI} setShowChoiceUI={setShowChoiceUI}
                 routerProvider={routerProvider}
                 specialistProvider={specialistProvider}
-                summarizerProvider={summarizerProvider}
                 backendConnected={backendConnected}
             />
 
@@ -410,7 +394,6 @@ const WORKFLOW_STAGES = [
     { key: 'router', label: 'Router' },
     { key: 'specialist', label: 'Specialist' },
     { key: 'executing', label: 'Executing' },
-    { key: 'summarizing', label: 'Summarizing' },
 ];
 
 function WorkflowIndicator({ status, elapsed }) {

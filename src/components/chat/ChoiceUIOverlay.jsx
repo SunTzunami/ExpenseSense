@@ -6,7 +6,6 @@ export default function ChoiceUIOverlay({
     showChoiceUI, setShowChoiceUI,
     routerProvider, setRouterProvider,
     specialistProvider, setSpecialistProvider,
-    summarizerProvider, setSummarizerProvider,
     backendConnected
 }) {
     return (
@@ -31,7 +30,6 @@ export default function ChoiceUIOverlay({
                         <div className="space-y-6 py-4">
                             <ProviderSelector label="Router" value={routerProvider} onChange={setRouterProvider} backendOk={backendConnected} />
                             <ProviderSelector label="Analyst" value={specialistProvider} onChange={setSpecialistProvider} backendOk={backendConnected} />
-                            <ProviderSelector label="Summarizer" value={summarizerProvider} onChange={setSummarizerProvider} backendOk={backendConnected} />
                         </div>
 
                         <button
@@ -39,7 +37,6 @@ export default function ChoiceUIOverlay({
                                 localStorage.setItem('expense_ai_setup_done', 'true');
                                 localStorage.setItem('router_provider', 'llamacpp');
                                 localStorage.setItem('specialist_provider', 'llamacpp');
-                                localStorage.setItem('summarizer_provider', 'llamacpp');
                                 setShowChoiceUI(false);
                             }}
                             className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition shadow-lg shadow-indigo-500/20"

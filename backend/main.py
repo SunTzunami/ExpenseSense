@@ -62,14 +62,6 @@ class AnalyzeResponse(BaseModel):
     code: Optional[str] = None
     error: Optional[str] = None
 
-def is_japanese_only(text: str) -> bool:
-    """Returns True if the text contains Japanese characters and NO English letters."""
-    import re
-    # Japanese character ranges: Hiragana, Katakana, Kanji
-    has_japanese = bool(re.search(r"[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]", text))
-    # English/Roman letter range
-    has_english = bool(re.search(r"[a-zA-Z]", text))
-    return has_japanese and not has_english
 
 def load_prompt_template(filename: str) -> str:
     try:
@@ -149,9 +141,6 @@ async def analyze_stream(request: AnalyzeRequest):
 
             current_date_str = datetime.now().strftime("%Y-%m-%d")
             
-            # --- LANGUAGE DETECTION ---
-            detected_lang = "ja" if is_japanese_only(request.prompt) else "en"
-            logger.info(f"Detected language: {detected_lang}")
 
             # --- STAGE 1: ROUTER ---
             target_router = request.router_model if request.router_model else request.model
@@ -195,13 +184,12 @@ async def analyze_stream(request: AnalyzeRequest):
             system_prompt = tool_prompt_template.format(
                 metadata=request.metadata,
                 current_date=current_date_str,
-                function_definition=tool_prompt_template,
-                lang=detected_lang
+                function_definition=tool_prompt_template
             )
             logger.info(f"System prompt for Specialist:\n{system_prompt}")
 
             logger.info(f"--- Stage 2: Specialist ({request.model}) via {request.specialist_provider} for {tool_name} ---")
-            logger.info(f"Metadata provided to Specialist:\n{request.metadata}")
+            # logger.info(f"Metadata provided to Specialist:\n{request.metadata}")
             llm_content = generate_text(
                 provider=request.specialist_provider,
                 model=request.model,
@@ -213,19 +201,24 @@ async def analyze_stream(request: AnalyzeRequest):
             )
 
             # Extract code
-            code = llm_content
-            if "```python" in code:
-                code = code.split("```python")[1].split("```")[0].strip()
-            elif "```" in code:
-                code = code.split("```")[1].split("```")[0].strip()
-            elif code.startswith("`") and code.endswith("`"):
-                code = code.strip("`").strip()
+            raw_code = llm_content.strip()
+            if "```python" in raw_code:
+                raw_code = raw_code.split("```python")[1].split("```")[0].strip()
+            elif "```" in raw_code:
+                raw_code = raw_code.split("```")[1].split("```")[0].strip()
+            elif raw_code.startswith("`") and raw_code.endswith("`"):
+                raw_code = raw_code.strip("`").strip()
                 
-            # Auto-fix if LLM forgot to assign 'fig, result ='
-            if code.startswith(tool_name) and not "fig, result" in code:
-                code = f"fig, result = {code}"
+            logger.info(f"Specialist raw output: {raw_code}")
 
-            logger.info(f"Specialist generated code:\n{code}")
+            # Prepend assignment if it's just a raw function call
+            code = raw_code
+            if not code.startswith("fig, result ="):
+                if "(" in code and code.strip().endswith(")"):
+                    code = f"fig, result = {code}"
+                    logger.info(f"Auto-wrapped code: {code}")
+
+            # logger.info(f"Final Execution Code:\n{code}")
 
             # --- STAGE 3: EXECUTION ---
             yield _sse_event("status", {
@@ -235,7 +228,7 @@ async def analyze_stream(request: AnalyzeRequest):
 
             from utils.analysis_tools import (
                 plot_time_series, plot_distribution, plot_comparison_bars,
-                calculate_total, calculate_statistics, get_top_expenses,
+                calculate_total, get_top_expenses,
             )
 
             exec_scope = {
@@ -244,7 +237,6 @@ async def analyze_stream(request: AnalyzeRequest):
                 "plot_distribution": plot_distribution,
                 "plot_comparison_bars": plot_comparison_bars,
                 "calculate_total": calculate_total,
-                "calculate_statistics": calculate_statistics,
                 "get_top_expenses": get_top_expenses,
                 "result": None, "fig": None
             }
@@ -270,38 +262,9 @@ async def analyze_stream(request: AnalyzeRequest):
                 else:
                     fig_json = str(fig_obj)
 
-            # --- STAGE 4: SUMMARIZE (conditional) ---
-            final_result = str(result) if result is not None else None
-            should_summarize = fig_obj is None and result is not None and not str(result).startswith("Total") and not str(result).startswith("Average")
-
-            if should_summarize:
-                target_model = request.chat_model if request.chat_model else request.model
-                yield _sse_event("status", {
-                    "stage": "summarizing",
-                    "message": "Summarizing results...",
-                    "model": target_model,
-                    "provider": request.summarizer_provider
-                })
-
-                logger.info("Requesting natural language summary from LLM...")
-                summary_template = load_prompt_template("summary_prompt.txt")
-                target_model = request.chat_model if request.chat_model else request.model
-
-                logger.info(f"Summarizing with {target_model} via {request.summarizer_provider}...")
-                final_result = generate_text(
-                    provider=request.summarizer_provider,
-                    model=target_model,
-                    messages=[
-                        {'role': 'system', 'content': summary_template},
-                        {'role': 'user', 'content': f"User Question: {request.prompt}\n Analysis Result: {result}"}
-                    ],
-                    options=request.options
-                )
-                logger.info(f"Summary generated: {final_result}")
-            else:
-                logger.info("Skipping LLM summary, using tool result directly.")
-                final_result = str(result) if result is not None else "Analysis complete."
-
+            # --- FINAL RESULT ---
+            final_result = str(result) if result is not None else "Analysis complete."
+            logger.info(f"Final response: {final_result}")
             logger.info("--- Analysis Complete ---")
 
             # Final result event
