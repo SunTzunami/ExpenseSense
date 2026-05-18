@@ -171,7 +171,7 @@ def auto_validate(func):
     return wrapper
 
 @auto_validate
-def plot_time_series(df, category=None, major_category=None, remarks=None, year=None, month=None, 
+def plot_time_series(df, category=None, remarks=None, year=None, month=None, 
                      start_year=None, start_month=None, end_year=None, end_month=None, months=None, title=None):
     """
     Shows spending trends over time with IMPROVED VISUALIZATION:
@@ -226,11 +226,11 @@ def plot_time_series(df, category=None, major_category=None, remarks=None, year=
     
     # Category filtering
     if category:
-        data = data[data['category'].str.lower() == category.lower()]
+        if 'major category' in data.columns and (data['major category'].str.lower() == category.lower()).any():
+            data = data[data['major category'].str.lower() == category.lower()]
+        else:
+            data = data[data['category'].str.lower() == category.lower()]
         label = category
-    elif major_category:
-        data = data[data['major category'].str.lower() == major_category.lower()]
-        label = major_category
     elif remarks:
         # enable partial matching (e.g. "Starbucks" matches "Starbucks Coffee")
         data = data[data['remarks'].str.contains(remarks, case=False, na=False)]
@@ -388,7 +388,6 @@ def plot_distribution(
     end_year=None,
     end_month=None,
     months=None,
-    major_category=None,
     category=None,
     remarks=None,
     title=None,
@@ -466,20 +465,20 @@ def plot_distribution(
         filter_label = f"remarks containing '{remarks}'"
 
     elif category:
-        data = data[data['category'].str.lower() == category.lower()]
-        if data['remarks'].notna().any():
-            group_by = 'remarks'
-            default_title = f"{category} Transactions - {time_label}"
-        else:
+        if 'major category' in data.columns and (data['major category'].str.lower() == category.lower()).any():
+            data = data[data['major category'].str.lower() == category.lower()]
             group_by = 'category'
             default_title = f"{category} Breakdown - {time_label}"
-        filter_label = f"category '{category}'"
-
-    elif major_category:
-        data = data[data['major category'].str.lower() == major_category.lower()]
-        group_by = 'category'
-        default_title = f"{major_category} Breakdown - {time_label}"
-        filter_label = f"major category '{major_category}'"
+            filter_label = f"major category '{category}'"
+        else:
+            data = data[data['category'].str.lower() == category.lower()]
+            if data['remarks'].notna().any():
+                group_by = 'remarks'
+                default_title = f"{category} Transactions - {time_label}"
+            else:
+                group_by = 'category'
+                default_title = f"{category} Breakdown - {time_label}"
+            filter_label = f"category '{category}'"
 
     else:
         group_by = 'major category'
@@ -567,7 +566,7 @@ def plot_distribution(
     return fig, msg 
 
 @auto_validate
-def plot_comparison_bars(df, category=None, major_category=None, remarks=None, 
+def plot_comparison_bars(df, category=None, remarks=None, 
                          y1=None, m1=None, d1=None, y2=None, m2=None, d2=None, 
                          sm1=None, em1=None, sm2=None, em2=None,
                          ey1=None, ey2=None,
@@ -669,15 +668,14 @@ def plot_comparison_bars(df, category=None, major_category=None, remarks=None,
     
     # Category filtering
     if category:
-        data1 = data1[data1['category'].str.lower() == category.lower()]
-        data2 = data2[data2['category'].str.lower() == category.lower()]
+        if 'major category' in data1.columns and (data1['major category'].str.lower() == category.lower()).any():
+            data1 = data1[data1['major category'].str.lower() == category.lower()]
+            data2 = data2[data2['major category'].str.lower() == category.lower()]
+        else:
+            data1 = data1[data1['category'].str.lower() == category.lower()]
+            data2 = data2[data2['category'].str.lower() == category.lower()]
         group_by = 'category'
         label = category
-    elif major_category:
-        data1 = data1[data1['major category'].str.lower() == major_category.lower()]
-        data2 = data2[data2['major category'].str.lower() == major_category.lower()]
-        group_by = 'category'
-        label = major_category
     elif remarks:
         data1 = data1[data1['remarks'].str.contains(remarks, case=False, na=False)]
         data2 = data2[data2['remarks'].str.contains(remarks, case=False, na=False)]
@@ -848,7 +846,7 @@ def plot_comparison_bars(df, category=None, major_category=None, remarks=None,
     return fig, msg
 
 @auto_validate
-def calculate_total(df, category=None, major_category=None, remarks=None, year=None, month=None, day=None,
+def calculate_total(df, category=None, remarks=None, year=None, month=None, day=None,
                     start_year=None, start_month=None, end_year=None, end_month=None, months=None):
     """
     Calculates total spending with transaction count and average per transaction.
@@ -899,11 +897,11 @@ def calculate_total(df, category=None, major_category=None, remarks=None, year=N
     
     # Category filtering
     if category:
-        data = data[data['category'].str.lower() == category.lower()]
+        if 'major category' in data.columns and (data['major category'].str.lower() == category.lower()).any():
+            data = data[data['major category'].str.lower() == category.lower()]
+        else:
+            data = data[data['category'].str.lower() == category.lower()]
         label = category
-    elif major_category:
-        data = data[data['major category'].str.lower() == major_category.lower()]
-        label = major_category
     elif remarks:
         data = data[data['remarks'].str.contains(remarks, case=False, na=False)]
         label = f"'{remarks}'"
@@ -924,7 +922,7 @@ def calculate_total(df, category=None, major_category=None, remarks=None, year=N
 
 
 @auto_validate
-def get_top_expenses(df, n=10, category=None, major_category=None, remarks=None,
+def get_top_expenses(df, n=10, category=None, remarks=None,
                     year=None, month=None, day=None,
                     start_year=None, start_month=None, 
                     end_year=None, end_month=None, 
@@ -980,11 +978,11 @@ def get_top_expenses(df, n=10, category=None, major_category=None, remarks=None,
     
     # Category filtering
     if category:
-        data = data[data['category'].str.lower() == category.lower()]
+        if 'major category' in data.columns and (data['major category'].str.lower() == category.lower()).any():
+            data = data[data['major category'].str.lower() == category.lower()]
+        else:
+            data = data[data['category'].str.lower() == category.lower()]
         label = category
-    elif major_category:
-        data = data[data['major category'].str.lower() == major_category.lower()]
-        label = major_category
     elif remarks:
         data = data[data['remarks'].str.contains(remarks, case=False, na=False)]
         label = f"'{remarks}'"

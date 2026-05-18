@@ -11,10 +11,8 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
-
-# Import from our new unified inference layer instead of mlx_utils/ollama
-from experiments.shared.inference import generate
-from experiments.configs.models import get_llamacpp_models
+from experiments.inference import generate
+from experiments.models import get_llamacpp_models
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,12 +30,22 @@ app.add_middleware(
 )
 
 # Load Category Mapping from categories.json
+def _deduplicate_category_mapping(mapping: dict) -> dict:
+    seen: dict[str, str] = {}
+    deduped: dict[str, str] = {}
+    for original_key, value in mapping.items():
+        lower_key = original_key.lower()
+        if lower_key not in seen:
+            seen[lower_key] = original_key
+            deduped[original_key] = value
+    return deduped
+
 try:
     base_dir = os.path.dirname(os.path.abspath(__file__))
     categories_path = os.path.join(base_dir, "..", "src", "utils", "categories.json")
     with open(categories_path, "r", encoding="utf-8") as f:
         categories_data = json.load(f)
-        CATEGORY_MAPPING = categories_data.get("CATEGORY_MAPPING", {})
+        CATEGORY_MAPPING = _deduplicate_category_mapping(categories_data.get("CATEGORY_MAPPING", {}))
 except Exception as e:
     logger.error(f"Error loading categories.json: {e}")
     CATEGORY_MAPPING = {}
@@ -184,7 +192,6 @@ async def analyze_stream(request: AnalyzeRequest):
             system_prompt = tool_prompt_template.format(
                 metadata=request.metadata,
                 current_date=current_date_str,
-                function_definition=tool_prompt_template
             )
             logger.info(f"System prompt for Specialist:\n{system_prompt}")
 
