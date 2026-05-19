@@ -33,7 +33,7 @@ BASE_INSTRUCTIONS = """You are an automated API function caller, NOT a Python de
 Currency: JPY
 Today: {current_date}
 
-FINAL REMINDER: Output ONLY the 1-line function call. NO MARKDOWN, NO BACKTICKS, NO EXPLANATION.
+FINAL REMINDER: Output ONLY the 1-line function call. NO MARKDOWN, NO BACKTICKS, NO EXPLANATION, NO CODE!
 """
 
 TOOL_PROMPTS = {
