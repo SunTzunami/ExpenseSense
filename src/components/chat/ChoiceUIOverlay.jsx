@@ -1,6 +1,4 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ProviderSelector } from './ProviderSelector';
 
 export default function ChoiceUIOverlay({
     showChoiceUI, setShowChoiceUI,
@@ -8,44 +6,48 @@ export default function ChoiceUIOverlay({
     specialistProvider, setSpecialistProvider,
     backendConnected
 }) {
+    if (!showChoiceUI) return null;
+
     return (
-        <AnimatePresence>
-            {showChoiceUI && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-6"
-                >
-                    <motion.div
-                        initial={{ scale: 0.9, y: 20 }}
-                        animate={{ scale: 1, y: 0 }}
-                        className="w-full max-w-md bg-slate-900 border border-white/10 rounded-2xl p-8 shadow-2xl space-y-6"
+        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-6">
+            <div className="retro-window w-full max-w-sm">
+                <div className="retro-titlebar">
+                    <span>Provider Configuration</span>
+                    <div className="retro-titlebar-buttons">
+                        <div className="retro-titlebar-button" onClick={() => setShowChoiceUI(false)}>X</div>
+                    </div>
+                </div>
+                
+                <div className="retro-content bg-[#c0c0c0] flex flex-col p-4">
+                    <div className="mb-4 text-[13px]">
+                        Please confirm your provider settings before continuing.
+                    </div>
+
+                    <div className="retro-panel mb-4">
+                        <div className="mb-2 text-[13px] font-bold">Router Provider:</div>
+                        <select className="retro-select w-full mb-4" value={routerProvider} onChange={e => setRouterProvider && setRouterProvider(e.target.value)}>
+                            <option value="llamacpp">LlamaCpp (Local)</option>
+                        </select>
+                        
+                        <div className="mb-2 text-[13px] font-bold">Analyst Provider:</div>
+                        <select className="retro-select w-full" value={specialistProvider} onChange={e => setSpecialistProvider && setSpecialistProvider(e.target.value)}>
+                            <option value="llamacpp">LlamaCpp (Local)</option>
+                        </select>
+                    </div>
+
+                    <button
+                        onClick={() => {
+                            localStorage.setItem('expense_ai_setup_done', 'true');
+                            localStorage.setItem('router_provider', 'llamacpp');
+                            localStorage.setItem('specialist_provider', 'llamacpp');
+                            setShowChoiceUI(false);
+                        }}
+                        className="retro-button justify-center font-bold"
                     >
-                        <div className="text-center space-y-2">
-                            <h3 className="text-xl font-bold text-white">Select Your Providers</h3>
-                            <p className="text-sm text-slate-400">Confirm the LlamaCpp backend for each stage of analysis.</p>
-                        </div>
-
-                        <div className="space-y-6 py-4">
-                            <ProviderSelector label="Router" value={routerProvider} onChange={setRouterProvider} backendOk={backendConnected} />
-                            <ProviderSelector label="Analyst" value={specialistProvider} onChange={setSpecialistProvider} backendOk={backendConnected} />
-                        </div>
-
-                        <button
-                            onClick={() => {
-                                localStorage.setItem('expense_ai_setup_done', 'true');
-                                localStorage.setItem('router_provider', 'llamacpp');
-                                localStorage.setItem('specialist_provider', 'llamacpp');
-                                setShowChoiceUI(false);
-                            }}
-                            className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition shadow-lg shadow-indigo-500/20"
-                        >
-                            Start Analyzing
-                        </button>
-                    </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 }

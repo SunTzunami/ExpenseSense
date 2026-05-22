@@ -1,121 +1,71 @@
-
 import React, { useRef, useState } from 'react';
-import { Upload, FileSpreadsheet, Loader2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const FileUploader = ({ onFileUpload, onUseDemo }) => {
-    const [isDragging, setIsDragging] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const fileInputRef = useRef(null);
 
-    const handleDragOver = (e) => {
-        e.preventDefault();
-        setIsDragging(true);
-    };
-
-    const handleDragLeave = (e) => {
-        e.preventDefault();
-        setIsDragging(false);
-    };
-
-    const handleDrop = (e) => {
-        e.preventDefault();
-        setIsDragging(false);
-
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            processFile(e.dataTransfer.files[0]);
-        }
-    };
-
-    const handleFileInput = (e) => {
+    const handleFileInput = async (e) => {
         if (e.target.files && e.target.files[0]) {
-            processFile(e.target.files[0]);
-        }
-    };
-
-    const processFile = async (file) => {
-        setIsLoading(true);
-        // Simulate slight delay for UI feedback or actual processing time
-        try {
-            await onFileUpload(file);
-        } catch (error) {
-            console.error("Upload failed", error);
-            alert("Failed to parse file");
-        } finally {
-            setIsLoading(false);
+            setIsLoading(true);
+            try {
+                await onFileUpload(e.target.files[0]);
+            } catch (error) {
+                console.error("Upload failed", error);
+                alert("Failed to parse file");
+            } finally {
+                setIsLoading(false);
+            }
         }
     };
 
     return (
-        <div className="w-full max-w-2xl mx-auto mt-20 p-8 glass-panel text-center">
-            <motion.div
-                className={`border-2 border-dashed rounded-xl p-12 transition-all cursor-pointer
-            ${isDragging ? 'border-primary bg-primary/10' : 'border-gray-600 hover:border-gray-500 hover:bg-gray-800/30'}
-        `}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-            >
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileInput}
-                    accept=".xls,.xlsx"
-                    className="hidden"
-                />
+        <div className="retro-window w-[400px]">
+            <div className="retro-titlebar">
+                <span>Open File</span>
+                <div className="retro-titlebar-buttons">
+                    <div className="retro-titlebar-button">X</div>
+                </div>
+            </div>
+            <div className="retro-content bg-[#c0c0c0] flex flex-col items-center py-6">
+                
+                <div className="mb-6 flex gap-4">
+                    <img src="https://win98icons.alexmeub.com/icons/png/file_lines-0.png" width="32" height="32" alt="File" />
+                    <div>
+                        <div className="text-[13px] font-bold">Select Data File (*.xls, *.xlsx)</div>
+                        <div className="text-[11px] mt-1">Please select an Excel file to begin analysis.</div>
+                    </div>
+                </div>
 
-                <AnimatePresence mode="wait">
-                    {isLoading ? (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            key="loading"
-                            className="flex flex-col items-center"
+                {isLoading ? (
+                    <div className="text-[13px] font-bold mb-4">Loading data, please wait...</div>
+                ) : (
+                    <div className="flex flex-col w-full px-8 gap-4">
+                        <button 
+                            className="retro-button w-full justify-center"
+                            onClick={() => fileInputRef.current?.click()}
                         >
-                            <Loader2 className="animate-spin text-primary mb-4" size={48} />
-                            <h3 className="text-xl font-semibold mb-2">Processing Data...</h3>
-                            <p className="text-gray-400">Analyzing thousands of rows locally</p>
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            key="upload"
-                            className="flex flex-col items-center"
+                            Browse...
+                        </button>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileInput}
+                            accept=".xls,.xlsx"
+                            className="hidden"
+                        />
+                        
+                        <div className="w-full h-px bg-[#808080] border-b border-[#ffffff] my-2"></div>
+                        
+                        <div className="text-[11px] text-center">No file? Try demo mode.</div>
+                        <button 
+                            className="retro-button w-full justify-center"
+                            onClick={onUseDemo}
                         >
-                            <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mb-6">
-                                <FileSpreadsheet className="text-primary" size={36} />
-                            </div>
-
-                            <h2 className="text-2xl font-bold mb-3">Upload Expense Data</h2>
-                            <p className="text-gray-400 mb-6 max-w-sm">
-                                Drag and drop your Excel file here, or click to browse.
-                                <br /><span className="text-xs opacity-60">Supports .xls and .xlsx</span>
-                            </p>
-
-                            <button className="glass-button px-8 py-3 flex items-center gap-2">
-                                <Upload size={18} />
-                                Select File
-                            </button>
-
-                            <div className="mt-8 pt-6 border-t border-gray-700/50 w-full max-w-xs mx-auto">
-                                <p className="text-sm text-gray-500 mb-3">Just want to look around?</p>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); onUseDemo(); }}
-                                    className="text-xs px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-white/5"
-                                >
-                                    Try with Demo Data
-                                </button>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </motion.div>
+                            Load Demo Data
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

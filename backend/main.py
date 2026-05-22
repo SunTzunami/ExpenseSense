@@ -236,7 +236,10 @@ async def analyze_stream(request: AnalyzeRequest):
             from utils.analysis_tools import (
                 plot_time_series, plot_distribution, plot_comparison_bars,
                 calculate_total, get_top_expenses,
+                clear_warnings, get_warnings
             )
+
+            clear_warnings()
 
             exec_scope = {
                 "df": df, "pd": pd, "np": np, "px": px,
@@ -256,7 +259,7 @@ async def analyze_stream(request: AnalyzeRequest):
                 logger.info(f"Raw script 'result' value: {script_result}")
             except Exception as e:
                 logger.error(f"Execution error: {str(e)}")
-                yield _sse_event("error", {"error": f"Execution error: {str(e)}", "code": code})
+                yield _sse_event("error", {"error": f"Execution error: {str(e)}", "code": raw_code})
                 return
 
             result = exec_scope.get('result')
@@ -269,6 +272,8 @@ async def analyze_stream(request: AnalyzeRequest):
                 else:
                     fig_json = str(fig_obj)
 
+            warnings_list = get_warnings()
+
             # --- FINAL RESULT ---
             final_result = str(result) if result is not None else "Analysis complete."
             logger.info(f"Final response: {final_result}")
@@ -278,7 +283,8 @@ async def analyze_stream(request: AnalyzeRequest):
             yield _sse_event("result", {
                 "result": final_result,
                 "fig": fig_json,
-                "code": code
+                "code": raw_code,
+                "validation_fixes": warnings_list
             })
 
         except Exception as e:

@@ -17,28 +17,29 @@ logger = logging.getLogger(__name__)
 
 # --- THEME CONSTANTS (Matching Main App Dashboard) ---
 THEME = {
-    'paper_bgcolor': 'rgba(0,0,0,0)',
-    'plot_bgcolor': 'rgba(0,0,0,0)',
-    'title_color': '#f8fafc',
-    'label_color': '#94a3b8',
-    'grid_color': 'rgba(255,255,255,0.05)',
-    'primary': '#818cf8',       # Indigo 400
-    'primary_fill': 'rgba(129, 140, 248, 0.1)',
-    'secondary': '#c084fc',     # Purple 400
-    'font_family': 'Outfit, sans-serif'
+    'paper_bgcolor': '#c0c0c0',
+    'plot_bgcolor': '#ffffff',
+    'title_color': '#000000',
+    'label_color': '#000000',
+    'grid_color': '#808080',
+    'primary': '#000080',       # Navy
+    'primary_fill': 'rgba(0, 0, 128, 0.1)',
+    'secondary': '#800080',     # Purple
+    'font_family': "'Consolas', 'Courier New', monospace"
 }
 
 CATEGORY_COLORS = {
-    'Housing and Utilities': '#818cf8', # Indigo-400
-    'Food': '#a78bfa',                 # Violet-400
-    'Transportation': '#6366f1',       # Indigo-500
-    'Fitness': '#c084fc',              # Purple-400
-    'Souvenirs/Gifts/Treats': '#4f46e5',# Indigo-600
-    'Household and Clothing': '#8b5cf6',# Violet-500
-    'Entertainment': '#7c3aed',        # Violet-600
-    'Miscellaneous': '#94a3b8',        # Slate-400
-    'Education': '#4338ca',            # Indigo-700
-    'Electronics and Furniture': '#6d28d9', # Violet-700
+    'Housing and Utilities': '#000080',
+    'Food': '#800000',
+    'Transportation': '#008000',
+    'Accommodation': '#800080',
+    'Fitness': '#008080',
+    'Souvenirs/Gifts/Treats': '#808000',
+    'Household and Clothing': '#0000ff',
+    'Entertainment': '#ff00ff',
+    'Miscellaneous': '#808080',
+    'Education': '#ff0000',
+    'Electronics and Furniture': '#00ffff'
 }
 
 # --- LOCALIZATION ---
@@ -121,6 +122,9 @@ def get_shared_layout(title_text):
         ),
         font=dict(color=THEME['label_color'], family=THEME['font_family']),
         margin=dict(t=60, b=80, l=50, r=20),
+        hoverlabel=dict(
+            font=dict(family=THEME['font_family'], size=12)
+        ),
         autosize=True
     )
 
@@ -131,22 +135,34 @@ def generate_subcategory_colors(labels, base_color=None):
     """
     # Diverse color palette (avoiding similar blues/purples)
     distinct_colors = [
-        '#818cf8',  # Indigo-400
-        '#f472b6',  # Pink-400
-        '#fb923c',  # Orange-400
-        '#34d399',  # Emerald-400
-        '#60a5fa',  # Blue-400
-        '#a78bfa',  # Violet-400
-        '#fbbf24',  # Amber-400
-        '#2dd4bf',  # Teal-400
-        '#c084fc',  # Purple-400
-        '#f87171',  # Red-400
-        '#4ade80',  # Green-400
-        '#38bdf8',  # Sky-400
+        '#000080',
+        '#800000',
+        '#008000',
+        '#800080',
+        '#008080',
+        '#808000',
+        '#0000ff',
+        '#ff00ff',
+        '#808080',
+        '#ff0000',
+        '#00ffff',
+        '#00ff00'
     ]
     
     # Return colors cycling through the palette
     return [distinct_colors[i % len(distinct_colors)] for i in range(len(labels))]
+
+import threading
+
+_local_storage = threading.local()
+
+def clear_warnings():
+    _local_storage.warnings = []
+
+def get_warnings():
+    if not hasattr(_local_storage, 'warnings'):
+        _local_storage.warnings = []
+    return _local_storage.warnings
 
 def auto_validate(func):
     """
@@ -157,6 +173,9 @@ def auto_validate(func):
     def wrapper(df, *args, **kwargs):
         # 1. Run the validation logic
         cleaned_params, warning = validate_and_fix_params(kwargs, df)
+        
+        if warning:
+            get_warnings().append(warning)
         
         # 2. Call the original function with the CLEANED parameters
         # We pass *args just in case, but usually tools use kwargs
@@ -711,7 +730,7 @@ def plot_comparison_bars(df, category=None, remarks=None,
         fig = make_subplots(
             rows=2, cols=1, 
             shared_xaxes=False,  # Changed from True to False to show categories on both plots
-            vertical_spacing=0.15,
+            vertical_spacing=0.3,
             subplot_titles=(f"{t('total')} (¥)", f"{t('average')} (¥)")
         )
         

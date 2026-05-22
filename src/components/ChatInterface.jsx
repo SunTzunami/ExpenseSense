@@ -1,27 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Send, X, Bot, Loader2, AlertCircle, RefreshCw, Clock, Settings, Minimize2 } from 'lucide-react';
+import { Send, Bot, AlertCircle, RefreshCw, Clock, Settings } from 'lucide-react';
 import { listLlamaCppModels } from '../utils/llamacpp';
-import { runPython, runPythonStream, initPyodide, PYTHON_ANALYSIS_PROMPT, getPromptMetadata } from '../utils/pythonRunner';
+import { runPythonStream } from '../utils/pythonRunner';
 import { CATEGORY_MAPPING, MAJOR_CATEGORIES } from '../utils/categoryMapping';
 
 import SettingsPanel from './chat/SettingsPanel';
 import ChoiceUIOverlay from './chat/ChoiceUIOverlay';
 import MessageItem, { PlotlyChart } from './chat/MessageItem';
 
-export default function ChatInterface({ data, onClose, visible, currency, onStatusChange }) {
+export default function ChatInterface({ data, visible, currency, onStatusChange }) {
     const [messages, setMessages] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [models, setModels] = useState([]);
     const [selectedCodeModel, setSelectedCodeModel] = useState('');
     const [selectedRouterModel, setSelectedRouterModel] = useState('');
     const [isConnected, setIsConnected] = useState(false);
     const [backendConnected, setBackendConnected] = useState(false);
     const [connectionError, setConnectionError] = useState(null);
     const [elapsedTime, setElapsedTime] = useState(0);
-    const [showSettings, setShowSettings] = useState(false);
+    const [showSettings] = useState(false);
     const [expandedChart, setExpandedChart] = useState(null);
     const [workflowStatus, setWorkflowStatus] = useState([]);
 
@@ -120,7 +118,6 @@ export default function ChatInterface({ data, onClose, visible, currency, onStat
             if (ok) {
                 setConnectionError(null);
                 setLlamacppModels(availableModels);
-                setModels(availableModels);
 
                 // Check if setup is needed
                 const hasSetup = localStorage.getItem('expense_ai_setup_done');
@@ -132,12 +129,6 @@ export default function ChatInterface({ data, onClose, visible, currency, onStat
 
                     setSelectedRouterModel(availableModels.includes(savedRouter) ? savedRouter : availableModels[0]);
                     setSelectedCodeModel(availableModels.includes(savedSpecialist) ? savedSpecialist : availableModels[0]);
-                }
-
-                try {
-                    await initPyodide();
-                } catch (e) {
-                    console.error("Failed to init Pyodide:", e);
                 }
             } else {
                 setConnectionError("Could not connect to LlamaCpp Backend. Make sure it is running at :8000");
@@ -162,7 +153,6 @@ export default function ChatInterface({ data, onClose, visible, currency, onStat
 
         try {
             const startTime = performance.now();
-            const metadata = getPromptMetadata(data);
             const allCats = Array.from(new Set([...MAJOR_CATEGORIES, ...Object.keys(CATEGORY_MAPPING)])).sort();
             const metadataStr = `
 ### CATEGORIES:
@@ -182,14 +172,7 @@ ${allCats.map(c => `- ${c}`).join('\n')}
                 setWorkflowStatus(prev => [...prev, { ...status, timestamp: performance.now() }]);
             });
 
-            let { result, fig, code, backend } = analysisResult;
-
-            if (!backend) {
-                // Browser fallback (Local execution)
-                const localResult = await runPython(code, data);
-                result = localResult.result;
-                fig = localResult.fig;
-            }
+            const { result, fig, code } = analysisResult;
 
             const endTime = performance.now();
             const durationSec = ((endTime - startTime) / 1000).toFixed(1);
@@ -199,7 +182,8 @@ ${allCats.map(c => `- ${c}`).join('\n')}
                 content: result || (fig ? "I've generated a visualization for you." : "Analysis complete."),
                 fig: fig ? JSON.parse(fig) : null,
                 code: code,
-                executionTime: durationSec
+                executionTime: durationSec,
+                validation_fixes: analysisResult.validation_fixes || null
             };
 
             setMessages(prev => [...prev, newMessage]);
@@ -218,139 +202,104 @@ ${allCats.map(c => `- ${c}`).join('\n')}
     };
 
     return (
-        <>
-            <AnimatePresence>
-                {visible && (
-                    <motion.div
-                        initial={{ opacity: 0, x: 300 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 300 }}
-                        className="fixed right-0 top-0 bottom-0 w-[600px] z-50 flex flex-col shadow-2xl bg-slate-900/70 backdrop-blur-xl border-l border-white/10"
-                    >
-                        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-slate-800/50">
-                            <div className="flex items-center gap-2">
-                                <Bot className="text-primary" />
-                                <h2 className="font-semibold text-white">Ask your data</h2>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div onClick={() => setShowSettings(!showSettings)} className="p-1.5 rounded-lg hover:bg-slate-700/50 cursor-pointer text-slate-400 hover:text-white transition-colors">
-                                    <Settings size={16} />
-                                </div>
-                                <div onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-700/50 cursor-pointer text-slate-400 hover:text-white transition-colors">
-                                    <Minimize2 size={16} />
-                                </div>
-                                <div onClick={onClose} className="p-1.5 rounded-lg hover:bg-red-500/20 cursor-pointer text-slate-400 hover:text-red-400 transition-colors">
-                                    <X size={16} />
-                                </div>
-                            </div>
+        <div className="w-full h-full flex flex-col bg-[#c0c0c0]" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
+            <SettingsPanel
+                showSettings={showSettings}
+                temperature={temperature} setTemperature={setTemperature}
+                topP={topP} setTopP={setTopP}
+                topK={topK} setTopK={setTopK}
+                routerProvider={routerProvider}
+                specialistProvider={specialistProvider}
+                backendConnected={backendConnected}
+            />
+
+            <div className="p-1 bg-[#c0c0c0] text-[13px] flex items-center justify-between border-b border-[#808080]">
+                <div className="flex items-center gap-3 px-2">
+                    <div className="flex items-center gap-1.5" title={backendConnected ? "Backend Connected" : "Backend Offline"}>
+                        <div className={`w-2 h-2 rounded-full ${backendConnected ? 'bg-green-500' : 'bg-red-500'}`} style={{ border: '1px solid black' }} />
+                        <span className="text-[13px] text-black font-medium">LlamaCpp</span>
+                        {!backendConnected && (
+                            <button onClick={initializeConnections} className="retro-button ml-2">
+                                Retry
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {isConnected && (
+                    <div className="flex gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-[13px] text-black font-bold">Router</span>
+                            <select value={selectedRouterModel} onChange={(e) => setSelectedRouterModel(e.target.value)} className="retro-select w-[150px]">
+                                {llamacppModels.map(m => <option key={m} value={m}>{m}</option>)}
+                            </select>
                         </div>
-
-                        <SettingsPanel
-                            showSettings={showSettings}
-                            temperature={temperature} setTemperature={setTemperature}
-                            topP={topP} setTopP={setTopP}
-                            topK={topK} setTopK={setTopK}
-                            routerProvider={routerProvider}
-                            specialistProvider={specialistProvider}
-                            backendConnected={backendConnected}
-                        />
-
-                        <div className="p-2 bg-slate-800/30 text-xs flex items-center justify-between border-b border-white/5">
-                            <div className="flex items-center gap-3 px-2">
-                                <div className="flex items-center gap-1.5" title={backendConnected ? "Backend Connected" : "Backend Offline"}>
-                                    <div className={`w-2 h-2 rounded-full ${backendConnected ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`} />
-                                    <span className="text-[10px] text-slate-400 font-medium">LlamaCpp</span>
-                                    {!backendConnected && (
-                                        <button onClick={initializeConnections} className={`p-0.5 hover:bg-white/10 rounded transition-colors ${isLoading ? 'animate-spin opacity-50' : 'opacity-70 hover:opacity-100'}`}>
-                                            <RefreshCw size={10} className="text-slate-400" />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
-                            {isConnected && (
-                                <div className="flex gap-2">
-                                    <div className="flex flex-col gap-0.5">
-                                        <span className="text-[8px] text-slate-500 uppercase font-bold ml-1">Router</span>
-                                        <select value={selectedRouterModel} onChange={(e) => setSelectedRouterModel(e.target.value)} className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-slate-300 outline-none focus:border-primary max-w-[150px] text-[10px]">
-                                            {llamacppModels.map(m => <option key={m} value={m}>{m}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="flex flex-col gap-0.5">
-                                        <span className="text-[8px] text-slate-500 uppercase font-bold ml-1">Specialist</span>
-                                        <select value={selectedCodeModel} onChange={(e) => setSelectedCodeModel(e.target.value)} className="bg-slate-900 border border-white/10 rounded px-2 py-1 text-slate-300 outline-none focus:border-primary max-w-[150px] text-[10px]">
-                                            {llamacppModels.map(m => <option key={m} value={m}>{m}</option>)}
-                                        </select>
-                                    </div>
-                                </div>
-                            )}
+                        <div className="flex items-center gap-2">
+                            <span className="text-[13px] text-black font-bold">Specialist</span>
+                            <select value={selectedCodeModel} onChange={(e) => setSelectedCodeModel(e.target.value)} className="retro-select w-[150px]">
+                                {llamacppModels.map(m => <option key={m} value={m}>{m}</option>)}
+                            </select>
                         </div>
-
-                        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-                            {!isConnected && !isLoading && (
-                                <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-2 text-center p-4">
-                                    <AlertCircle size={32} className="text-red-400 mb-2" />
-                                    <p>{connectionError || "Local backend unreachable."}</p>
-                                    <button onClick={initializeConnections} className="flex items-center gap-2 px-3 py-1 bg-slate-800 rounded-lg hover:bg-slate-700 transition">
-                                        <RefreshCw size={14} /> Retry
-                                    </button>
-                                </div>
-                            )}
-
-                            {messages.length === 0 && isConnected && (
-                                <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-4">
-                                    <Bot size={48} className="opacity-20" />
-                                    <p className="text-sm">Ask questions about your expenses</p>
-                                    <div className="grid grid-cols-1 gap-2 w-full">
-                                        {["How much did I spend in total on gym in 2024?", "Compare Groceries 2024 vs 2025", "What were my top 5 expenses for past month??"].map(q => (
-                                            <button key={q} onClick={() => setInput(q)} className="text-xs p-2 bg-slate-800/50 rounded hover:bg-slate-700 text-left transition text-slate-400 hover:text-primary">
-                                                "{q}"
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {messages.map((msg, i) => (
-                                <MessageItem key={i} msg={msg} setExpandedChart={setExpandedChart} />
-                            ))}
-
-                            {isLoading && messages.length > 0 && (
-                                <div className="flex gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0">
-                                        <Bot size={14} />
-                                    </div>
-                                    <div className="bg-slate-800 p-3 rounded-2xl w-full max-w-[90%]">
-                                        <WorkflowIndicator status={workflowStatus} elapsed={elapsedTime} />
-                                    </div>
-                                </div>
-                            )}
-                            <div ref={messagesEndRef} />
-                        </div>
-
-                        <div className="p-4 bg-slate-800/50 border-t border-white/5">
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                                    placeholder="Ask a question..."
-                                    disabled={!isConnected || isLoading}
-                                    className="flex-1 bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm focus:border-primary outline-none text-white placeholder-slate-500 disabled:opacity-50"
-                                />
-                                <button
-                                    onClick={handleSend}
-                                    disabled={!isConnected || isLoading || !input.trim()}
-                                    className="p-2 bg-primary text-white rounded-xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                >
-                                    <Send size={18} />
-                                </button>
-                            </div>
-                        </div>
-                    </motion.div>
+                    </div>
                 )}
-            </AnimatePresence>
+            </div>
+
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 retro-panel retro-scrollbar bg-[#ffffff]">
+                {!isConnected && !isLoading && (
+                    <div className="flex flex-col items-center justify-center h-full text-black space-y-2 text-center p-4">
+                        <p>{connectionError || "Local backend unreachable."}</p>
+                        <button onClick={initializeConnections} className="retro-button">
+                            Retry Connection
+                        </button>
+                    </div>
+                )}
+
+                {messages.length === 0 && isConnected && (
+                    <div className="flex flex-col items-center justify-center h-full text-black space-y-4">
+                        <p className="font-bold text-[16px]">Q&A Assistant Ready</p>
+                        <div className="flex flex-col gap-2 w-full max-w-md">
+                            {["How much did I spend in total on gym in 2024?", "Compare Groceries 2024 vs 2025", "What were my top 5 expenses for past month?"].map(q => (
+                                <button key={q} onClick={() => setInput(q)} className="retro-button w-full text-left justify-start">
+                                    "{q}"
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {messages.map((msg, i) => (
+                    <MessageItem key={i} msg={msg} setExpandedChart={setExpandedChart} />
+                ))}
+
+                {isLoading && messages.length > 0 && (
+                    <div className="mb-4">
+                        <div className="text-[11px] font-bold mb-1 text-black">Q&A Assistant</div>
+                        <div className="p-2 retro-panel" style={{ borderStyle: 'solid', borderColor: '#808080', borderWidth: '1px' }}>
+                            <WorkflowIndicator status={workflowStatus} elapsed={elapsedTime} />
+                        </div>
+                    </div>
+                )}
+                <div ref={messagesEndRef} />
+            </div>
+
+            <div className="p-2 bg-[#c0c0c0] border-t border-[#ffffff] flex gap-2">
+                <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                    placeholder="Ask a question..."
+                    disabled={!isConnected || isLoading}
+                    className="retro-input flex-1"
+                />
+                <button
+                    onClick={handleSend}
+                    disabled={!isConnected || isLoading || !input.trim()}
+                    className="retro-button font-bold"
+                >
+                    Send
+                </button>
+            </div>
 
             <ChoiceUIOverlay
                 showChoiceUI={showChoiceUI} setShowChoiceUI={setShowChoiceUI}
@@ -359,34 +308,22 @@ ${allCats.map(c => `- ${c}`).join('\n')}
                 backendConnected={backendConnected}
             />
 
-            <AnimatePresence>
-                {expandedChart && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-8"
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            className="relative w-full h-full max-w-6xl max-h-[85vh] bg-slate-900 rounded-2xl border border-white/10 p-8 shadow-2xl flex flex-col"
-                        >
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-bold text-white">{expandedChart.layout?.title?.text || 'Analysis Result'}</h3>
-                                <button onClick={() => setExpandedChart(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white">
-                                    <Minimize2 size={24} />
-                                </button>
+            {expandedChart && (
+                <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-8">
+                    <div className="retro-window w-full h-full max-w-6xl max-h-[85vh] flex flex-col">
+                        <div className="retro-titlebar">
+                            <span>{expandedChart.layout?.title?.text || 'Analysis Result'}</span>
+                            <div className="retro-titlebar-buttons">
+                                <div className="retro-titlebar-button" onClick={() => setExpandedChart(null)}>X</div>
                             </div>
-                            <div className="flex-1 min-h-0">
-                                <PlotlyChart data={expandedChart} isExpanded={true} />
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </>
+                        </div>
+                        <div className="retro-content flex-1 bg-[#ffffff]">
+                            <PlotlyChart data={expandedChart} isExpanded={true} />
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }
 
@@ -398,68 +335,69 @@ const WORKFLOW_STAGES = [
 
 function WorkflowIndicator({ status, elapsed }) {
     const stages = status || [];
-    const latestStage = stages.length > 0 ? stages[stages.length - 1] : null;
-    const currentIndex = latestStage ? WORKFLOW_STAGES.findIndex(s => s.key === latestStage.stage) : -1;
 
-    const stageInfo = {};
-    stages.forEach(s => { stageInfo[s.stage] = s; });
+    const routerInfo = stages.find(s => s.stage === 'router');
+    const specialistInfo = stages.find(s => s.stage === 'specialist');
+    const executingInfo = stages.find(s => s.stage === 'executing');
+
+    // 1. Router status
+    let routerStatus = '[   ]';
+    let routerText = 'Router: Intent classification pending';
+    if (routerInfo) {
+        if (specialistInfo || executingInfo) {
+            const tool = specialistInfo?.tool || routerInfo?.tool || 'unknown';
+            routerStatus = '[OK]';
+            routerText = `Router: Intent classified as ${tool}`;
+        } else {
+            routerStatus = '[...]';
+            routerText = 'Router: Classifying intent...';
+        }
+    }
+
+    // 2. Specialist status
+    let specialistStatus = '[   ]';
+    let specialistText = 'Specialist: Parameter generation pending';
+    if (specialistInfo) {
+        if (executingInfo) {
+            specialistStatus = '[OK]';
+            specialistText = 'Specialist: Parameters generated';
+        } else {
+            specialistStatus = '[...]';
+            specialistText = 'Specialist: Generating parameters...';
+        }
+    } else if (routerInfo) {
+        specialistStatus = '[...]';
+        specialistText = 'Specialist: Waiting for router...';
+    }
+
+    // 3. Validator status
+    let validatorStatus = '[   ]';
+    let validatorText = 'Validator: Python AST execution pending';
+    if (executingInfo) {
+        validatorStatus = '[...]';
+        validatorText = 'Validator: Executing Python AST...';
+    } else if (specialistInfo) {
+        validatorStatus = '[   ]';
+        validatorText = 'Validator: Waiting for specialist...';
+    }
 
     return (
-        <div style={{ fontFamily: "'Consolas', 'Courier New', monospace" }} className="text-[11px] leading-relaxed">
-            {currentIndex < 0 && (
-                <div className="flex items-center gap-2 text-slate-400">
-                    <Loader2 size={11} className="animate-spin" />
-                    <span>initializing...</span>
-                </div>
-            )}
-            {WORKFLOW_STAGES.map((stage, i) => {
-                const isCompleted = i < currentIndex;
-                const isActive = i === currentIndex;
-                const isPending = i > currentIndex;
-                if (stage.key === 'summarizing' && isPending) return null;
-
-                const info = stageInfo[stage.key];
-                let duration = null;
-                if (info) {
-                    const nextInfo = stages.find(s => WORKFLOW_STAGES.findIndex(ws => ws.key === s.stage) > i);
-                    if (nextInfo) {
-                        duration = ((nextInfo.timestamp - info.timestamp) / 1000).toFixed(1);
-                    } else if (isActive) {
-                        duration = ((performance.now() - info.timestamp) / 1000).toFixed(1);
-                        if (parseFloat(duration) < 0) duration = "0.0";
-                    }
-                }
-
-                return (
-                    <div key={stage.key} className={`flex items-start gap-2 py-0.5 ${isCompleted ? 'text-green-400/80' : isActive ? 'text-white' : 'text-slate-600'}`}>
-                        <span className="w-4 flex-shrink-0 text-center">
-                            {isCompleted && '\u2713'}
-                            {isActive && <Loader2 size={11} className="animate-spin inline-block" />}
-                            {isPending && '\u00B7'}
-                        </span>
-                        <div className="flex-1 overflow-hidden">
-                            <span className={isActive ? 'font-bold' : ''}>{stage.label}</span>
-                            {isActive && info && (
-                                <span className="text-slate-300 ml-1.5 whitespace-nowrap">
-                                    {' '}-- {info.message}
-                                    {info.model && <span className="text-slate-400"> [{info.model}]</span>}
-                                    {info.tool && <span className="text-indigo-300"> {'>'} {info.tool}</span>}
-                                </span>
-                            )}
-                            {isCompleted && info && (
-                                <span className="text-slate-500 ml-1.5 whitespace-nowrap">
-                                    {info.model && <span> [{info.model}]</span>}
-                                    {info.tool && <span> {'>'} {info.tool}</span>}
-                                </span>
-                            )}
-                            {duration !== null && <span className="text-[10px] text-slate-400 ml-2 tabular-nums">{duration}s</span>}
-                        </div>
-                    </div>
-                );
-            })}
-            <div className="flex items-center gap-2 pt-1 text-slate-500 border-t border-white/5 mt-1">
+        <div style={{ fontFamily: "'Consolas', 'Courier New', monospace" }} className="text-[12px] leading-relaxed text-black font-mono">
+            <div className="flex items-center gap-2 mb-1">
+                <span className="font-bold text-[#000080]">{routerStatus}</span>
+                <span>{routerText}</span>
+            </div>
+            <div className="flex items-center gap-2 mb-1">
+                <span className="font-bold text-[#000080]">{specialistStatus}</span>
+                <span>{specialistText}</span>
+            </div>
+            <div className="flex items-center gap-2 mb-1">
+                <span className="font-bold text-[#000080]">{validatorStatus}</span>
+                <span>{validatorText}</span>
+            </div>
+            <div className="flex items-center gap-2 pt-1 border-t border-[#808080] mt-2 text-[#808080] text-[11px]">
                 <Clock size={10} />
-                <span>Total: {elapsed}s</span>
+                <span>Elapsed: {elapsed}s</span>
             </div>
         </div>
     );

@@ -1,16 +1,16 @@
 {
   "CATEGORY_COLORS": {
-    "Housing and Utilities": "#818cf8",
-    "Food": "#a78bfa",
-    "Transportation": "#6366f1",
-    "Accommodation": "#a855f7",
-    "Fitness": "#c084fc",
-    "Souvenirs/Gifts/Treats": "#4f46e5",
-    "Household and Clothing": "#8b5cf6",
-    "Entertainment": "#7c3aed",
-    "Miscellaneous": "#94a3b8",
-    "Education": "#4338ca",
-    "Electronics and Furniture": "#6d28d9"
+    "Housing and Utilities": "#000080",
+    "Food": "#800000",
+    "Transportation": "#008000",
+    "Accommodation": "#800080",
+    "Fitness": "#008080",
+    "Souvenirs/Gifts/Treats": "#808000",
+    "Household and Clothing": "#0000ff",
+    "Entertainment": "#ff00ff",
+    "Miscellaneous": "#808080",
+    "Education": "#ff0000",
+    "Electronics and Furniture": "#00ffff"
   },
   "CATEGORY_MAPPING": {
     "grocery": "Food",
