@@ -176,7 +176,7 @@ async def analyze_stream(request: AnalyzeRequest):
             import re
             
             clean_router = router_output.strip().replace("`", "").replace("'", "").replace('"', "")
-            digit_match = re.search(r'[1-5]', clean_router)
+            digit_match = re.search(r'[1-6]', clean_router)
             if digit_match:
                 tool_id = int(digit_match.group(0))
                 tool_name = TOOL_ID_TO_NAME.get(tool_id, "calculate_total")
@@ -247,7 +247,7 @@ async def analyze_stream(request: AnalyzeRequest):
             except Exception as json_err:
                 logger.error(f"JSON parsing failed: {json_err}. Trying regex fallback...")
                 # Regex fallback parsing
-                for key in ["category", "year", "month", "day", "start_year", "start_month", "end_year", "end_month", "months", "ignore_rent", "remarks", "n", "min_amount", "y1", "m1", "d1", "y2", "m2", "d2"]:
+                for key in ["category", "year", "month", "day", "start_year", "start_month", "end_year", "end_month", "months", "ignore_rent", "remarks", "n", "min_amount", "y1", "m1", "d1", "y2", "m2", "d2", "forecast_period"]:
                     pattern = r'["\']?' + re.escape(key) + r'["\']?\s*[:=]\s*["\']?([^"\'\s,}]+)["\']?'
                     match = re.search(pattern, json_str)
                     if match:
@@ -270,7 +270,7 @@ async def analyze_stream(request: AnalyzeRequest):
 
             from utils.analysis_tools import (
                 plot_time_series, plot_distribution, plot_comparison_bars,
-                calculate_total, get_top_expenses,
+                calculate_total, get_top_expenses, forecast_spending,
                 clear_warnings, get_warnings
             )
 
@@ -282,6 +282,7 @@ async def analyze_stream(request: AnalyzeRequest):
                 "plot_comparison_bars": plot_comparison_bars,
                 "calculate_total": calculate_total,
                 "get_top_expenses": get_top_expenses,
+                "forecast_spending": forecast_spending,
             }
             
             tool_fn = tool_functions.get(tool_name, calculate_total)

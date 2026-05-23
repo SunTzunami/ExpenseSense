@@ -1034,3 +1034,279 @@ def get_top_expenses(df, n=10, category=None, remarks=None,
         msg += f"* **{date_str}**: ¥{row['Expense']:,.0f} ({row['category']}){remarks_str}\n"
     
     return None, msg.strip()
+
+
+@auto_validate
+def forecast_spending(df, forecast_period=None, category=None, remarks=None):
+    """
+    Forecasts future spending by fitting a linear trend + exponential weighted mean
+    on historical data and projecting it forward.
+    
+    Uses an 80-20 visual ratio: shows ~4x the forecast period of historical data,
+    then extends the forecast as a dashed line with a confidence band.
+    
+    Args:
+        forecast_period: str like '1 month', '2 weeks', '10 days', '3 months'
+        category: optional category filter
+        remarks: optional remarks filter
+    
+    Zero new dependencies — uses scipy.stats.linregress (already installed) + pandas ewm.
+    """
+    import re as _re
+    
+    if not forecast_period:
+        return None, "Please specify a forecast period (e.g., 'next month', '2 weeks', '10 days')."
+    
+    # --- Parse forecast_period into days ---
+    period_str = str(forecast_period).lower().strip()
+    match = _re.match(r'(\d+)\s*(day|week|month|year)s?', period_str)
+    if not match:
+        return None, f"Could not parse forecast period: '{forecast_period}'. Use formats like '1 month', '2 weeks', '10 days'."
+    
+    num = int(match.group(1))
+    unit = match.group(2)
+    unit_to_days = {'day': 1, 'week': 7, 'month': 30, 'year': 365}
+    forecast_days = num * unit_to_days[unit]
+    
+    # Context window: 4x the forecast period (80-20 rule)
+    context_days = forecast_days * 4
+    context_days = max(context_days, 30)
+    
+    data = df.copy()
+    if 'Date' in data.columns:
+        data['Date'] = pd.to_datetime(data['Date'])
+    
+    now = pd.Timestamp.now().normalize()
+    cutoff = now - pd.Timedelta(days=context_days)
+    data = data[data['Date'] >= cutoff]
+    
+    # Category filtering
+    if category:
+        if 'major category' in data.columns and (data['major category'].str.lower() == category.lower()).any():
+            data = data[data['major category'].str.lower() == category.lower()]
+        else:
+            data = data[data['category'].str.lower() == category.lower()]
+        label = category
+    elif remarks:
+        data = data[data['remarks'].str.contains(remarks, case=False, na=False)]
+        label = f"'{remarks}'"
+    else:
+        label = t('total')
+    
+    if data.empty:
+        return None, f"No spending data found for {label} in the past {context_days} days. Cannot forecast."
+    
+    # --- Decide aggregation granularity based on forecast period ---
+    if forecast_days <= 14:
+        freq = 'D'
+        freq_label = 'Daily'
+        date_format = '%Y-%m-%d'
+    elif forecast_days <= 90:
+        freq = 'W-MON'
+        freq_label = 'Weekly'
+        date_format = '%Y-%m-%d'
+    else:
+        freq = 'MS'
+        freq_label = 'Monthly'
+        date_format = '%Y-%m'
+    
+    # --- Aggregate historical data ---
+    if freq == 'D':
+        agg = data.groupby(data['Date'].dt.date)['Expense'].sum().reset_index()
+        agg.columns = ['Date', 'Expense']
+        agg['Date'] = pd.to_datetime(agg['Date'])
+        all_dates = pd.date_range(start=cutoff, end=now, freq='D')
+        agg = agg.set_index('Date').reindex(all_dates, fill_value=0).reset_index()
+        agg.columns = ['Date', 'Expense']
+    elif freq == 'W-MON':
+        data['Week'] = data['Date'].dt.to_period('W').apply(lambda r: r.start_time)
+        agg = data.groupby('Week')['Expense'].sum().reset_index()
+        agg.columns = ['Date', 'Expense']
+        agg['Date'] = pd.to_datetime(agg['Date'])
+        all_weeks = pd.date_range(start=cutoff, end=now, freq='W-MON')
+        agg = agg.set_index('Date').reindex(all_weeks, fill_value=0).reset_index()
+        agg.columns = ['Date', 'Expense']
+    else:
+        data['Month'] = data['Date'].dt.to_period('M').apply(lambda r: r.start_time)
+        agg = data.groupby('Month')['Expense'].sum().reset_index()
+        agg.columns = ['Date', 'Expense']
+        agg['Date'] = pd.to_datetime(agg['Date'])
+        all_months = pd.date_range(start=cutoff.replace(day=1), end=now, freq='MS')
+        agg = agg.set_index('Date').reindex(all_months, fill_value=0).reset_index()
+        agg.columns = ['Date', 'Expense']
+    
+    # --- Drop the last (incomplete) period ---
+    # The current week/month is partial and would drag averages down artificially.
+    # e.g. if today is Wednesday, the current week bucket only has 3 days of data
+    # but appears as a full "week" with very low totals — this kills the forecast.
+    if freq != 'D' and len(agg) > 3:
+        agg = agg.iloc[:-1]
+    
+    if len(agg) < 3:
+        return None, f"Not enough data points ({len(agg)}) for {label} to generate a meaningful forecast. Need at least 3 {freq_label.lower()} periods."
+    
+    # --- Fit linear trend via scipy.stats.linregress ---
+    x_numeric = np.arange(len(agg), dtype=float)
+    y_values = agg['Expense'].values.astype(float)
+    
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x_numeric, y_values)
+    
+    # Exponential weighted mean for recent-weighted baseline
+    span = max(3, len(agg) // 3)
+    ewm_values = agg['Expense'].ewm(span=span, adjust=False).mean().values
+    
+    # Historical average as a stability anchor
+    hist_avg = float(y_values.mean())
+    
+    # --- Generate forecast points ---
+    if freq == 'D':
+        forecast_dates = pd.date_range(start=now + pd.Timedelta(days=1), periods=forecast_days, freq='D')
+    elif freq == 'W-MON':
+        n_weeks = max(1, forecast_days // 7)
+        # Start from the next Monday after today
+        days_until_monday = (7 - now.weekday()) % 7
+        if days_until_monday == 0:
+            days_until_monday = 7
+        next_monday = now + pd.Timedelta(days=days_until_monday)
+        forecast_dates = pd.date_range(start=next_monday, periods=n_weeks, freq='W-MON')
+    else:
+        n_months = max(1, forecast_days // 30)
+        last_date = agg['Date'].max()
+        forecast_dates = pd.date_range(start=last_date + pd.offsets.MonthBegin(1), periods=n_months, freq='MS')
+    
+    n_forecast = len(forecast_dates)
+    x_forecast = np.arange(len(agg), len(agg) + n_forecast, dtype=float)
+    
+    # --- Hybrid forecast ---
+    # Blend: 40% EWM (recent behaviour), 30% linear trend (direction), 30% historical avg (stability)
+    trend_forecast = slope * x_forecast + intercept
+    ewm_last = ewm_values[-1]
+    blended_forecast = 0.4 * ewm_last + 0.3 * trend_forecast + 0.3 * hist_avg
+    blended_forecast = np.maximum(blended_forecast, 0)
+    
+    # Confidence band
+    in_sample_blended = 0.4 * ewm_values + 0.3 * (slope * x_numeric + intercept) + 0.3 * hist_avg
+    residuals = y_values - in_sample_blended
+    residual_std = np.std(residuals)
+    distance = np.arange(1, n_forecast + 1, dtype=float)
+    confidence_width = 1.96 * residual_std * np.sqrt(distance / len(agg))
+    upper_bound = blended_forecast + confidence_width
+    lower_bound = np.maximum(blended_forecast - confidence_width, 0)
+    
+    # --- Predicted total ---
+    predicted_total = float(np.sum(blended_forecast))
+    historical_total = float(y_values.sum())
+    
+    # ==================== BUILD PLOT ====================
+    fig = go.Figure()
+    
+    # 1. Historical spending (solid area)
+    fig.add_trace(go.Scatter(
+        x=agg['Date'],
+        y=agg['Expense'],
+        mode='lines+markers',
+        name=f'{freq_label} Spending',
+        line=dict(color=THEME['primary'], width=2),
+        marker=dict(size=5, color=THEME['primary']),
+        fill='tozeroy',
+        fillcolor=THEME['primary_fill'],
+        hovertemplate='<b>%{x|' + date_format + '}</b><br>¥%{y:,.0f}<extra></extra>'
+    ))
+    
+    # 2. Historical EWM trend line
+    fig.add_trace(go.Scatter(
+        x=agg['Date'],
+        y=ewm_values,
+        mode='lines',
+        name=t('trend'),
+        line=dict(color=THEME['secondary'], width=2, dash='dot'),
+        hovertemplate='<b>%{x|' + date_format + '}</b><br>Trend: ¥%{y:,.0f}<extra></extra>'
+    ))
+    
+    # 3. Forecast line — bridge from last historical point into forecast
+    bridge_x = [agg['Date'].iloc[-1]]
+    bridge_y = [ewm_values[-1]]
+    full_forecast_x = bridge_x + list(forecast_dates)
+    full_forecast_y = bridge_y + list(blended_forecast)
+    
+    band_upper = bridge_y + list(upper_bound)
+    band_lower = bridge_y + list(lower_bound)
+    
+    fig.add_trace(go.Scatter(
+        x=full_forecast_x,
+        y=full_forecast_y,
+        customdata=list(zip(band_upper, band_lower)),
+        mode='lines+markers',
+        name='Forecast',
+        line=dict(color='#cc0000', width=3, dash='dash'),
+        marker=dict(size=8, color='#cc0000', symbol='diamond'),
+        hovertemplate='<b>%{x|' + date_format + '}</b><br>Forecast: ¥%{y:,.0f}<br>CI Upper bound: ¥%{customdata[0]:,.0f}<br>CI Lower bound: ¥%{customdata[1]:,.0f}<extra></extra>'
+    ))
+    
+    # 4. Confidence band
+    band_x = bridge_x + list(forecast_dates)
+    
+    fig.add_trace(go.Scatter(
+        x=band_x + band_x[::-1],
+        y=band_upper + band_lower[::-1],
+        fill='toself',
+        fillcolor='rgba(204, 0, 0, 0.12)',
+        line=dict(color='rgba(204, 0, 0, 0.3)', width=1),
+        name='Confidence Range',
+        showlegend=True,
+        hoverinfo='skip'
+    ))
+    
+    # 5. "Today" vertical separator
+    y_max = max(float(y_values.max()), float(upper_bound.max()))
+    fig.add_shape(
+        type='line',
+        x0=now, x1=now,
+        y0=0, y1=y_max * 1.15,
+        line=dict(color='#808080', width=2, dash='dash')
+    )
+    fig.add_annotation(
+        x=now, y=y_max * 1.1,
+        text="Today",
+        showarrow=False,
+        font=dict(size=12, color='#808080', family=THEME['font_family']),
+        xanchor='center'
+    )
+    
+    # --- CRITICAL: Extend x-axis to show full forecast ---
+    x_pad = pd.Timedelta(days=max(3, forecast_days * 0.1))
+    x_start = agg['Date'].min() - pd.Timedelta(days=3)
+    x_end = forecast_dates[-1] + x_pad
+    
+    title_text = f"{label} Forecast — Next {forecast_period}"
+    fig.update_layout(
+        **get_shared_layout(title_text),
+        xaxis_title=t('date'),
+        yaxis_title=t('amount'),
+        hovermode='x unified',
+        showlegend=True,
+        xaxis_range=[x_start, x_end]
+    )
+    fig.update_yaxes(tickprefix='¥')
+    
+    # --- Build message ---
+    avg_per_period = predicted_total / n_forecast if n_forecast > 0 else 0
+    trend_direction = "upward" if slope > 0 else "downward" if slope < 0 else "flat"
+    
+    if freq_label == 'Daily':
+        period_name = 'day'
+    elif freq_label == 'Weekly':
+        period_name = 'week'
+    else:
+        period_name = 'month'
+    
+    msg = (
+        f"Based on your past {context_days} days of spending on **{label}** "
+        f"(total: ¥{historical_total:,.0f}), here's the forecast for the next **{forecast_period}**:\n\n"
+        f"* **Predicted total**: ¥{predicted_total:,.0f}\n"
+        f"* **Average per {period_name}**: ¥{avg_per_period:,.0f}\n"
+        f"* **Trend**: {trend_direction} (slope: ¥{slope:,.0f} per period)\n\n"
+        f"The shaded area shows the confidence range — wider = more uncertainty further out."
+    )
+    
+    return fig, msg

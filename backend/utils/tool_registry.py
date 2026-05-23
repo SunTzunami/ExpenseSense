@@ -5,5 +5,6 @@ TOOL_ID_TO_NAME = {
     3: "plot_comparison_bars",
     4: "calculate_total",
     5: "get_top_expenses",
+    6: "forecast_spending",
 }
 TOOL_NAME_TO_ID = {v: k for k, v in TOOL_ID_TO_NAME.items()}

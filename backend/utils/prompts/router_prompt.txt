@@ -24,8 +24,12 @@ Your job is to determine which ONE tool is best suited to answer the user's ques
    - Use when user asks for: biggest/largest expenses, top X items, most expensive.
    - Keywords: biggest, largest, top, most expensive, highest, excluding rent.
 
+6. **`forecast_spending`** (ID: 6)
+   - Use when user asks about: predictions, forecasts, future spending, "how much will I spend", "expected spending".
+   - Keywords: predict, forecast, expect, will I spend, next month, next week, projection, estimate future.
+
 ## Output Format
-Output ONLY the tool number (1-5). Do not output anything else, NO MARKDOWN, NO BACKTICKS, NO EXPLANATION, NO CODE!
+Output ONLY the tool number (1-6). Do not output anything else, NO MARKDOWN, NO BACKTICKS, NO EXPLANATION, NO CODE!
 
 ## WRONG outputs (NEVER do this):
 ❌ I think the best tool is 4¸
@@ -71,3 +75,12 @@ Output: 2
 
 User: "How is my spending split in 2023?"
 Output: 2
+
+User: "How much will I spend on food next month?"
+Output: 6
+
+User: "Predict my grocery spending for the next 2 weeks"
+Output: 6
+
+User: "What's my expected transportation cost next month?"
+Output: 6

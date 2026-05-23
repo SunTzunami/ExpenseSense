@@ -202,6 +202,27 @@ Q: "Top 7 futsal expenses for 2025?"
 
 Q: "Top 5 expenses last month, exclude rent"
 {"n": 5, "months": 1, "ignore_rent": true}"""
+    },
+
+    "forecast_spending": {
+        "parameters": "forecast_period (str, required - e.g. '1 month', '2 weeks', '10 days', '3 months'), category (str, optional)",
+        "examples": """Q: "How much will I spend on food next month?"
+{"forecast_period": "1 month", "category": "Food"}
+
+Q: "Predict my grocery spending for the next 2 weeks"
+{"forecast_period": "2 weeks", "category": "grocery"}
+
+Q: "What's my expected transportation cost next month?"
+{"forecast_period": "1 month", "category": "Transportation"}
+
+Q: "Forecast my spending for the next 3 months"
+{"forecast_period": "3 months"}
+
+Q: "How much will I spend in the next 10 days?"
+{"forecast_period": "10 days"}
+
+Q: "Predict dining expenses for next week"
+{"forecast_period": "1 week", "category": "dining"}"""
     }
 }
 
