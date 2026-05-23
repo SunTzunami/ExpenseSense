@@ -117,15 +117,38 @@ export function PlotlyChart({ data, isExpanded = false }) {
 
 export default function MessageItem({ msg, setExpandedChart }) {
     const isUser = msg.role === 'user';
-    const [showDetails, setShowDetails] = useState(false);
+    const [showCode, setShowCode] = useState(false);
 
     return (
         <div className={`mb-4 flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
-            <div className={`text-[13px] font-bold mb-1 ${isUser ? 'text-[#000080]' : 'text-black'}`}>
+            <div className={`text-[14px] font-bold mb-1 ${isUser ? 'text-[#000080]' : 'text-black'}`}>
                 {isUser ? 'User' : msg.isSystem ? 'System' : 'Q&A Assistant'}
             </div>
 
-            <div className={`p-2 max-w-[95%] ${isUser ? 'retro-panel bg-[#e0e0e0]' : 'retro-panel'}`} style={{ borderStyle: 'solid', borderColor: isUser ? '#808080' : '#808080', borderWidth: '1px' }}>
+            {/* Always-visible pipeline status bar for assistant messages */}
+            {!isUser && msg.tool_name && (
+                <div
+                    className="w-full max-w-[95%] mb-1 px-2 py-1.5 flex items-center gap-3 text-[14px]"
+                    style={{
+                        fontFamily: "'Consolas', 'Courier New', monospace",
+                        backgroundColor: '#c0c0c0',
+                        borderTop: '2px solid #808080',
+                        borderLeft: '2px solid #808080',
+                        borderRight: '2px solid #ffffff',
+                        borderBottom: '2px solid #ffffff',
+                    }}
+                >
+                    <span className="font-bold text-[#000080]">Router →</span>
+                    <span className="font-bold text-[#800000]">{msg.tool_name}</span>
+                    {msg.router_output && (
+                        <span className="text-[#808080] text-[12px] ml-auto truncate max-w-[200px]" title={msg.router_output.trim()}>
+                            raw: "{msg.router_output.trim()}"
+                        </span>
+                    )}
+                </div>
+            )}
+
+            <div className={`p-2 max-w-[95%] ${isUser ? 'retro-panel bg-[#e0e0e0]' : 'retro-panel'}`} style={{ borderStyle: 'solid', borderColor: '#808080', borderWidth: '1px' }}>
                 <div className="markdown-content text-[16px]" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {msg.content}
@@ -137,14 +160,14 @@ export default function MessageItem({ msg, setExpandedChart }) {
                         <div className="flex items-center justify-between font-bold">
                             <span>⚠️ Note: Auto-corrected parameters via fuzzy matching</span>
                             <button
-                                onClick={() => setShowDetails(!showDetails)}
+                                onClick={() => setShowCode(!showCode)}
                                 className="text-[#000080] underline cursor-pointer focus:outline-none ml-2"
                                 style={{ background: 'none', border: 'none', padding: 0 }}
                             >
-                                {showDetails ? '[Hide Details]' : '[View Details]'}
+                                {showCode ? '[Hide Details]' : '[View Details]'}
                             </button>
                         </div>
-                        {showDetails && (
+                        {showCode && (
                             <ul className="mt-1.5 pl-4 list-disc text-[13px] font-mono border-t border-dashed border-[#808080] pt-1.5">
                                 {msg.validation_fixes.map((fix, idx) => (
                                     <li key={idx}>{fix}</li>
@@ -172,23 +195,11 @@ export default function MessageItem({ msg, setExpandedChart }) {
 
                 <div className="flex items-start justify-between mt-2 gap-2 w-full border-t border-[#c0c0c0] pt-1">
                     {msg.code && (
-                        <details className="text-[13px] flex-1 min-w-0">
-                            <summary className="cursor-pointer select-none font-bold text-[#000080]">View Logic</summary>
-                            <div className="mt-2 w-full bg-[#ffffff] border border-[#808080] p-2 flex flex-col gap-2 font-mono text-[12px]" style={{ fontFamily: "'Courier New', Courier, monospace" }}>
-                                <div>
-                                    <div className="font-bold text-[#800000]">1. Router Chose:</div>
-                                    <div className="text-black font-semibold mt-0.5 pl-2 border-l-2 border-[#808080]">
-                                        {msg.tool_name ? `Tool: "${msg.tool_name}"` : 'Tool: calculate_total (Default)'}
-                                        {msg.router_output ? ` (Raw Output: "${msg.router_output.trim()}")` : ''}
-                                    </div>
-                                </div>
-                                <div className="border-t border-dashed border-[#c0c0c0] pt-1">
-                                    <div className="font-bold text-[#800000]">2. Specialist's Output:</div>
-                                    <pre className="mt-1 whitespace-pre-wrap break-all min-w-0 bg-[#f8f8f8] p-1.5 border border-[#c0c0c0] text-black">
-                                        {msg.code}
-                                    </pre>
-                                </div>
-                            </div>
+                        <details className="text-[14px] flex-1 min-w-0">
+                            <summary className="cursor-pointer select-none font-bold text-[#000080]">View Specialist Output</summary>
+                            <pre className="mt-2 whitespace-pre-wrap break-all min-w-0 bg-[#f8f8f8] p-2 border border-[#c0c0c0] text-black text-[13px]" style={{ fontFamily: "'Courier New', Courier, monospace" }}>
+                                {msg.code}
+                            </pre>
                         </details>
                     )}
 

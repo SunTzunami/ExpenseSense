@@ -216,11 +216,11 @@ ${allCats.map(c => `- ${c}`).join('\n')}
                 backendConnected={backendConnected}
             />
 
-            <div className="p-1 bg-[#c0c0c0] text-[15px] flex items-center justify-between border-b border-[#808080]">
+            <div className="p-1 bg-[#c0c0c0] text-[16px] flex items-center justify-between border-b border-[#808080]">
                 <div className="flex items-center gap-3 px-2">
                     <div className="flex items-center gap-1.5" title={backendConnected ? "Backend Connected" : "Backend Offline"}>
-                        <div className={`w-2 h-2 rounded-full ${backendConnected ? 'bg-green-500' : 'bg-red-500'}`} style={{ border: '1px solid black' }} />
-                        <span className="text-[15px] text-black font-medium">LlamaCpp</span>
+                        <div className={`w-2.5 h-2.5 rounded-full ${backendConnected ? 'bg-green-500' : 'bg-red-500'}`} style={{ border: '1px solid black' }} />
+                        <span className="text-[16px] text-black font-medium">LlamaCpp</span>
                         {!backendConnected && (
                             <button onClick={initializeConnections} className="retro-button ml-2">
                                 Retry
@@ -232,11 +232,11 @@ ${allCats.map(c => `- ${c}`).join('\n')}
                 {isConnected && (
                     <div className="flex gap-4">
                         <div className="flex items-center gap-2">
-                            <span className="text-[15px] text-black font-bold">Router</span>
+                            <span className="text-[16px] text-black font-bold">Router</span>
                             <RetroSelect value={selectedRouterModel} onChange={setSelectedRouterModel} options={llamacppModels} width="150px" />
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-[15px] text-black font-bold">Specialist</span>
+                            <span className="text-[16px] text-black font-bold">Specialist</span>
                             <RetroSelect value={selectedCodeModel} onChange={setSelectedCodeModel} options={llamacppModels} width="150px" />
                         </div>
                     </div>
@@ -280,6 +280,34 @@ ${allCats.map(c => `- ${c}`).join('\n')}
                 )}
                 <div ref={messagesEndRef} />
             </div>
+
+            {/* Persistent example query chips — always visible above input */}
+            {isConnected && (
+                <div className="px-2 pt-2 pb-0 bg-[#c0c0c0] flex flex-wrap gap-1.5">
+                    {[
+                        "Monthly breakdown",
+                        "Top 5 expenses",
+                        "Compare Groceries 2024 vs 2025",
+                        "Show spending trend",
+                        "Total spending on Transport"
+                    ].map(q => (
+                        <button
+                            key={q}
+                            onClick={() => {
+                                // Option A: Fill input for editing before send
+                                setInput(q);
+                                // Option B: Auto-send immediately (uncomment below, comment above)
+                                // setInput(q); setTimeout(() => handleSend(), 0);
+                            }}
+                            disabled={isLoading}
+                            className="retro-button text-[13px] py-1 px-2"
+                            style={{ fontSize: '13px' }}
+                        >
+                            {q}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             <div className="p-2 bg-[#c0c0c0] border-t border-[#ffffff] flex gap-2">
                 <input
@@ -381,7 +409,7 @@ function WorkflowIndicator({ status, elapsed }) {
     }
 
     return (
-        <div style={{ fontFamily: "'Consolas', 'Courier New', monospace" }} className="text-[14px] leading-relaxed text-black font-mono">
+        <div style={{ fontFamily: "'Consolas', 'Courier New', monospace" }} className="text-[16px] leading-relaxed text-black font-mono">
             <div className="flex items-center gap-2 mb-1">
                 <span className="font-bold text-[#000080]">{routerStatus}</span>
                 <span>{routerText}</span>
@@ -394,8 +422,8 @@ function WorkflowIndicator({ status, elapsed }) {
                 <span className="font-bold text-[#000080]">{validatorStatus}</span>
                 <span>{validatorText}</span>
             </div>
-            <div className="flex items-center gap-2 pt-1 border-t border-[#808080] mt-2 text-[#808080] text-[13px]">
-                <Clock size={10} />
+            <div className="flex items-center gap-2 pt-1 border-t border-[#808080] mt-2 text-[#808080] text-[14px]">
+                <Clock size={12} />
                 <span>Elapsed: {elapsed}s</span>
             </div>
         </div>

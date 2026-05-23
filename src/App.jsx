@@ -7,7 +7,6 @@ import { processExcelFile } from './utils/dataProcessor';
 import { generateDummyData } from './utils/dummyGenerator';
 
 import './styles/index.css';
-import './styles/glass.css';
 import './styles/retro.css';
 
 function App() {
@@ -118,7 +117,7 @@ function App() {
               <button className="retro-button" onClick={() => setRawData(null)}>
                 New File
               </button>
-              <span className="text-[13px] ml-4 text-gray-700">Previewing first {displayData.length} of {rawData.length} rows</span>
+              <span className="text-[15px] ml-4 text-gray-700">Previewing first {displayData.length} of {rawData.length} rows</span>
             </div>
 
             <div className="retro-panel flex-1 retro-scrollbar">
