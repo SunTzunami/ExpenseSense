@@ -108,85 +108,94 @@ Your job is to determine which ONE tool is best suited to answer the user's ques
 
 ## Available Tools
 
-1. **`plot_time_series`**
+1. **`plot_time_series`** (ID: 1)
    - Use when user asks about: trends, spending over time, "past X months", "since 2023", date ranges.
    - Keywords: trend, over time, months, years, since.
 
-2. **`plot_distribution`**
+2. **`plot_distribution`** (ID: 2)
    - Use when user asks for: breakdown, distribution, proportions, pie chart, "how is X split", "excluding rent".
    - Keywords: breakdown, distribution, pie chart, split, exclude rent, without rent.
 
-3. **`plot_comparison_bars`**
+3. **`plot_comparison_bars`** (ID: 3)
    - Use ONLY when comparing TWO different time periods (e.g. "Dec 2024 vs Dec 2025").
    - REQUIRES two distinct periods. If the user only mentions one month or one year, DO NOT use this tool.
    - Keywords: compare, vs, versus, difference between.
 
-4. **`calculate_total`**
+4. **`calculate_total`** (ID: 4)
    - Use when user asks for: simple totals, sums, specific amounts "how much did I spend".
    - Keywords: how much, total, sum, cost.
 
-5. **`get_top_expenses`**
+5. **`get_top_expenses`** (ID: 5)
    - Use when user asks for: biggest/largest expenses, top X items, most expensive.
    - Keywords: biggest, largest, top, most expensive, highest, excluding rent.
 
 ## Output Format
-Output ONLY the tool name. Do not output anything else.
-If the intent is unclear, default to `calculate_total`.
+Output ONLY the tool number (1-5). Do not output anything else.
+If the intent is unclear, default to 4 (which corresponds to `calculate_total`).
 
 ## Examples
 User: "How much did I spend on food?"
-Output: calculate_total
+Output: 4
 
 User: "Show me my spending trend for groceries"
-Output: plot_time_series
+Output: 1
 
 User: "Compare food spending in 2024 and 2025"
-Output: plot_comparison_bars
+Output: 3
 
 User: "What were my biggest expenses?"
-Output: get_top_expenses
+Output: 5
 
 User: "Pie chart of transportation"
-Output: plot_distribution
+Output: 2
 
 User: "Top 10 items without rent"
-Output: get_top_expenses
+Output: 5
 """
 
 
 def build_single_agent_prompt(metadata: str, current_date: str) -> str:
     return f"""
-You are an intelligent API function caller for an expense analysis system.
+You are an intelligent API parameter extractor for an expense analysis system.
 
-Your task has TWO steps:
+Your task is to output a single JSON object containing:
+1. "tool": The numeric ID (1-5) of the best tool suited for the query.
+2. The parameters for that tool.
 
-STEP 1: Decide the BEST tool to answer the user's query.
-STEP 2: Call that function with the correct parameters.
+## TOOL IDs (1-5)
+1 = `plot_time_series`
+2 = `plot_distribution`
+3 = `plot_comparison_bars`
+4 = `calculate_total`
+5 = `get_top_expenses`
 
-You MUST internally decide the tool first, but you MUST NOT output the tool name separately.
+## CRITICAL RULES (READ CAREFULLY)
+1. DO NOT write any Python code. DO NOT wrap the output in markdown. NO backticks (```).
+2. Output EXACTLY and ONLY a JSON object.
+3. Use EXACT category names from the metadata below. If not an exact match, map it to the closest one.
 
-FINAL OUTPUT RULE:
-- Output EXACTLY ONE line: a valid function call.
-- DO NOT explain anything.
-- DO NOT output JSON.
-- DO NOT include backticks.
-- DO NOT include any text before or after the function call.
-- Use EXACT category names from the metadata below. If not an exact match, map it to the closest one.
-- For both broad/major categories (e.g. "Food") and specific sub-categories (e.g. "grocery"), use category=.
+## PARAMETERS DEFINITIONS FOR EACH TOOL
+1. `plot_time_series`: category (str), year (int), month (int), start_year (int), start_month (int), end_year (int), end_month (int), months (int)
+2. `plot_distribution`: category (str), remarks (str), year (int), month (int), day (int), start_year (int), start_month (int), end_year (int), end_month (int), months (int), ignore_rent (bool)
+3. `plot_comparison_bars`: category (str), y1 (int), m1 (int), d1 (int), y2 (int), m2 (int), d2 (int)
+4. `calculate_total`: category (str), remarks (str), year (int), month (int), day (int), start_year (int), start_month (int), end_year (int), end_month (int), months (int)
+5. `get_top_expenses`: n (int), category (str), year (int), month (int), day (int), start_year (int), start_month (int), end_year (int), end_month (int), months (int), min_amount (int), ignore_rent (bool)
 
---------------------------------------------------
+## Examples
+Q: "How much did I spend on groceries in Dec 2024?"
+{{"tool": 4, "category": "grocery", "year": 2024, "month": 12}}
 
-## AVAILABLE TOOLS
+Q: "Compare total spending 2022 vs 2023"
+{{"tool": 3, "y1": 2022, "y2": 2023}}
 
-1. plot_time_series(df, category=None, year=None, month=None, start_year=None, start_month=None, end_year=None, end_month=None, months=None)
+Q: "Show me food spending trend for the last 6 months"
+{{"tool": 1, "category": "Food", "months": 6}}
 
-2. plot_distribution(df, category=None, remarks=None, year=None, month=None, start_year=None, start_month=None, end_year=None, end_month=None, months=None, ignore_rent=False)
+Q: "What were my top 5 expenses excluding rent last month?"
+{{"tool": 5, "n": 5, "months": 1, "ignore_rent": true}}
 
-3. plot_comparison_bars(df, category=None, y1=None, m1=None, d1=None, y2=None, m2=None, d2=None)
-
-4. calculate_total(df, category=None, remarks=None, year=None, month=None, day=None, start_year=None, start_month=None, end_year=None, end_month=None, months=None)
-
-5. get_top_expenses(df, n=10, category=None, year=None, month=None, day=None, start_year=None, start_month=None, end_year=None, end_month=None, months=None, min_amount=None, ignore_rent=False)
+Q: "Split of spending for feb 2026"
+{{"tool": 2, "year": 2026, "month": 2}}
 
 --------------------------------------------------
 
@@ -195,8 +204,7 @@ FINAL OUTPUT RULE:
 
 Today: {current_date}
 
-FINAL REMINDER:
-Output ONLY the function call.
+FINAL REMINDER: Output ONLY the JSON object. NO MARKDOWN, NO BACKTICKS, NO EXPLANATION, NO CODE!
 """
 
 
@@ -321,6 +329,40 @@ def strip_code_fences(text: str) -> str:
     return s.strip().strip("`")
 
 
+def extract_json_params(text: str) -> tuple[dict[str, Any], str]:
+    """
+    Strips code fences, parses JSON parameters, and returns (params_dict, cleaned_text).
+    """
+    cleaned = strip_code_fences(text)
+    if not cleaned:
+        return {}, ""
+    
+    # Try parsing as JSON
+    try:
+        data = json.loads(cleaned)
+        if isinstance(data, dict):
+            return data, cleaned
+    except Exception:
+        pass
+        
+    # Regex fallback for key-value extraction
+    params = {}
+    for key in ["tool", "category", "year", "month", "day", "start_year", "start_month", "end_year", "end_month", "months", "ignore_rent", "remarks", "n", "min_amount", "y1", "m1", "d1", "y2", "m2", "d2"]:
+        pattern = r'["\']?' + re.escape(key) + r'["\']?\s*[:=]\s*["\']?([^"\'\s,}]+)["\']?'
+        match = re.search(pattern, cleaned)
+        if match:
+            val = match.group(1).strip()
+            if val.lower() == 'true':
+                params[key] = True
+            elif val.lower() == 'false':
+                params[key] = False
+            elif val.isdigit():
+                params[key] = int(val)
+            elif val.lower() != 'none' and val.lower() != 'null':
+                params[key] = val
+    return params, cleaned
+
+
 def extract_first_tool_call(text: str) -> tuple[str, dict[str, Any], str]:
     """
     Returns (tool_name, kwargs, cleaned_text).
@@ -340,6 +382,64 @@ def extract_first_tool_call(text: str) -> tuple[str, dict[str, Any], str]:
 
     start = call_match.start(1)
     candidate = cleaned[start:].strip()
+
+    # Auto-correction for duplicate keyword arguments (e.g., m1 repeated instead of m2)
+    try:
+        if "(" in candidate:
+            first_paren = candidate.find("(")
+            last_paren = candidate.rfind(")")
+            if last_paren > first_paren:
+                prefix = candidate[:first_paren + 1]
+                suffix = candidate[last_paren:]
+                arg_str = candidate[first_paren + 1 : last_paren]
+                
+                # Split arguments quote-safely
+                parts = []
+                current = []
+                in_quote = None
+                for char in arg_str:
+                    if char in ("'", '"'):
+                        if in_quote == char:
+                            in_quote = None
+                        elif in_quote is None:
+                            in_quote = char
+                        current.append(char)
+                    elif char == ',' and in_quote is None:
+                        parts.append("".join(current).strip())
+                        current = []
+                    else:
+                        current.append(char)
+                if current:
+                    parts.append("".join(current).strip())
+                    
+                seen_keys = set()
+                rebuilt_parts = []
+                corrected = False
+                for part in parts:
+                    if '=' in part:
+                        key, val = part.split('=', 1)
+                        key = key.strip()
+                        val = val.strip()
+                        
+                        orig_key = key
+                        if key == 'y1' and 'y1' in seen_keys:
+                            key = 'y2'
+                        elif key == 'm1' and 'm1' in seen_keys:
+                            key = 'm2'
+                        elif key == 'd1' and 'd1' in seen_keys:
+                            key = 'd2'
+                        
+                        if key != orig_key:
+                            corrected = True
+                        seen_keys.add(key)
+                        rebuilt_parts.append(f"{key}={val}")
+                    else:
+                        rebuilt_parts.append(part)
+                        
+                if corrected:
+                    candidate = prefix + ", ".join(rebuilt_parts) + suffix
+    except Exception:
+        pass
 
     try:
         tree = ast.parse(f"__x__ = {candidate}")
@@ -698,10 +798,31 @@ def benchmark_single_agent(
     # FIX: capture token usage immediately after the LLM call while it's still
     # the "last" call — avoids stale values from earlier calls in the process.
     usage = get_last_usage()
-    tool, kwargs, cleaned = extract_first_tool_call(raw_text)
+    
+    # Now it's JSON with "tool" (numeric) and other parameters
+    params, cleaned = extract_json_params(raw_text)
+    
+    # Map the tool ID/name to string
+    from utils.tool_registry import TOOL_ID_TO_NAME
+    tool_val = params.get("tool", "calculate_total")
+    if isinstance(tool_val, int):
+        tool = TOOL_ID_TO_NAME.get(tool_val, "calculate_total")
+    elif isinstance(tool_val, str) and tool_val.isdigit():
+        tool = TOOL_ID_TO_NAME.get(int(tool_val), "calculate_total")
+    elif tool_val in TOOL_ID_TO_NAME.values():
+        tool = tool_val
+    else:
+        tool = "calculate_total"
+        for name in TOOL_ID_TO_NAME.values():
+            if name in raw_text:
+                tool = name
+                break
+                
+    kwargs = {k: v for k, v in params.items() if k != "tool"}
     kwargs = canonicalize_params(kwargs)
     validated_kwargs, warning = validate_and_fix_params(kwargs, VALIDATION_DF)
     validated_kwargs = canonicalize_params(validated_kwargs)
+    
     return {
         "router_time_s": 0.0,
         "specialist_time_s": elapsed,
@@ -709,7 +830,7 @@ def benchmark_single_agent(
         "total_time_s": elapsed,
         "peak_cpu_pct": rm.peak_cpu_percent,
         "peak_ram_mb": rm.peak_ram_mb,
-        "router_raw": tool,
+        "router_raw": str(tool_val),
         "specialist_raw": cleaned,
         "pred_tool_raw": tool,
         "pred_params_raw": kwargs,
@@ -747,10 +868,23 @@ def benchmark_dual_agent(
         # FIX: capture router token usage before the specialist call overwrites it.
         router_usage = get_last_usage()
 
-        router_tool, _, _ = extract_first_tool_call(router_raw)
-        router_tool = router_tool.strip().strip("`'\"")
-        if router_tool not in ALLOWED_TOOLS:
-            router_tool = router_raw.split()[0].strip().strip("`'\"")
+        # Parse number from router
+        from utils.tool_registry import TOOL_ID_TO_NAME
+        clean_router = router_raw.strip().replace("`", "").replace("'", "").replace('"', "")
+        digit_match = re.search(r'[1-5]', clean_router)
+        if digit_match:
+            tool_id = int(digit_match.group(0))
+            router_tool = TOOL_ID_TO_NAME.get(tool_id, "calculate_total")
+        else:
+            logger.warning(f"Router output did not contain a valid tool ID (1-5): '{router_raw}'. Attempting name fallback...")
+            fallback_found = False
+            for name in TOOL_ID_TO_NAME.values():
+                if name in clean_router:
+                    router_tool = name
+                    fallback_found = True
+                    break
+            if not fallback_found:
+                router_tool = "calculate_total"
 
         # Stage 2: Specialist
         predicted_tool_for_prompt = router_tool if router_tool in ALLOWED_TOOLS else "calculate_total"
@@ -758,8 +892,10 @@ def benchmark_dual_agent(
         if tool_prompt_template is None:
             tool_prompt_template = get_tool_prompt("calculate_total")
 
-        specialist_system_prompt = tool_prompt_template.format(
-            metadata=metadata, current_date=current_date
+        specialist_system_prompt = tool_prompt_template.replace(
+            "{metadata}", metadata
+        ).replace(
+            "{current_date}", current_date
         )
 
         specialist_raw, specialist_time, spec_err = run_llm(
@@ -772,7 +908,7 @@ def benchmark_dual_agent(
         # FIX: capture specialist usage before exiting the monitor context.
         specialist_usage = get_last_usage()
 
-    spec_tool, spec_kwargs, cleaned = extract_first_tool_call(specialist_raw)
+    spec_kwargs, cleaned = extract_json_params(specialist_raw)
     spec_kwargs = canonicalize_params(spec_kwargs)
     validated_kwargs, warning = validate_and_fix_params(spec_kwargs, VALIDATION_DF)
     validated_kwargs = canonicalize_params(validated_kwargs)
@@ -791,8 +927,8 @@ def benchmark_dual_agent(
         "pred_tool_validated": router_tool,
         "pred_params_validated": validated_kwargs,
         "warning": warning or "",
-        "raw_parse_ok": 1 if router_tool in ALLOWED_TOOLS and spec_tool in ALLOWED_TOOLS else 0,
-        "validated_parse_ok": 1 if router_tool in ALLOWED_TOOLS and spec_tool in ALLOWED_TOOLS else 0,
+        "raw_parse_ok": 1 if router_tool in ALLOWED_TOOLS else 0,
+        "validated_parse_ok": 1 if router_tool in ALLOWED_TOOLS else 0,
         "notes": "; ".join([x for x in [router_err, spec_err] if x]) if (router_err or spec_err) else "",
         # FIX: sum router + specialist token counts so dual-mode reports the full
         # prompt budget consumed, not just the specialist stage.

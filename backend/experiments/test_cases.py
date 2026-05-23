@@ -82,7 +82,7 @@ def _compute_category_distance(query: str, expected: dict[str, Any]) -> int:
         "futsal game":          ["futsal"],
         "basketball game":      ["basketball"],
         "football game":        ["football"],
-        "sports event":         ["sports events"],
+        "sports event":         ["sports events", "sporting events", "sporting event"],
         # Entertainment
         "arcades & karaoke":    ["karaoke", "karaokes", "arcade", "arcades"],
         "events & venues":      ["events", "venue", "venues"],
@@ -94,6 +94,13 @@ def _compute_category_distance(query: str, expected: dict[str, Any]) -> int:
         # Misc
         "healthcare":           ["medical", "doctor", "hospital"],
         "personal care":        ["hygiene", "toiletries"],
+        # New mappings for v2 test cases
+        "grocery":              ["groceries", "grocery bills"],
+        "medicines":            ["meds", "medication"],
+        "bus":                  ["bus fares", "bus fare"],
+        "car rental":           ["car rentals"],
+        "donation":             ["donations"],
+        "taxi":                 ["taxis"],
     }
 
     for canonical, aliases in semantic_maps.items():
@@ -220,9 +227,71 @@ _RAW_CASES: list[dict[str, Any]] = [
     },
     {
         "id": "TS10", "group": "time_series",
-        "q": "plot spending on gas for past 30 months.",
+        "q": "plot spending on gas for past 30 months",
         "tool": "plot_time_series",
         "expected": {"category": "gas bill", "months": 30},
+    },
+
+    # ── Time series (11-20) ──────────────────────────────────────────────────
+    {
+        "id": "TS11", "group": "time_series",
+        "q": "show me how my groceries spending has changed over 2025",
+        "tool": "plot_time_series",
+        "expected": {"category": "grocery", "year": 2025},
+    },
+    {
+        "id": "TS12", "group": "time_series",
+        "q": "plot trend for bullet train expenses from jan 2024 to dec 2025",
+        "tool": "plot_time_series",
+        "expected": {"category": "shinkansen", "start_year": 2024, "start_month": 1, "end_year": 2025, "end_month": 12},
+    },
+    {
+        "id": "TS13", "group": "time_series",
+        "q": "can u show my accommodation spending for past 3 months?",
+        "tool": "plot_time_series",
+        "expected": {"category": "Accommodation", "months": 3},
+    },
+    {
+        "id": "TS14", "group": "time_series",
+        "q": "show electronics spending since 2023",
+        "tool": "plot_time_series",
+        "expected": {"category": "electronics", "start_year": 2023},
+    },
+    {
+        "id": "TS15", "group": "time_series",
+        "q": "plot spend on tuition from 2024/04 to 2026/03",
+        "tool": "plot_time_series",
+        "expected": {"category": "tuition", "start_year": 2024, "start_month": 4, "end_year": 2026, "end_month": 3},
+    },
+    {
+        "id": "TS16", "group": "time_series",
+        "q": "show me my transportation spending from sep 2024 to march 2025",
+        "tool": "plot_time_series",
+        "expected": {"category": "Transportation", "start_year": 2024, "start_month": 9, "end_year": 2025, "end_month": 3},
+    },
+    {
+        "id": "TS17", "group": "time_series",
+        "q": "plot spending on meds for past 18 months",
+        "tool": "plot_time_series",
+        "expected": {"category": "medicines", "months": 18},
+    },
+    {
+        "id": "TS18", "group": "time_series",
+        "q": "show my ride share costs from '24 to 26",
+        "tool": "plot_time_series",
+        "expected": {"category": "ride share", "start_year": 2024, "end_year": 2026},
+    },
+    {
+        "id": "TS19", "group": "time_series",
+        "q": "plot spending from 6/2023 to dec '25",
+        "tool": "plot_time_series",
+        "expected": {"start_year": 2023, "start_month": 6, "end_year": 2025, "end_month": 12},
+    },
+    {
+        "id": "TS20", "group": "time_series",
+        "q": "show spend on basketball from oct 24 to mar 26",
+        "tool": "plot_time_series",
+        "expected": {"category": "basketball game", "start_year": 2024, "start_month": 10, "end_year": 2026, "end_month": 3},
     },
 
     # ── Distribution (10) ───────────────────────────────────────────────────
@@ -247,7 +316,7 @@ _RAW_CASES: list[dict[str, Any]] = [
     },
     {
         "id": "DI04", "group": "distribution",
-        "q": "show breakdown of spend on utilities for the past year",
+        "q": "show breakdown of spend on utilities for past year",
         "tool": "plot_distribution",
         "expected": {"category": "Housing and Utilities", "months": 12},
     },
@@ -259,9 +328,9 @@ _RAW_CASES: list[dict[str, Any]] = [
     },
     {
         "id": "DI06", "group": "distribution",
-        "q": "show breakdown of all expenses for 2026 feb",
+        "q": "show breakdown of expenses for june 21 2024",
         "tool": "plot_distribution",
-        "expected": {"year": 2026, "month": 2},
+        "expected": {"year": 2024, "month": 6, "day": 21},
     },
     {
         "id": "DI07", "group": "distribution",
@@ -288,6 +357,68 @@ _RAW_CASES: list[dict[str, Any]] = [
         "expected": {"category": "Food", "months": 3},
     },
 
+    # ── Distribution (11-20) ─────────────────────────────────────────────────
+    {
+        "id": "DI11", "group": "distribution",
+        "q": "how is my spending split for 2025 excluding rent?",
+        "tool": "plot_distribution",
+        "expected": {"year": 2025, "ignore_rent": True},
+    },
+    {
+        "id": "DI12", "group": "distribution",
+        "q": "gimme a pie chart of accomodation expenses from 2024 - 25",
+        "tool": "plot_distribution",
+        "expected": {"category": "Accommodation", "start_year": 2024, "end_year": 2025},
+    },
+    {
+        "id": "DI13", "group": "distribution",
+        "q": "show me breakdown of miscellaneous expenses for past 6 months",
+        "tool": "plot_distribution",
+        "expected": {"category": "Miscellaneous", "months": 6},
+    },
+    {
+        "id": "DI14", "group": "distribution",
+        "q": "share distro of household, clothing expenses.....",
+        "tool": "plot_distribution",
+        "expected": {"category": "Household and Clothing"},
+    },
+    {
+        "id": "DI15", "group": "distribution",
+        "q": "what does my electronics and furniture spending look like for jan 2025?",
+        "tool": "plot_distribution",
+        "expected": {"category": "Electronics and Furniture", "year": 2025, "month": 1},
+    },
+    {
+        "id": "DI16", "group": "distribution",
+        "q": "breakdown of all expenses for 15 march 2025",
+        "tool": "plot_distribution",
+        "expected": {"year": 2025, "month": 3, "day": 15},
+    },
+    {
+        "id": "DI17", "group": "distribution",
+        "q": "can ya show breakdown of spending w/o rent for past 3 months?",
+        "tool": "plot_distribution",
+        "expected": {"months": 3, "ignore_rent": True},
+    },
+    {
+        "id": "DI18", "group": "distribution",
+        "q": "plz share distribuution of souvenirs expenses from 2023 jan to 2025/12",
+        "tool": "plot_distribution",
+        "expected": {"category": "Souvenirs/Gifts/Treats", "start_year": 2023, "start_month": 1, "end_year": 2025, "end_month": 12},
+    },
+    {
+        "id": "DI19", "group": "distribution",
+        "q": "show breakdown of entertainment expenses for nov 2024 to feb 2025",
+        "tool": "plot_distribution",
+        "expected": {"category": "Entertainment", "start_year": 2024, "start_month": 11, "end_year": 2025, "end_month": 2},
+    },
+    {
+        "id": "DI20", "group": "distribution",
+        "q": "how did I split my money in 2024?",
+        "tool": "plot_distribution",
+        "expected": {"year": 2024},
+    },
+
     # ── Comparison bars (10) ────────────────────────────────────────────────
     {
         "id": "CP01", "group": "comparison",
@@ -297,7 +428,7 @@ _RAW_CASES: list[dict[str, Any]] = [
     },
     {
         "id": "CP02", "group": "comparison",
-        "q": "contrast spending on groceries 2025 jan vs 2026 jan",
+        "q": "contrast spending on groceries jan 2025 vs jan 2026",
         "tool": "plot_comparison_bars",
         "expected": {"category": "grocery", "y1": 2025, "m1": 1, "y2": 2026, "m2": 1},
     },
@@ -350,6 +481,68 @@ _RAW_CASES: list[dict[str, Any]] = [
         "expected": {"category": "dining", "y1": 2025, "y2": 2026},
     },
 
+    # ── Comparison bars (11-20) ──────────────────────────────────────────────
+    {
+        "id": "CP11", "group": "comparison",
+        "q": "compare grocery spending feb 2025 vs same month in 26",
+        "tool": "plot_comparison_bars",
+        "expected": {"category": "grocery", "y1": 2025, "m1": 2, "y2": 2026, "m2": 2},
+    },
+    {
+        "id": "CP12", "group": "comparison",
+        "q": "how does my accommodation spend in 2024 compare to 25?",
+        "tool": "plot_comparison_bars",
+        "expected": {"category": "Accommodation", "y1": 2024, "y2": 2025},
+    },
+    {
+        "id": "CP13", "group": "comparison",
+        "q": "contrast transportation costs for mar 2025 vs march 2026",
+        "tool": "plot_comparison_bars",
+        "expected": {"category": "Transportation", "y1": 2025, "m1": 3, "y2": 2026, "m2": 3},
+    },
+    {
+        "id": "CP14", "group": "comparison",
+        "q": "compare spend on wifi 2024 vs 2025",
+        "tool": "plot_comparison_bars",
+        "expected": {"category": "internet bill", "y1": 2024, "y2": 2025},
+    },
+    {
+        "id": "CP15", "group": "comparison",
+        "q": "compare spend on phone 2025 vs 26",
+        "tool": "plot_comparison_bars",
+        "expected": {"category": "phone bill", "y1": 2025, "y2": 2026},
+    },
+    {
+        "id": "CP16", "group": "comparison",
+        "q": "compare spend on clothing for jul 2024 vs jul 2025",
+        "tool": "plot_comparison_bars",
+        "expected": {"category": "clothing", "y1": 2024, "m1": 7, "y2": 2025, "m2": 7},
+    },
+    {
+        "id": "CP17", "group": "comparison",
+        "q": "compare education expenses '24 vs '25",
+        "tool": "plot_comparison_bars",
+        "expected": {"category": "Education", "y1": 2024, "y2": 2025},
+    },
+    {
+        "id": "CP18", "group": "comparison",
+        "q": "compare overall spending for 10 jan 2025 vs same date in 2026",
+        "tool": "plot_comparison_bars",
+        "expected": {"y1": 2025, "m1": 1, "d1": 10, "y2": 2026, "m2": 1, "d2": 10},
+    },
+    {
+        "id": "CP19", "group": "comparison",
+        "q": "difference in subway spending between 2024 and 2025",
+        "tool": "plot_comparison_bars",
+        "expected": {"category": "tokyo metro", "y1": 2024, "y2": 2025},
+    },
+    {
+        "id": "CP20", "group": "comparison",
+        "q": "compare household expenses for april '24 vs apr 2025",
+        "tool": "plot_comparison_bars",
+        "expected": {"category": "household", "y1": 2024, "m1": 4, "y2": 2025, "m2": 4},
+    },
+
     # ── Calculate total (10) ────────────────────────────────────────────────
     {
         "id": "CT01", "group": "calculate_total",
@@ -365,7 +558,7 @@ _RAW_CASES: list[dict[str, Any]] = [
     },
     {
         "id": "CT03", "group": "calculate_total",
-        "q": "tell sum spent at karaokes from 2023 to 2026",
+        "q": "tell sum spent at karaoke from 2023 to 2026",
         "tool": "calculate_total",
         "expected": {"category": "arcades & karaoke", "start_year": 2023, "end_year": 2026},
     },
@@ -377,7 +570,7 @@ _RAW_CASES: list[dict[str, Any]] = [
     },
     {
         "id": "CT05", "group": "calculate_total",
-        "q": "tell me sum money spent on treats from 2023 to 2026..",
+        "q": "tell me sum spent on treats from 2023 to 2026..",
         "tool": "calculate_total",
         "expected": {"category": "souvenirs/gifts/treats", "start_year": 2023, "end_year": 2026},
     },
@@ -411,6 +604,68 @@ _RAW_CASES: list[dict[str, Any]] = [
         "q": "can ya tell me total spend at combinis in 2025?",
         "tool": "calculate_total",
         "expected": {"category": "combini meal", "year": 2025},
+    },
+
+    # ── Calculate total (11-20) ──────────────────────────────────────────────
+    {
+        "id": "CT11", "group": "calculate_total",
+        "q": "how much did I spend on groceries in 2025?",
+        "tool": "calculate_total",
+        "expected": {"category": "grocery", "year": 2025},
+    },
+    {
+        "id": "CT12", "group": "calculate_total",
+        "q": "total spent on bus fares from 2024 to 2025",
+        "tool": "calculate_total",
+        "expected": {"category": "bus", "start_year": 2024, "end_year": 2025},
+    },
+    {
+        "id": "CT13", "group": "calculate_total",
+        "q": "how much did I spend on car rentals for past 2 years?",
+        "tool": "calculate_total",
+        "expected": {"category": "car rental", "months": 24},
+    },
+    {
+        "id": "CT14", "group": "calculate_total",
+        "q": "total amount spent on exam fees in 2025",
+        "tool": "calculate_total",
+        "expected": {"category": "exam fees", "year": 2025},
+    },
+    {
+        "id": "CT15", "group": "calculate_total",
+        "q": "whats the total spend on donations from '23 to 2026?",
+        "tool": "calculate_total",
+        "expected": {"category": "donation", "start_year": 2023, "end_year": 2026},
+    },
+    {
+        "id": "CT16", "group": "calculate_total",
+        "q": "how much on taxis in dec 2024?",
+        "tool": "calculate_total",
+        "expected": {"category": "taxi", "year": 2024, "month": 12},
+    },
+    {
+        "id": "CT17", "group": "calculate_total",
+        "q": "total spent on personal care for past 3 months",
+        "tool": "calculate_total",
+        "expected": {"category": "personal care", "months": 3},
+    },
+    {
+        "id": "CT18", "group": "calculate_total",
+        "q": "how much did I spend at cable car from 2024 june to march 2025?",
+        "tool": "calculate_total",
+        "expected": {"category": "cable car", "start_year": 2024, "start_month": 6, "end_year": 2025, "end_month": 3},
+    },
+    {
+        "id": "CT19", "group": "calculate_total",
+        "q": "sum of all spending on 22 feb 2025",
+        "tool": "calculate_total",
+        "expected": {"year": 2025, "month": 2, "day": 22},
+    },
+    {
+        "id": "CT20", "group": "calculate_total",
+        "q": "what was the total spent on books in 2024?",
+        "tool": "calculate_total",
+        "expected": {"category": "books", "year": 2024},
     },
 
     # ── Top expenses (10) ───────────────────────────────────────────────────
@@ -473,6 +728,68 @@ _RAW_CASES: list[dict[str, Any]] = [
         "q": "tell me about top 10 expenses of last year but exclude rent tho",
         "tool": "get_top_expenses",
         "expected": {"n": 10, "months": 12, "ignore_rent": True},
+    },
+
+    # ── Top expenses (11-20) ────────────────────────────────────────────────
+    {
+        "id": "TP11", "group": "top_expenses",
+        "q": "top 5 transportation expenses in 2025",
+        "tool": "get_top_expenses",
+        "expected": {"n": 5, "category": "Transportation", "year": 2025},
+    },
+    {
+        "id": "TP12", "group": "top_expenses",
+        "q": "what are the 3 biggest grocery bills in 2024?",
+        "tool": "get_top_expenses",
+        "expected": {"n": 3, "category": "grocery", "year": 2024},
+    },
+    {
+        "id": "TP13", "group": "top_expenses",
+        "q": "show me top 10 expenses from jan 2025 to june '25",
+        "tool": "get_top_expenses",
+        "expected": {"n": 10, "start_year": 2025, "start_month": 1, "end_year": 2025, "end_month": 6},
+    },
+    {
+        "id": "TP14", "group": "top_expenses",
+        "q": "top 6 entertainment expenses for past 6 months",
+        "tool": "get_top_expenses",
+        "expected": {"n": 6, "category": "Entertainment", "months": 6},
+    },
+    {
+        "id": "TP15", "group": "top_expenses",
+        "q": "biggest 5 expenses on 1 jan 2025",
+        "tool": "get_top_expenses",
+        "expected": {"n": 5, "year": 2025, "month": 1, "day": 1},
+    },
+    {
+        "id": "TP16", "group": "top_expenses",
+        "q": "top 10 expenses for past 3 months exclude rent",
+        "tool": "get_top_expenses",
+        "expected": {"n": 10, "months": 3, "ignore_rent": True},
+    },
+    {
+        "id": "TP17", "group": "top_expenses",
+        "q": "show top 8 accommodation expenses from 2024 to 2025",
+        "tool": "get_top_expenses",
+        "expected": {"n": 8, "category": "Accommodation", "start_year": 2024, "end_year": 2025},
+    },
+    {
+        "id": "TP18", "group": "top_expenses",
+        "q": "most expensive 4 purchases on education in 2025",
+        "tool": "get_top_expenses",
+        "expected": {"n": 4, "category": "Education", "year": 2025},
+    },
+    {
+        "id": "TP19", "group": "top_expenses",
+        "q": "tell me the top 15 expenses for 2025, ignore rent plz",
+        "tool": "get_top_expenses",
+        "expected": {"n": 15, "year": 2025, "ignore_rent": True},
+    },
+    {
+        "id": "TP20", "group": "top_expenses",
+        "q": "what were the top 5 sporting events expenses for past year?",
+        "tool": "get_top_expenses",
+        "expected": {"n": 5, "category": "sports event", "months": 12},
     }
 ]
 

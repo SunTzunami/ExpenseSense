@@ -1,4 +1,5 @@
 import React from 'react';
+import RetroSelect from './RetroSelect';
 
 export default function ChoiceUIOverlay({
     showChoiceUI, setShowChoiceUI,
@@ -25,14 +26,21 @@ export default function ChoiceUIOverlay({
 
                     <div className="retro-panel mb-4">
                         <div className="mb-2 text-[13px] font-bold">Router Provider:</div>
-                        <select className="retro-select w-full mb-4" value={routerProvider} onChange={e => setRouterProvider && setRouterProvider(e.target.value)}>
-                            <option value="llamacpp">LlamaCpp (Local)</option>
-                        </select>
+                        <RetroSelect 
+                            value={routerProvider} 
+                            onChange={val => setRouterProvider && setRouterProvider(val)} 
+                            options={[{ value: 'llamacpp', label: 'LlamaCpp (Local)' }]} 
+                            width="100%" 
+                            className="mb-4"
+                        />
                         
                         <div className="mb-2 text-[13px] font-bold">Analyst Provider:</div>
-                        <select className="retro-select w-full" value={specialistProvider} onChange={e => setSpecialistProvider && setSpecialistProvider(e.target.value)}>
-                            <option value="llamacpp">LlamaCpp (Local)</option>
-                        </select>
+                        <RetroSelect 
+                            value={specialistProvider} 
+                            onChange={val => setSpecialistProvider && setSpecialistProvider(val)} 
+                            options={[{ value: 'llamacpp', label: 'LlamaCpp (Local)' }]} 
+                            width="100%" 
+                        />
                     </div>
 
                     <button

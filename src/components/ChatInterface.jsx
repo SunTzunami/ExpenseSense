@@ -7,6 +7,7 @@ import { CATEGORY_MAPPING, MAJOR_CATEGORIES } from '../utils/categoryMapping';
 import SettingsPanel from './chat/SettingsPanel';
 import ChoiceUIOverlay from './chat/ChoiceUIOverlay';
 import MessageItem, { PlotlyChart } from './chat/MessageItem';
+import RetroSelect from './chat/RetroSelect';
 
 export default function ChatInterface({ data, visible, currency, onStatusChange }) {
     const [messages, setMessages] = useState([]);
@@ -172,7 +173,7 @@ ${allCats.map(c => `- ${c}`).join('\n')}
                 setWorkflowStatus(prev => [...prev, { ...status, timestamp: performance.now() }]);
             });
 
-            const { result, fig, code } = analysisResult;
+            const { result, fig, code, router_output, tool_name } = analysisResult;
 
             const endTime = performance.now();
             const durationSec = ((endTime - startTime) / 1000).toFixed(1);
@@ -182,6 +183,8 @@ ${allCats.map(c => `- ${c}`).join('\n')}
                 content: result || (fig ? "I've generated a visualization for you." : "Analysis complete."),
                 fig: fig ? JSON.parse(fig) : null,
                 code: code,
+                router_output: router_output,
+                tool_name: tool_name,
                 executionTime: durationSec,
                 validation_fixes: analysisResult.validation_fixes || null
             };
@@ -213,11 +216,11 @@ ${allCats.map(c => `- ${c}`).join('\n')}
                 backendConnected={backendConnected}
             />
 
-            <div className="p-1 bg-[#c0c0c0] text-[13px] flex items-center justify-between border-b border-[#808080]">
+            <div className="p-1 bg-[#c0c0c0] text-[15px] flex items-center justify-between border-b border-[#808080]">
                 <div className="flex items-center gap-3 px-2">
                     <div className="flex items-center gap-1.5" title={backendConnected ? "Backend Connected" : "Backend Offline"}>
                         <div className={`w-2 h-2 rounded-full ${backendConnected ? 'bg-green-500' : 'bg-red-500'}`} style={{ border: '1px solid black' }} />
-                        <span className="text-[13px] text-black font-medium">LlamaCpp</span>
+                        <span className="text-[15px] text-black font-medium">LlamaCpp</span>
                         {!backendConnected && (
                             <button onClick={initializeConnections} className="retro-button ml-2">
                                 Retry
@@ -229,16 +232,12 @@ ${allCats.map(c => `- ${c}`).join('\n')}
                 {isConnected && (
                     <div className="flex gap-4">
                         <div className="flex items-center gap-2">
-                            <span className="text-[13px] text-black font-bold">Router</span>
-                            <select value={selectedRouterModel} onChange={(e) => setSelectedRouterModel(e.target.value)} className="retro-select w-[150px]">
-                                {llamacppModels.map(m => <option key={m} value={m}>{m}</option>)}
-                            </select>
+                            <span className="text-[15px] text-black font-bold">Router</span>
+                            <RetroSelect value={selectedRouterModel} onChange={setSelectedRouterModel} options={llamacppModels} width="150px" />
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-[13px] text-black font-bold">Specialist</span>
-                            <select value={selectedCodeModel} onChange={(e) => setSelectedCodeModel(e.target.value)} className="retro-select w-[150px]">
-                                {llamacppModels.map(m => <option key={m} value={m}>{m}</option>)}
-                            </select>
+                            <span className="text-[15px] text-black font-bold">Specialist</span>
+                            <RetroSelect value={selectedCodeModel} onChange={setSelectedCodeModel} options={llamacppModels} width="150px" />
                         </div>
                     </div>
                 )}
@@ -256,7 +255,7 @@ ${allCats.map(c => `- ${c}`).join('\n')}
 
                 {messages.length === 0 && isConnected && (
                     <div className="flex flex-col items-center justify-center h-full text-black space-y-4">
-                        <p className="font-bold text-[16px]">Q&A Assistant Ready</p>
+                        <p className="font-bold text-[18px]">Q&A Assistant Ready</p>
                         <div className="flex flex-col gap-2 w-full max-w-md">
                             {["How much did I spend in total on gym in 2024?", "Compare Groceries 2024 vs 2025", "What were my top 5 expenses for past month?"].map(q => (
                                 <button key={q} onClick={() => setInput(q)} className="retro-button w-full text-left justify-start">
@@ -273,7 +272,7 @@ ${allCats.map(c => `- ${c}`).join('\n')}
 
                 {isLoading && messages.length > 0 && (
                     <div className="mb-4">
-                        <div className="text-[11px] font-bold mb-1 text-black">Q&A Assistant</div>
+                        <div className="text-[13px] font-bold mb-1 text-black">Q&A Assistant</div>
                         <div className="p-2 retro-panel" style={{ borderStyle: 'solid', borderColor: '#808080', borderWidth: '1px' }}>
                             <WorkflowIndicator status={workflowStatus} elapsed={elapsedTime} />
                         </div>
@@ -382,7 +381,7 @@ function WorkflowIndicator({ status, elapsed }) {
     }
 
     return (
-        <div style={{ fontFamily: "'Consolas', 'Courier New', monospace" }} className="text-[12px] leading-relaxed text-black font-mono">
+        <div style={{ fontFamily: "'Consolas', 'Courier New', monospace" }} className="text-[14px] leading-relaxed text-black font-mono">
             <div className="flex items-center gap-2 mb-1">
                 <span className="font-bold text-[#000080]">{routerStatus}</span>
                 <span>{routerText}</span>
@@ -395,7 +394,7 @@ function WorkflowIndicator({ status, elapsed }) {
                 <span className="font-bold text-[#000080]">{validatorStatus}</span>
                 <span>{validatorText}</span>
             </div>
-            <div className="flex items-center gap-2 pt-1 border-t border-[#808080] mt-2 text-[#808080] text-[11px]">
+            <div className="flex items-center gap-2 pt-1 border-t border-[#808080] mt-2 text-[#808080] text-[13px]">
                 <Clock size={10} />
                 <span>Elapsed: {elapsed}s</span>
             </div>

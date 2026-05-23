@@ -402,6 +402,7 @@ def plot_distribution(
     df,
     year=None,
     month=None,
+    day=None,
     start_year=None,
     start_month=None,
     end_year=None,
@@ -416,6 +417,7 @@ def plot_distribution(
     Shows spending distribution with flexible time filtering (aligned with plot_time_series).
 
     Time filters (use ONE):
+    - year + month + day: specific date (e.g. year=2024, month=12, day=31)
     - year + month: specific month
     - year: entire year
     - start_year + end_year: year range
@@ -438,7 +440,13 @@ def plot_distribution(
     if month and not year:
         year = now.year
 
-    if year and month:
+    if year and month and day:
+        specific_date = pd.Timestamp(year=int(year), month=int(month), day=int(day))
+        data = data[data['Date'].dt.date == specific_date.date()]
+        range_start, range_end = specific_date, specific_date
+        time_label = specific_date.strftime('%Y-%m-%d')
+
+    elif year and month:
         start_date = pd.Timestamp(year=int(year), month=int(month), day=1)
         end_date = start_date + pd.offsets.MonthEnd(0)
         data = data[
@@ -806,7 +814,7 @@ def plot_comparison_bars(df, category=None, remarks=None,
             y=[sum1.get(c, 0) for c in all_cats],
             text=[f'¥{sum1.get(c, 0):,.0f}' for c in all_cats],
             textposition='outside',
-            textfont=dict(size=10),
+            textfont=dict(size=12),
             marker_color=THEME['primary'],
             cliponaxis=False,
             customdata=[count1.get(c, 0) for c in all_cats],
@@ -819,7 +827,7 @@ def plot_comparison_bars(df, category=None, remarks=None,
             y=[sum2.get(c, 0) for c in all_cats],
             text=[f'¥{sum2.get(c, 0):,.0f}' for c in all_cats],
             textposition='outside',
-            textfont=dict(size=10),
+            textfont=dict(size=12),
             marker_color=THEME['secondary'],
             cliponaxis=False,
             customdata=[count2.get(c, 0) for c in all_cats],
@@ -835,13 +843,13 @@ def plot_comparison_bars(df, category=None, remarks=None,
         bargap=0.25,
         bargroupgap=0.1,
         uniformtext_mode='hide',
-        uniformtext_minsize=9
+        uniformtext_minsize=11
     )
     
     if show_avg:
         # Update subplot titles font and position
         for i in fig['layout']['annotations']:
-            i['font'] = dict(size=15, color=THEME['title_color'], family=THEME['font_family'])
+            i['font'] = dict(size=18, color=THEME['title_color'], family=THEME['font_family'])
             i['y'] = i['y'] + 0.02 # Slightly nudge up
 
     # Calculate overall totals and change

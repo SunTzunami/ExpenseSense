@@ -137,6 +137,8 @@ export async function runPython(code, data, optionsArg = {}) {
                 result: result.result,
                 fig: result.fig,
                 code: result.code,
+                router_output: result.router_output || null,
+                tool_name: result.tool_name || null,
                 backend: true
             };
         } else {
@@ -239,6 +241,8 @@ export async function runPythonStream(code, data, optionsArg = {}, onStatus = nu
                 result: finalResult.result,
                 fig: finalResult.fig,
                 code: finalResult.code,
+                router_output: finalResult.router_output || null,
+                tool_name: finalResult.tool_name || null,
                 validation_fixes: finalResult.validation_fixes || null,
                 backend: true
             };

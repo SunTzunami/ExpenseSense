@@ -1,4 +1,5 @@
 import React from 'react';
+import RetroSelect from './RetroSelect';
 
 export default function SettingsPanel({
     showSettings,
@@ -70,17 +71,23 @@ export default function SettingsPanel({
                 <h4 className="text-[11px] font-bold mb-2">Providers</h4>
 
                 <div className="flex flex-col gap-2 text-[11px]">
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                         <span>Router:</span>
-                        <select className="retro-select" value={routerProvider} onChange={(e) => setRouterProvider(e.target.value)}>
-                            <option value="llamacpp">LlamaCpp</option>
-                        </select>
+                        <RetroSelect 
+                            value={routerProvider} 
+                            onChange={val => setRouterProvider && setRouterProvider(val)} 
+                            options={[{ value: 'llamacpp', label: 'LlamaCpp' }]} 
+                            width="100px" 
+                        />
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                         <span>Specialist:</span>
-                        <select className="retro-select" value={specialistProvider} onChange={(e) => setSpecialistProvider(e.target.value)}>
-                            <option value="llamacpp">LlamaCpp</option>
-                        </select>
+                        <RetroSelect 
+                            value={specialistProvider} 
+                            onChange={val => setSpecialistProvider && setSpecialistProvider(val)} 
+                            options={[{ value: 'llamacpp', label: 'LlamaCpp' }]} 
+                            width="100px" 
+                        />
                     </div>
                 </div>
             </div>

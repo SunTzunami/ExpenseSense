@@ -101,7 +101,7 @@ The multi-agent pipeline is composed of the following key source files:
 
 ### Ask Your Data (Localized Analytics)
 - **Multi-Model Pipeline**: Uses a structured tri-stage pipeline (Router, Specialist, and Summary) allowing different LLM models to handle specific tasks for optimal performance and accuracy.
-- **Hybrid Execution Architecture**: Prioritizes a FastAPI-based Python backend for high-performance analysis, with an automatic fallback to Pyodide (WebAssembly) for client-side processing if the backend is unavailable.
+- **FastAPI-Based Execution**: Uses a dedicated FastAPI-based Python backend with specialized Router and Specialist agents for high-performance, validated financial data analysis.
 - **Performance Instrumentation**: Real-time telemetry tracks both LLM inference time and code execution duration.
 
 ### Advanced Visualization and Insights
@@ -118,7 +118,6 @@ The multi-agent pipeline is composed of the following key source files:
 - **Local LLM Infrastructure**:
   - **Llama.cpp**: The core inference engine powering the multi-agent pipeline using GGUF models. It provides extremely high performance on both CPU and GPU (Metal/CUDA/Vulkan support).
   - **GGUF Models**: Specifically optimized for local execution with varying quantization levels (e.g., LFM2 and Qwen3.5 variants).
-- **In-Browser Execution**: Pyodide (WASM) for standalone client-side analysis.
 
 ## Getting Started
 

@@ -42,6 +42,15 @@ def validate_and_fix_params(
     cleaned_params = params.copy()
     warnings: list[str] = []
 
+    # Remap year/month to start_year/start_month if end_year/end_month is provided
+    if 'end_year' in cleaned_params or 'end_month' in cleaned_params:
+        if 'year' in cleaned_params and 'start_year' not in cleaned_params:
+            cleaned_params['start_year'] = cleaned_params.pop('year')
+            warnings.append("Mapped 'year' to 'start_year' for date range")
+        if 'month' in cleaned_params and 'start_month' not in cleaned_params:
+            cleaned_params['start_month'] = cleaned_params.pop('month')
+            warnings.append("Mapped 'month' to 'start_month' for date range")
+
     input_cat = params.get("category") or params.get("major_category")
 
     if isinstance(input_cat, str):

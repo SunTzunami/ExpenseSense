@@ -8,7 +8,7 @@ export function PlotlyChart({ data, isExpanded = false }) {
     useEffect(() => {
         if (containerRef.current && data) {
             const retroColorway = ['#000080', '#ff00ff', '#008080', '#800000', '#0000ff', '#808080', '#00ff00', '#ff0000', '#ffff00'];
-            
+
             const layout = {
                 ...data.layout,
                 autosize: true,
@@ -19,13 +19,21 @@ export function PlotlyChart({ data, isExpanded = false }) {
                 font: {
                     color: '#000000',
                     family: "'MS Sans Serif', 'Tahoma', 'Consolas', monospace",
-                    size: isExpanded ? 14 : 11
+                    size: isExpanded ? 18 : 14
                 },
-                title: isExpanded ? { text: data.layout?.title?.text || '' } : {
+                title: isExpanded ? {
+                    text: data.layout?.title?.text || '',
+                    font: {
+                        size: 18,
+                        color: '#000000',
+                        family: "'MS Sans Serif', 'Tahoma', 'Consolas', monospace",
+                        weight: 'bold'
+                    }
+                } : {
                     ...data.layout?.title,
                     font: {
                         ...data.layout?.title?.font,
-                        size: 13,
+                        size: 16,
                         color: '#000000',
                         family: "'MS Sans Serif', 'Tahoma', 'Consolas', monospace",
                         weight: 'bold'
@@ -39,8 +47,8 @@ export function PlotlyChart({ data, isExpanded = false }) {
                     linewidth: 1,
                     mirror: true,
                     showline: true,
-                    tickfont: { color: '#000000', size: isExpanded ? 11 : 9, family: "'MS Sans Serif', 'Tahoma', 'Consolas', monospace" },
-                    titlefont: { color: '#000000', size: isExpanded ? 13 : 11, weight: 'bold', family: "'MS Sans Serif', 'Tahoma', 'Consolas', monospace" },
+                    tickfont: { color: '#000000', size: isExpanded ? 14 : 12, family: "'MS Sans Serif', 'Tahoma', 'Consolas', monospace" },
+                    titlefont: { color: '#000000', size: isExpanded ? 16 : 14, weight: 'bold', family: "'MS Sans Serif', 'Tahoma', 'Consolas', monospace" },
                     automargin: true
                 },
                 yaxis: {
@@ -51,14 +59,14 @@ export function PlotlyChart({ data, isExpanded = false }) {
                     linewidth: 1,
                     mirror: true,
                     showline: true,
-                    tickfont: { color: '#000000', size: isExpanded ? 11 : 9, family: "'MS Sans Serif', 'Tahoma', 'Consolas', monospace" },
-                    titlefont: { color: '#000000', size: isExpanded ? 13 : 11, weight: 'bold', family: "'MS Sans Serif', 'Tahoma', 'Consolas', monospace" },
+                    tickfont: { color: '#000000', size: isExpanded ? 14 : 12, family: "'MS Sans Serif', 'Tahoma', 'Consolas', monospace" },
+                    titlefont: { color: '#000000', size: isExpanded ? 16 : 14, weight: 'bold', family: "'MS Sans Serif', 'Tahoma', 'Consolas', monospace" },
                     automargin: true
                 },
                 legend: {
                     orientation: 'h',
                     y: isExpanded ? -0.15 : -0.25,
-                    font: { color: '#000000', size: isExpanded ? 11 : 9, family: "'MS Sans Serif', 'Tahoma', 'Consolas', monospace" },
+                    font: { color: '#000000', size: isExpanded ? 14 : 12, family: "'MS Sans Serif', 'Tahoma', 'Consolas', monospace" },
                     bgcolor: '#c0c0c0',
                     bordercolor: '#000000',
                     borderwidth: 1
@@ -68,7 +76,7 @@ export function PlotlyChart({ data, isExpanded = false }) {
                     bordercolor: '#000000',
                     font: {
                         family: "'MS Sans Serif', 'Tahoma', 'Consolas', monospace",
-                        size: isExpanded ? 12 : 10,
+                        size: isExpanded ? 15 : 13,
                         color: '#000000'
                     }
                 }
@@ -110,26 +118,26 @@ export function PlotlyChart({ data, isExpanded = false }) {
 export default function MessageItem({ msg, setExpandedChart }) {
     const isUser = msg.role === 'user';
     const [showDetails, setShowDetails] = useState(false);
-    
+
     return (
         <div className={`mb-4 flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
-            <div className={`text-[11px] font-bold mb-1 ${isUser ? 'text-[#000080]' : 'text-black'}`}>
+            <div className={`text-[13px] font-bold mb-1 ${isUser ? 'text-[#000080]' : 'text-black'}`}>
                 {isUser ? 'User' : msg.isSystem ? 'System' : 'Q&A Assistant'}
             </div>
 
             <div className={`p-2 max-w-[95%] ${isUser ? 'retro-panel bg-[#e0e0e0]' : 'retro-panel'}`} style={{ borderStyle: 'solid', borderColor: isUser ? '#808080' : '#808080', borderWidth: '1px' }}>
-                <div className="markdown-content text-[14px]" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
+                <div className="markdown-content text-[16px]" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {msg.content}
                     </ReactMarkdown>
                 </div>
 
                 {msg.validation_fixes && msg.validation_fixes.length > 0 && (
-                    <div className="mt-2 mb-2 p-2 bg-[#ffffcc] border border-[#808080] text-[12px] text-black" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
+                    <div className="mt-2 mb-2 p-2 bg-[#ffffcc] border border-[#808080] text-[14px] text-black" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
                         <div className="flex items-center justify-between font-bold">
                             <span>⚠️ Note: Auto-corrected parameters via fuzzy matching</span>
-                            <button 
-                                onClick={() => setShowDetails(!showDetails)} 
+                            <button
+                                onClick={() => setShowDetails(!showDetails)}
                                 className="text-[#000080] underline cursor-pointer focus:outline-none ml-2"
                                 style={{ background: 'none', border: 'none', padding: 0 }}
                             >
@@ -137,7 +145,7 @@ export default function MessageItem({ msg, setExpandedChart }) {
                             </button>
                         </div>
                         {showDetails && (
-                            <ul className="mt-1.5 pl-4 list-disc text-[11px] font-mono border-t border-dashed border-[#808080] pt-1.5">
+                            <ul className="mt-1.5 pl-4 list-disc text-[13px] font-mono border-t border-dashed border-[#808080] pt-1.5">
                                 {msg.validation_fixes.map((fix, idx) => (
                                     <li key={idx}>{fix}</li>
                                 ))}
@@ -164,18 +172,28 @@ export default function MessageItem({ msg, setExpandedChart }) {
 
                 <div className="flex items-start justify-between mt-2 gap-2 w-full border-t border-[#c0c0c0] pt-1">
                     {msg.code && (
-                        <details className="text-[11px] flex-1 min-w-0">
+                        <details className="text-[13px] flex-1 min-w-0">
                             <summary className="cursor-pointer select-none font-bold text-[#000080]">View Logic</summary>
-                            <div className="mt-1 w-full bg-[#ffffff] border border-[#808080] p-1 overflow-x-auto">
-                                <pre className="whitespace-pre-wrap break-all font-mono min-w-0" style={{ fontFamily: "'Courier New', Courier, monospace" }}>
-                                    {msg.code}
-                                </pre>
+                            <div className="mt-2 w-full bg-[#ffffff] border border-[#808080] p-2 flex flex-col gap-2 font-mono text-[12px]" style={{ fontFamily: "'Courier New', Courier, monospace" }}>
+                                <div>
+                                    <div className="font-bold text-[#800000]">1. Router Chose:</div>
+                                    <div className="text-black font-semibold mt-0.5 pl-2 border-l-2 border-[#808080]">
+                                        {msg.tool_name ? `Tool: "${msg.tool_name}"` : 'Tool: calculate_total (Default)'}
+                                        {msg.router_output ? ` (Raw Output: "${msg.router_output.trim()}")` : ''}
+                                    </div>
+                                </div>
+                                <div className="border-t border-dashed border-[#c0c0c0] pt-1">
+                                    <div className="font-bold text-[#800000]">2. Specialist's Output:</div>
+                                    <pre className="mt-1 whitespace-pre-wrap break-all min-w-0 bg-[#f8f8f8] p-1.5 border border-[#c0c0c0] text-black">
+                                        {msg.code}
+                                    </pre>
+                                </div>
                             </div>
                         </details>
                     )}
 
                     {msg.executionTime && (
-                        <div className="text-[11px] text-[#808080] ml-auto flex-shrink-0">
+                        <div className="text-[13px] text-[#808080] ml-auto flex-shrink-0">
                             Time: {msg.executionTime}s
                         </div>
                     )}

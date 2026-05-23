@@ -162,7 +162,7 @@ async def analyze_stream(request: AnalyzeRequest):
             router_template = load_prompt_template("router_prompt.txt")
             logger.info(f"--- Stage 1: Router ({target_router}) via {request.router_provider} ---")
             
-            tool_name = generate_text(
+            router_output = generate_text(
                 provider=request.router_provider,
                 model=target_router,
                 messages=[
@@ -171,8 +171,26 @@ async def analyze_stream(request: AnalyzeRequest):
                 ],
                 options=request.options
             )
-            tool_name = tool_name.split()[0].replace("`", "").replace("'", "").replace('"', "")
-            logger.info(f"Router decided on tool: {tool_name}")
+            # Parse number from router
+            from utils.tool_registry import TOOL_ID_TO_NAME
+            import re
+            
+            clean_router = router_output.strip().replace("`", "").replace("'", "").replace('"', "")
+            digit_match = re.search(r'[1-5]', clean_router)
+            if digit_match:
+                tool_id = int(digit_match.group(0))
+                tool_name = TOOL_ID_TO_NAME.get(tool_id, "calculate_total")
+            else:
+                logger.warning(f"Router output did not contain a valid tool ID (1-5): '{router_output}'. Attempting name fallback...")
+                fallback_found = False
+                for name in TOOL_ID_TO_NAME.values():
+                    if name in clean_router:
+                        tool_name = name
+                        fallback_found = True
+                        break
+                if not fallback_found:
+                    tool_name = "calculate_total"
+            logger.info(f"Router decided on tool: {tool_name} (raw output: {router_output.strip()})")
 
             # --- STAGE 2: SPECIALIST ---
             tool_prompt_template = get_tool_prompt(tool_name)
@@ -189,14 +207,14 @@ async def analyze_stream(request: AnalyzeRequest):
                 "provider": request.specialist_provider
             })
 
-            system_prompt = tool_prompt_template.format(
-                metadata=request.metadata,
-                current_date=current_date_str,
+            system_prompt = tool_prompt_template.replace(
+                "{metadata}", request.metadata
+            ).replace(
+                "{current_date}", current_date_str
             )
             logger.info(f"System prompt for Specialist:\n{system_prompt}")
 
             logger.info(f"--- Stage 2: Specialist ({request.model}) via {request.specialist_provider} for {tool_name} ---")
-            # logger.info(f"Metadata provided to Specialist:\n{request.metadata}")
             llm_content = generate_text(
                 provider=request.specialist_provider,
                 model=request.model,
@@ -207,25 +225,42 @@ async def analyze_stream(request: AnalyzeRequest):
                 options=request.options
             )
 
-            # Extract code
+            # Extract json
             raw_code = llm_content.strip()
-            if "```python" in raw_code:
-                raw_code = raw_code.split("```python")[1].split("```")[0].strip()
-            elif "```" in raw_code:
-                raw_code = raw_code.split("```")[1].split("```")[0].strip()
-            elif raw_code.startswith("`") and raw_code.endswith("`"):
-                raw_code = raw_code.strip("`").strip()
+            json_str = raw_code
+            if "```json" in json_str:
+                json_str = json_str.split("```json")[1].split("```")[0].strip()
+            elif "```" in json_str:
+                json_str = json_str.split("```")[1].split("```")[0].strip()
+            elif json_str.startswith("`") and json_str.endswith("`"):
+                json_str = json_str.strip("`").strip()
                 
             logger.info(f"Specialist raw output: {raw_code}")
+            logger.info(f"Extracted JSON string: {json_str}")
 
-            # Prepend assignment if it's just a raw function call
-            code = raw_code
-            if not code.startswith("fig, result ="):
-                if "(" in code and code.strip().endswith(")"):
-                    code = f"fig, result = {code}"
-                    logger.info(f"Auto-wrapped code: {code}")
-
-            # logger.info(f"Final Execution Code:\n{code}")
+            params = {}
+            try:
+                params = json.loads(json_str)
+                if not isinstance(params, dict):
+                    logger.warning(f"Parsed JSON is not a dict: {type(params)}")
+                    params = {}
+            except Exception as json_err:
+                logger.error(f"JSON parsing failed: {json_err}. Trying regex fallback...")
+                # Regex fallback parsing
+                for key in ["category", "year", "month", "day", "start_year", "start_month", "end_year", "end_month", "months", "ignore_rent", "remarks", "n", "min_amount", "y1", "m1", "d1", "y2", "m2", "d2"]:
+                    pattern = r'["\']?' + re.escape(key) + r'["\']?\s*[:=]\s*["\']?([^"\'\s,}]+)["\']?'
+                    match = re.search(pattern, json_str)
+                    if match:
+                        val = match.group(1).strip()
+                        if val.lower() == 'true':
+                            params[key] = True
+                        elif val.lower() == 'false':
+                            params[key] = False
+                        elif val.isdigit():
+                            params[key] = int(val)
+                        elif val.lower() != 'none' and val.lower() != 'null':
+                            params[key] = val
+                logger.info(f"Regex fallback parsed params: {params}")
 
             # --- STAGE 3: EXECUTION ---
             yield _sse_event("status", {
@@ -241,29 +276,27 @@ async def analyze_stream(request: AnalyzeRequest):
 
             clear_warnings()
 
-            exec_scope = {
-                "df": df, "pd": pd, "np": np, "px": px,
+            tool_functions = {
                 "plot_time_series": plot_time_series,
                 "plot_distribution": plot_distribution,
                 "plot_comparison_bars": plot_comparison_bars,
                 "calculate_total": calculate_total,
                 "get_top_expenses": get_top_expenses,
-                "result": None, "fig": None
             }
-
+            
+            tool_fn = tool_functions.get(tool_name, calculate_total)
+            
+            fig_obj = None
+            result = None
             try:
-                logger.info("Executing generated code...")
-                exec(code, {}, exec_scope)
+                logger.info(f"Directly calling function {tool_fn.__name__} with parameters: {params}")
+                fig_obj, result = tool_fn(df, **params)
                 logger.info("Execution successful.")
-                script_result = exec_scope.get('result')
-                logger.info(f"Raw script 'result' value: {script_result}")
             except Exception as e:
                 logger.error(f"Execution error: {str(e)}")
                 yield _sse_event("error", {"error": f"Execution error: {str(e)}", "code": raw_code})
                 return
 
-            result = exec_scope.get('result')
-            fig_obj = exec_scope.get('fig')
             fig_json = None
 
             if fig_obj is not None:
@@ -284,6 +317,8 @@ async def analyze_stream(request: AnalyzeRequest):
                 "result": final_result,
                 "fig": fig_json,
                 "code": raw_code,
+                "router_output": router_output,
+                "tool_name": tool_name,
                 "validation_fixes": warnings_list
             })
 
