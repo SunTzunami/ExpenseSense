@@ -191,7 +191,7 @@ def auto_validate(func):
 
 @auto_validate
 def plot_time_series(df, category=None, remarks=None, year=None, month=None, 
-                     start_year=None, start_month=None, end_year=None, end_month=None, months=None, title=None):
+                     start_year=None, start_month=None, end_year=None, end_month=None, months=None, title=None, ignore_rent=False):
     """
     Shows spending trends over time with IMPROVED VISUALIZATION:
     - Automatic grouping based on data density (daily/weekly/monthly)
@@ -207,10 +207,18 @@ def plot_time_series(df, category=None, remarks=None, year=None, month=None,
     
     Category filters (use ONE):
     - category: specific category (e.g., 'futsal game') OR broad category (e.g., 'Food')
+    
+    ignore_rent: if True, excludes "Housing and Utilities" expenses
     """
     data = df.copy()
     if 'Date' in data.columns:
         data['Date'] = pd.to_datetime(data['Date'])
+    
+    # if ignore_rent and 'major category' in data.columns:
+    #     data = data[data['major category'] != 'Housing and Utilities']
+
+    if ignore_rent and 'category' in data.columns:
+        data = data[data['category'] != 'housing']
     
     # Determine intended date range
     range_start = None
@@ -255,7 +263,7 @@ def plot_time_series(df, category=None, remarks=None, year=None, month=None,
         data = data[data['remarks'].str.contains(remarks, case=False, na=False)]
         label = f"'{remarks}'"
     else:
-        label = t('total')
+        label = t('total') + (" (excluding rent)" if ignore_rent else "")
     
     if data.empty:
         return None, f"No spending data found for {label} in the specified period."
@@ -430,8 +438,11 @@ def plot_distribution(
     data = df.copy()
     data['Date'] = pd.to_datetime(data['Date'])
 
-    if ignore_rent:
-        data = data[data['major category'] != 'Housing and Utilities']
+    # if ignore_rent:
+    #     data = data[data['major category'] != 'Housing and Utilities']
+
+    if ignore_rent and 'category' in data.columns:
+        data = data[data['category'] != 'housing']
 
     now = pd.Timestamp.now()
     range_start, range_end = None, None
@@ -589,15 +600,14 @@ def plot_distribution(
 
     msg = f"Your spending breakdown for {filter_label} totals ¥{total:,.0f} across {len(data)} transactions. " \
           f"The largest category here is {grouped.iloc[0][group_by]}, accounting for {grouped.iloc[0]['Percentage']:.1f}% of the total."
-
-    return fig, msg 
+    return fig, msg
 
 @auto_validate
 def plot_comparison_bars(df, category=None, remarks=None, 
                          y1=None, m1=None, d1=None, y2=None, m2=None, d2=None, 
                          sm1=None, em1=None, sm2=None, em2=None,
                          ey1=None, ey2=None,
-                         show_avg=True, title=None):
+                         show_avg=True, title=None, ignore_rent=False):
     """
     Compares spending between two periods with IMPROVED VISUALIZATION:
     - Percentage change indicators
@@ -616,10 +626,18 @@ def plot_comparison_bars(df, category=None, remarks=None,
     If category specified: shows breakdown within that category (or subcategories of a major category)
     Otherwise: shows breakdown by major categories
     
+    ignore_rent: if True, excludes "Housing and Utilities" expenses
+    
     NOTE: Regardless of parameter order, the earlier period is always shown first
     """
     data = df.copy()
     data['Date'] = pd.to_datetime(data['Date'])
+    
+    # if ignore_rent and 'major category' in data.columns:
+    #     data = data[data['major category'] != 'Housing and Utilities']
+
+    if ignore_rent and 'category' in data.columns:
+        data = data[data['category'] != 'housing']
     
     # Basic validation for comparison parameters
     if y1 is None or y2 is None:
@@ -691,7 +709,7 @@ def plot_comparison_bars(df, category=None, remarks=None,
         if int(y2) < int(y1):
             data1, data2 = data2, data1
             period1, period2 = period2, period1
-
+ 
     
     # Category filtering
     if category:
@@ -710,10 +728,16 @@ def plot_comparison_bars(df, category=None, remarks=None,
         label = f"'{remarks}'"
     else:
         group_by = 'major category'
-        label = 'All Categories'
+        label = 'All Categories' + (' (excluding rent)' if ignore_rent else '')
     
-    if data1.empty or data2.empty:
+    if data1.empty and data2.empty:
         return None, f"{t('insufficient_data')} {period1} and {period2}."
+
+    warnings = []
+    if data1.empty:
+        warnings.append(f"No data found for {period1}.")
+    if data2.empty:
+        warnings.append(f"No data found for {period2}.")
     
     # Aggregate data
     if show_avg:
@@ -867,14 +891,13 @@ def plot_comparison_bars(df, category=None, remarks=None,
         else t('no_change')
     )
 
-    
     msg = f"Comparing your **{label}** spending in {period1} (¥{total1:,.0f}) to {period2} (¥{total2:,.0f}), it **{change_direction}** by **{abs(change_pct):.1f}%**."
     
     return fig, msg
 
 @auto_validate
 def calculate_total(df, category=None, remarks=None, year=None, month=None, day=None,
-                    start_year=None, start_month=None, end_year=None, end_month=None, months=None):
+                    start_year=None, start_month=None, end_year=None, end_month=None, months=None, ignore_rent=False):
     """
     Calculates total spending with transaction count and average per transaction.
     
@@ -885,16 +908,24 @@ def calculate_total(df, category=None, remarks=None, year=None, month=None, day=
     - start_year + end_year: year range
     - months: last X months from today
     - (none): all time
+    
+    ignore_rent: if True, excludes "Housing and Utilities" expenses
     """
     data = df.copy()
     data['Date'] = pd.to_datetime(data['Date'])
+    
+    # if ignore_rent and 'major category' in data.columns:
+    #     data = data[data['major category'] != 'Housing and Utilities']
+
+    if ignore_rent and 'category' in data.columns:
+        data = data[data['category'] != 'housing']
     
     now = pd.Timestamp.now()
     
     # Time filtering
     if month and not year:
         year = now.year
-
+ 
     if year and month and day:
         specific_date = pd.Timestamp(year=int(year), month=int(month), day=int(day))
         data = data[data['Date'].dt.date == specific_date.date()]
@@ -933,7 +964,7 @@ def calculate_total(df, category=None, remarks=None, year=None, month=None, day=
         data = data[data['remarks'].str.contains(remarks, case=False, na=False)]
         label = f"'{remarks}'"
     else:
-        label = t('total')
+        label = t('total') + (" (excluding rent)" if ignore_rent else "")
     
     if data.empty:
         return None, f"No transactions found for {label} in {time_label}."

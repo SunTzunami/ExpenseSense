@@ -25,7 +25,8 @@ def _compute_date_complexity(expected: dict[str, Any]) -> int:
     has_range = ("start_year" in expected and "end_year" in expected) or \
                 ("y1" in expected and "y2" in expected)
     has_month = "month" in expected or "start_month" in expected or \
-                "end_month" in expected or "m1" in expected or "m2" in expected
+                "end_month" in expected or "m1" in expected or "m2" in expected or \
+                "sm1" in expected or "em1" in expected or "sm2" in expected or "em2" in expected
     has_year = "year" in expected or "start_year" in expected or \
                "y1" in expected or "y2" in expected
     has_relative = "months" in expected
@@ -46,7 +47,12 @@ def _compute_date_complexity(expected: dict[str, Any]) -> int:
 
 
 def _compute_category_distance(query: str, expected: dict[str, Any]) -> int:
-    """Score how far the query's natural phrasing is from the expected category name."""
+    """Score how far the query's natural phrasing is from the expected category name.
+
+    Returns 2 for any unmapped category (e.g. "supplements", "snacks", "gym", "clothing", "books").
+    This is intentional to represent that mapped concepts require a genuine semantic leap/domain knowledge 
+    to match from informal queries.
+    """
     cat = expected.get("category") or expected.get("major_category")
     if cat is None:
         return 0
@@ -60,8 +66,7 @@ def _compute_category_distance(query: str, expected: dict[str, Any]) -> int:
 
     # Semantic mappings that require domain knowledge.
     # Key = canonical category name (lowercase), value = list of natural-language aliases.
-    # Distance 1 = trivial alias (plural, abbreviation, one-word shortening).
-    # Distance 2 = genuine semantic leap (returned for anything not matched below).
+    # Distance-1 aliases (trivial mapping): plural, abbreviation, one-word shortening.
     semantic_maps = {
         # Food
         "dining":               ["eating out", "eat out", "dine"],
@@ -107,6 +112,8 @@ def _compute_category_distance(query: str, expected: dict[str, Any]) -> int:
         if cat_lower == canonical:
             if any(alias in q_lower for alias in aliases):
                 return 1  # Minor mapping (common alias)
+                
+    # Everything else → distance 2
     return 2  # Requires real semantic mapping
 
 
@@ -118,8 +125,8 @@ def _has_relative_time(query: str) -> int:
 def _has_abbreviations(query: str) -> int:
     """Check if query uses abbreviated year forms or informal date notation."""
     q = query.lower()
-    # Two-digit years: '24, '25, '26
-    if re.search(r"['\s](\d{2})(?:\b|['\s.,])", q):
+    # Require apostrophe specifically for the year-abbreviation case: '24, '25, '26 etc.
+    if re.search(r"'\d{2}\b", q):
         return 1
     # Slash notation: 2024/01, 11/2025
     if re.search(r"\d{4}/\d{1,2}|\d{1,2}/\d{4}", q):
@@ -132,7 +139,7 @@ def _count_multi_value_groups(expected: dict[str, Any]) -> int:
     count = 0
     if "y1" in expected and "y2" in expected:
         count += 1
-    if "m1" in expected and "m2" in expected:
+    if ("m1" in expected and "m2" in expected) or ("sm1" in expected and "sm2" in expected):
         count += 1
     return count
 
@@ -176,7 +183,6 @@ _RAW_CASES: list[dict[str, Any]] = [
     },
     {
         "id": "TS02", "group": "time_series",
-        # FIX: removed spurious "for" before "from"
         "q": "plot spend at cafes from june 24 to feb 2026",
         "tool": "plot_time_series",
         "expected": {"category": "cafe", "start_year": 2024, "start_month": 6, "end_year": 2026, "end_month": 2},
@@ -292,6 +298,24 @@ _RAW_CASES: list[dict[str, Any]] = [
         "q": "show spend on basketball from oct 24 to mar 26",
         "tool": "plot_time_series",
         "expected": {"category": "basketball game", "start_year": 2024, "start_month": 10, "end_year": 2026, "end_month": 3},
+    },
+    {
+        "id": "TS21", "group": "time_series",
+        "q": "Show spending trend for past 4 months exclude rent tho",
+        "tool": "plot_time_series",
+        "expected": {"months": 4, "ignore_rent": True},
+    },
+    {
+        "id": "TS22", "group": "time_series",
+        "q": "Plot my monthly expenses over the past year excluding rent",
+        "tool": "plot_time_series",
+        "expected": {"months": 12, "ignore_rent": True},
+    },
+    {
+        "id": "TS23", "group": "time_series",
+        "q": "plot spend on cafes for past 1.5 yrs",
+        "tool": "plot_time_series",
+        "expected": {"category": "cafe", "months": 18},
     },
 
     # ── Distribution (10) ───────────────────────────────────────────────────
@@ -542,6 +566,42 @@ _RAW_CASES: list[dict[str, Any]] = [
         "tool": "plot_comparison_bars",
         "expected": {"category": "household", "y1": 2024, "m1": 4, "y2": 2025, "m2": 4},
     },
+    {
+        "id": "CP21", "group": "comparison",
+        "q": "compare overall spend in '24 vs '25 (exclude rent tho)",
+        "tool": "plot_comparison_bars",
+        "expected": {"y1": 2024, "y2": 2025, "ignore_rent": True},
+    },
+    {
+        "id": "CP22", "group": "comparison",
+        "q": "compare total spend on new years eve 2024 vs for same day on 2025",
+        "tool": "plot_comparison_bars",
+        "expected": {"y1": 2024, "m1": 12, "d1": 31, "y2": 2025, "m2": 12, "d2": 31},
+    },
+    {
+        "id": "CP23", "group": "comparison",
+        "q": "compare dining between Jan-Jun 2024 and Jan-Jun 2025",
+        "tool": "plot_comparison_bars",
+        "expected": {"category": "dining", "y1": 2024, "sm1": 1, "em1": 6, "y2": 2025, "sm2": 1, "em2": 6},
+    },
+    {
+        "id": "CP24", "group": "comparison",
+        "q": "compare groceries nov 2024 to april 2025 vs nov 2025 to april 2026",
+        "tool": "plot_comparison_bars",
+        "expected": {"category": "grocery", "y1": 2024, "sm1": 11, "ey1": 2025, "em1": 4, "y2": 2025, "sm2": 11, "ey2": 2026, "em2": 4},
+    },
+    {
+        "id": "CP25", "group": "comparison",
+        "q": "compare overall expenses from oct 2024 to dec 2024 vs oct 2025 to dec 2025 excluding rent",
+        "tool": "plot_comparison_bars",
+        "expected": {"y1": 2024, "sm1": 10, "em1": 12, "y2": 2025, "sm2": 10, "em2": 12, "ignore_rent": True},
+    },
+    {
+        "id": "CP26", "group": "comparison",
+        "q": "compare electricity from jan-mar '24 vs jan-mar '25",
+        "tool": "plot_comparison_bars",
+        "expected": {"category": "electricity bill", "y1": 2024, "sm1": 1, "em1": 3, "y2": 2025, "sm2": 1, "em2": 3},
+    },
 
     # ── Calculate total (10) ────────────────────────────────────────────────
     {
@@ -666,6 +726,18 @@ _RAW_CASES: list[dict[str, Any]] = [
         "q": "what was the total spent on books in 2024?",
         "tool": "calculate_total",
         "expected": {"category": "books", "year": 2024},
+    },
+    {
+        "id": "CT21", "group": "calculate_total",
+        "q": "How much did I spend in the last 6 months? (no rent)",
+        "tool": "calculate_total",
+        "expected": {"months": 6, "ignore_rent": True},
+    },
+    {
+        "id": "CT22", "group": "calculate_total",
+        "q": "Excluding rent, what was my total spend in 2025?",
+        "tool": "calculate_total",
+        "expected": {"year": 2025, "ignore_rent": True},
     },
 
     # ── Top expenses (10) ───────────────────────────────────────────────────

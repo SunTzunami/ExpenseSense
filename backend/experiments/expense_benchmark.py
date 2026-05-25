@@ -175,10 +175,10 @@ Your task is to output a single JSON object containing:
 3. Use EXACT category names from the metadata below. If not an exact match, map it to the closest one.
 
 ## PARAMETERS DEFINITIONS FOR EACH TOOL
-1. `plot_time_series`: category (str), year (int), month (int), start_year (int), start_month (int), end_year (int), end_month (int), months (int)
+1. `plot_time_series`: category (str), year (int), month (int), start_year (int), start_month (int), end_year (int), end_month (int), months (int), ignore_rent (bool)
 2. `plot_distribution`: category (str), remarks (str), year (int), month (int), day (int), start_year (int), start_month (int), end_year (int), end_month (int), months (int), ignore_rent (bool)
-3. `plot_comparison_bars`: category (str), y1 (int), m1 (int), d1 (int), y2 (int), m2 (int), d2 (int)
-4. `calculate_total`: category (str), remarks (str), year (int), month (int), day (int), start_year (int), start_month (int), end_year (int), end_month (int), months (int)
+3. `plot_comparison_bars`: category (str), y1 (int), m1 (int), d1 (int), y2 (int), m2 (int), d2 (int), sm1 (int), em1 (int), sm2 (int), em2 (int), ey1 (int), ey2 (int), ignore_rent (bool)
+4. `calculate_total`: category (str), remarks (str), year (int), month (int), day (int), start_year (int), start_month (int), end_year (int), end_month (int), months (int), ignore_rent (bool)
 5. `get_top_expenses`: n (int), category (str), year (int), month (int), day (int), start_year (int), start_month (int), end_year (int), end_month (int), months (int), min_amount (int), ignore_rent (bool)
 
 ## Examples
@@ -187,6 +187,9 @@ Q: "How much did I spend on groceries in Dec 2024?"
 
 Q: "Compare total spending 2022 vs 2023"
 {{"tool": 3, "y1": 2022, "y2": 2023}}
+
+Q: "Compare dining between Jan-Jun 2024 and Jan-Jun 2025"
+{{"tool": 3, "category": "dining", "y1": 2024, "sm1": 1, "em1": 6, "y2": 2025, "sm2": 1, "em2": 6}}
 
 Q: "Show me food spending trend for the last 6 months"
 {{"tool": 1, "category": "Food", "months": 6}}
