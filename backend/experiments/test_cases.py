@@ -1,15 +1,17 @@
+# experiments/test_cases.py
 """
 Test suite for the ExpenseSense tool-calling benchmark.
 
-Each test case has a *computed* complexity score based on 6 measurable features:
+Each test case has a *computed* complexity score based on 7 measurable features:
   - n_params:  number of expected parameters
   - d_date:    date specification complexity (0=none, 1=year, 2=year+month, 3=range, 4=day)
   - d_cat:     category normalization distance (0=exact, 1=plural/minor, 2=semantic mapping)
   - d_rel:     uses relative time expression (0/1)
   - d_multi:   compound/multi-value param groups (e.g. comparison with 2 date sets)
   - d_abbr:    contains abbreviated years/informal date formats (0/1)
+  - d_holiday: requires semantic calendar/holiday knowledge (0/2)
 
-complexity = n_params + d_date + d_cat + d_rel + d_multi + d_abbr
+complexity = n_params + d_date + d_cat + d_rel + d_multi + d_abbr + d_holiday
 Binning: L1 (<=4), L2 (5-7), L3 (>=8)
 """
 
@@ -144,6 +146,19 @@ def _count_multi_value_groups(expected: dict[str, Any]) -> int:
     return count
 
 
+def _has_holiday_knowledge(query: str) -> int:
+    """Check if query requires knowledge of specific holidays/informal calendar names."""
+    q = query.lower()
+    holiday_terms = [
+        "new year's eve", "new years eve", "nye",
+        "new year's day", "new years day",
+        "christmas eve", "christmas", "xmas"
+    ]
+    if any(term in q for term in holiday_terms):
+        return 2
+    return 0
+
+
 def compute_complexity(tc: dict[str, Any]) -> tuple[int, str]:
     """Compute complexity score and level for a test case.
 
@@ -158,8 +173,9 @@ def compute_complexity(tc: dict[str, Any]) -> tuple[int, str]:
     d_rel = _has_relative_time(query)
     d_multi = _count_multi_value_groups(expected)
     d_abbr = _has_abbreviations(query)
+    d_holiday = _has_holiday_knowledge(query)
 
-    score = n_params + d_date + d_cat + d_rel + d_multi + d_abbr
+    score = n_params + d_date + d_cat + d_rel + d_multi + d_abbr + d_holiday
 
     if score <= 4:
         level = "L1"
@@ -169,6 +185,7 @@ def compute_complexity(tc: dict[str, Any]) -> tuple[int, str]:
         level = "L3"
 
     return score, level
+
 
 
 # ── Test cases ──────────────────────────────────────────────────────────────
@@ -442,6 +459,12 @@ _RAW_CASES: list[dict[str, Any]] = [
         "tool": "plot_distribution",
         "expected": {"year": 2024},
     },
+    {
+        "id": "DI21", "group": "distribution",
+        "q": "show breakdown of all expenses for mar 2026 (exclude rent tho)",
+        "tool": "plot_distribution",
+        "expected": {"year": 2026, "month": 3, "ignore_rent": True},
+    },
 
     # ── Comparison bars (10) ────────────────────────────────────────────────
     {
@@ -601,6 +624,18 @@ _RAW_CASES: list[dict[str, Any]] = [
         "q": "compare electricity from jan-mar '24 vs jan-mar '25",
         "tool": "plot_comparison_bars",
         "expected": {"category": "electricity bill", "y1": 2024, "sm1": 1, "em1": 3, "y2": 2025, "sm2": 1, "em2": 3},
+    },
+    {
+        "id": "CP27", "group": "comparison",
+        "q": "compare groceries jan 2024 - april 2024 vs jan 25 - apr 2025",
+        "tool": "plot_comparison_bars",
+        "expected": {"category": "grocery", "y1": 2024, "sm1": 1, "em1": 4, "y2": 2025, "sm2": 1, "em2": 4},
+    },
+    {
+        "id": "CP28", "group": "comparison",
+        "q": "compare groceries 11/2024 - 04/2025 vs 11/2025-04/2026",
+        "tool": "plot_comparison_bars",
+        "expected": {"category": "grocery", "y1": 2024, "sm1": 11, "ey1": 2025, "em1": 4, "y2": 2025, "sm2": 11, "ey2": 2026, "em2": 4},
     },
 
     # ── Calculate total (10) ────────────────────────────────────────────────
@@ -862,6 +897,12 @@ _RAW_CASES: list[dict[str, Any]] = [
         "q": "what were the top 5 sporting events expenses for past year?",
         "tool": "get_top_expenses",
         "expected": {"n": 5, "category": "sports event", "months": 12},
+    },
+    {
+        "id": "TP21", "group": "top_expenses",
+        "q": "tell me about top 10 expenses from feb 2024 to jan 2026 (exclude rent tho)",
+        "tool": "get_top_expenses",
+        "expected": {"n": 10, "start_year": 2024, "start_month": 2, "end_year": 2026, "end_month": 1, "ignore_rent": True},
     }
 ]
 

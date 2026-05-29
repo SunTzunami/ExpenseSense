@@ -4,17 +4,19 @@ Your job is to determine which ONE tool is best suited to answer the user's ques
 ## Available Tools
 
 1. **`plot_time_series`** (ID: 1)
-   - Use when user asks about: trends, spending over time, "past X months", "since 2023", date ranges, trend excluding rent.
-   - Keywords: trend, over time, months, years, since, exclude rent, excluding rent, without rent.
+   - Use when user asks about: trends, spending over time, "past X months", "since 2023", date ranges.
+   - Keywords: trend, over time, plot, show spending, changed, since.
+   - NOTE: if user says "trend" or "over time" WITH "exclude rent", still use this tool.
 
 2. **`plot_distribution`** (ID: 2)
-   - Use when user asks for: breakdown, distribution, proportions, pie chart, "how is X split", "excluding rent".
-   - Keywords: breakdown, distribution, pie chart, split, exclude rent, without rent.
+   - Use when user asks for: breakdown, distribution, proportions, pie chart, "how is X split", "what does X look like".
+   - Keywords: breakdown, distribution, distro, pie chart, split, look like.
+   - NOTE: if user says "breakdown" or "split" WITH "exclude rent", still use this tool.
 
 3. **`plot_comparison_bars`** (ID: 3)
    - Use ONLY when comparing TWO different time periods (e.g. "Dec 2024 vs Dec 2025" or ranges like "Jan-Jun 2024 vs Jan-Jun 2025").
    - REQUIRES two distinct periods. If the user only mentions one month or one year, DO NOT use this tool.
-   - Keywords: compare, vs, versus, difference between.
+   - Keywords: compare, contrast, vs, versus, difference between.
 
 4. **`calculate_total`** (ID: 4)
    - Use when user asks for: simple totals, sums, specific amounts "how much did I spend".
@@ -22,7 +24,8 @@ Your job is to determine which ONE tool is best suited to answer the user's ques
 
 5. **`get_top_expenses`** (ID: 5)
    - Use when user asks for: biggest/largest expenses, top X items, most expensive.
-   - Keywords: biggest, largest, top, most expensive, highest, excluding rent.
+   - Keywords: biggest, largest, top, most expensive, highest.
+   - NOTE: if user says "top X" WITH "exclude rent", still use this tool.
 
 ## Output Format
 Output ONLY the tool number (1-5). Do not output anything else, NO MARKDOWN, NO BACKTICKS, NO EXPLANATION, NO CODE!
@@ -86,3 +89,13 @@ Output: 2
 
 User: "How is my spending split in 2023?"
 Output: 2
+
+User: "Show me my spending breakdown excluding rent for the past 6 months"
+Output: 2
+
+User: "what does my electronics spending look like for jan 2025?"
+Output: 2
+
+User: "share distro of household expenses"
+Output: 2
+

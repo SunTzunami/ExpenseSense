@@ -214,11 +214,8 @@ def plot_time_series(df, category=None, remarks=None, year=None, month=None,
     if 'Date' in data.columns:
         data['Date'] = pd.to_datetime(data['Date'])
     
-    # if ignore_rent and 'major category' in data.columns:
-    #     data = data[data['major category'] != 'Housing and Utilities']
-
-    if ignore_rent and 'category' in data.columns:
-        data = data[data['category'] != 'housing']
+    if ignore_rent and 'major category' in data.columns:
+        data = data[data['major category'] != 'Housing and Utilities']
     
     # Determine intended date range
     range_start = None
@@ -239,11 +236,13 @@ def plot_time_series(df, category=None, remarks=None, year=None, month=None,
         end_date = pd.Timestamp(year=int(year), month=12, day=31)
         data = data[data['Date'].dt.year == int(year)]
         range_start, range_end = start_date, end_date
-    elif start_year and end_year:
+    elif start_year or end_year:
+        s_y = int(start_year) if start_year else 1900
         s_m = int(start_month) if start_month else 1
+        e_y = int(end_year) if end_year else now.year + 10
         e_m = int(end_month) if end_month else 12
-        start_date = pd.Timestamp(year=int(start_year), month=s_m, day=1)
-        end_date = pd.Timestamp(year=int(end_year), month=e_m, day=1) + pd.offsets.MonthEnd(0)
+        start_date = pd.Timestamp(year=s_y, month=s_m, day=1)
+        end_date = pd.Timestamp(year=e_y, month=e_m, day=1) + pd.offsets.MonthEnd(0)
         data = data[(data['Date'] >= start_date) & (data['Date'] <= end_date)]
         range_start, range_end = start_date, end_date
     elif months:
@@ -438,11 +437,13 @@ def plot_distribution(
     data = df.copy()
     data['Date'] = pd.to_datetime(data['Date'])
 
-    # if ignore_rent:
-    #     data = data[data['major category'] != 'Housing and Utilities']
+    # Normalize numeric parameters to int (LLM may return strings)
+    if year is not None: year = int(year)
+    if month is not None: month = int(month)
+    if day is not None: day = int(day)
 
-    if ignore_rent and 'category' in data.columns:
-        data = data[data['category'] != 'housing']
+    if ignore_rent and 'major category' in data.columns:
+        data = data[data['major category'] != 'Housing and Utilities']
 
     now = pd.Timestamp.now()
     range_start, range_end = None, None
@@ -474,17 +475,23 @@ def plot_distribution(
         range_start, range_end = start_date, end_date
         time_label = str(year)
 
-    elif start_year and end_year:
+    elif start_year or end_year:
+        s_y = int(start_year) if start_year else 1900
         s_m = int(start_month) if start_month else 1
+        e_y = int(end_year) if end_year else now.year + 10
         e_m = int(end_month) if end_month else 12
-        start_date = pd.Timestamp(year=int(start_year), month=s_m, day=1)
-        end_date = pd.Timestamp(year=int(end_year), month=e_m, day=1) + pd.offsets.MonthEnd(0)
+        start_date = pd.Timestamp(year=s_y, month=s_m, day=1)
+        end_date = pd.Timestamp(year=e_y, month=e_m, day=1) + pd.offsets.MonthEnd(0)
         data = data[(data['Date'] >= start_date) & (data['Date'] <= end_date)]
         range_start, range_end = start_date, end_date
-        if start_year == end_year and s_m == e_m:
+        if start_year and end_year and start_year == end_year and s_m == e_m:
             time_label = f"{start_year}/{s_m:02d}"
-        else:
+        elif start_year and end_year:
             time_label = f"{start_year}/{s_m:02d} - {end_year}/{e_m:02d}"
+        elif start_year:
+            time_label = f"since {start_year}/{s_m:02d}"
+        else:
+            time_label = f"until {end_year}/{e_m:02d}"
 
     elif months:
         cutoff = now - pd.DateOffset(months=int(months))
@@ -633,11 +640,8 @@ def plot_comparison_bars(df, category=None, remarks=None,
     data = df.copy()
     data['Date'] = pd.to_datetime(data['Date'])
     
-    # if ignore_rent and 'major category' in data.columns:
-    #     data = data[data['major category'] != 'Housing and Utilities']
-
-    if ignore_rent and 'category' in data.columns:
-        data = data[data['category'] != 'housing']
+    if ignore_rent and 'major category' in data.columns:
+        data = data[data['major category'] != 'Housing and Utilities']
     
     # Basic validation for comparison parameters
     if y1 is None or y2 is None:
@@ -913,12 +917,14 @@ def calculate_total(df, category=None, remarks=None, year=None, month=None, day=
     """
     data = df.copy()
     data['Date'] = pd.to_datetime(data['Date'])
-    
-    # if ignore_rent and 'major category' in data.columns:
-    #     data = data[data['major category'] != 'Housing and Utilities']
 
-    if ignore_rent and 'category' in data.columns:
-        data = data[data['category'] != 'housing']
+    # Normalize numeric parameters to int (LLM may return strings)
+    if year is not None: year = int(year)
+    if month is not None: month = int(month)
+    if day is not None: day = int(day)
+    
+    if ignore_rent and 'major category' in data.columns:
+        data = data[data['major category'] != 'Housing and Utilities']
     
     now = pd.Timestamp.now()
     
@@ -927,25 +933,31 @@ def calculate_total(df, category=None, remarks=None, year=None, month=None, day=
         year = now.year
  
     if year and month and day:
-        specific_date = pd.Timestamp(year=int(year), month=int(month), day=int(day))
+        specific_date = pd.Timestamp(year=year, month=month, day=day)
         data = data[data['Date'].dt.date == specific_date.date()]
         time_label = specific_date.strftime('%Y-%m-%d')
     elif year and month:
-        data = data[(data['Date'].dt.year == int(year)) & (data['Date'].dt.month == int(month))]
+        data = data[(data['Date'].dt.year == year) & (data['Date'].dt.month == month)]
         time_label = f"{year}-{month:02d}"
     elif year:
         data = data[data['Date'].dt.year == int(year)]
         time_label = str(year)
-    elif start_year and end_year:
+    elif start_year or end_year:
+        s_y = int(start_year) if start_year else 1900
         s_m = int(start_month) if start_month else 1
+        e_y = int(end_year) if end_year else now.year + 10
         e_m = int(end_month) if end_month else 12
-        start_date = pd.Timestamp(year=int(start_year), month=s_m, day=1)
-        end_date = pd.Timestamp(year=int(end_year), month=e_m, day=1) + pd.offsets.MonthEnd(0)
+        start_date = pd.Timestamp(year=s_y, month=s_m, day=1)
+        end_date = pd.Timestamp(year=e_y, month=e_m, day=1) + pd.offsets.MonthEnd(0)
         data = data[(data['Date'] >= start_date) & (data['Date'] <= end_date)]
-        if start_year == end_year and s_m == e_m:
+        if start_year and end_year and start_year == end_year and s_m == e_m:
             time_label = f"{start_year}/{s_m:02d}"
-        else:
+        elif start_year and end_year:
             time_label = f"from {start_year}/{s_m:02d} to {end_year}/{e_m:02d}"
+        elif start_year:
+            time_label = f"since {start_year}/{s_m:02d}"
+        else:
+            time_label = f"until {end_year}/{e_m:02d}"
     elif months:
         cutoff = now - pd.DateOffset(months=int(months))
         data = data[data['Date'] >= cutoff]
@@ -997,8 +1009,13 @@ def get_top_expenses(df, n=10, category=None, remarks=None,
     """
     data = df.copy()
     data['Date'] = pd.to_datetime(data['Date'])
+
+    # Normalize numeric parameters to int (LLM may return strings)
+    if year is not None: year = int(year)
+    if month is not None: month = int(month)
+    if day is not None: day = int(day)
     
-    if ignore_rent:
+    if ignore_rent and 'major category' in data.columns:
         data = data[data['major category'] != 'Housing and Utilities']
     
     now = pd.Timestamp.now()
@@ -1008,25 +1025,31 @@ def get_top_expenses(df, n=10, category=None, remarks=None,
         year = now.year
 
     if year and month and day:
-        specific_date = pd.Timestamp(year=int(year), month=int(month), day=int(day))
+        specific_date = pd.Timestamp(year=year, month=month, day=day)
         data = data[data['Date'].dt.date == specific_date.date()]
         time_label = specific_date.strftime('%Y-%m-%d')
     elif year and month:
-        data = data[(data['Date'].dt.year == int(year)) & (data['Date'].dt.month == int(month))]
+        data = data[(data['Date'].dt.year == year) & (data['Date'].dt.month == month)]
         time_label = f"{year}-{month:02d}"
     elif year:
         data = data[data['Date'].dt.year == int(year)]
         time_label = str(year)
-    elif start_year and end_year:
+    elif start_year or end_year:
+        s_y = int(start_year) if start_year else 1900
         s_m = int(start_month) if start_month else 1
+        e_y = int(end_year) if end_year else now.year + 10
         e_m = int(end_month) if end_month else 12
-        start_date = pd.Timestamp(year=int(start_year), month=s_m, day=1)
-        end_date = pd.Timestamp(year=int(end_year), month=e_m, day=1) + pd.offsets.MonthEnd(0)
+        start_date = pd.Timestamp(year=s_y, month=s_m, day=1)
+        end_date = pd.Timestamp(year=e_y, month=e_m, day=1) + pd.offsets.MonthEnd(0)
         data = data[(data['Date'] >= start_date) & (data['Date'] <= end_date)]
-        if start_year == end_year and s_m == e_m:
+        if start_year and end_year and start_year == end_year and s_m == e_m:
             time_label = f"{start_year}/{s_m:02d}"
-        else:
+        elif start_year and end_year:
             time_label = f"{start_year}/{s_m:02d}-{end_year}/{e_m:02d}"
+        elif start_year:
+            time_label = f"since {start_year}/{s_m:02d}"
+        else:
+            time_label = f"until {end_year}/{e_m:02d}"
     elif months:
         cutoff = now - pd.DateOffset(months=int(months))
         data = data[data['Date'] >= cutoff]

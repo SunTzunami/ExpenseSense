@@ -46,6 +46,10 @@ import psutil
 # Configuration
 # -----------------------------------------------------------------------------
 TEMPERATURE = 0.1
+TOP_P = None
+MIN_P = 0.05
+TOP_K = None
+MAX_TOKENS = None
 
 # -----------------------------------------------------------------------------
 # Logging
@@ -87,6 +91,7 @@ from experiments.models import get_llamacpp_models
 from experiments.memory import free_model_memory
 from utils.llm_input_validation import validate_and_fix_params
 from utils.tool_prompts import get_tool_prompt
+from utils.tool_registry import TOOL_ID_TO_NAME
 
 # -----------------------------------------------------------------------------
 # Prompt loading
@@ -332,6 +337,41 @@ def strip_code_fences(text: str) -> str:
     return s.strip().strip("`")
 
 
+def normalize_extracted_params(data: dict[str, Any]) -> dict[str, Any]:
+    out = {}
+    for k, v in data.items():
+        if k == "ignore_rent":
+            if isinstance(v, bool):
+                out[k] = v
+            elif isinstance(v, (int, float)):
+                out[k] = bool(v)
+            elif isinstance(v, str):
+                v_lower = v.strip().lower()
+                if v_lower in ("true", "1"):
+                    out[k] = True
+                elif v_lower in ("false", "0"):
+                    out[k] = False
+                else:
+                    out[k] = v
+            else:
+                out[k] = v
+        elif k == "months":
+            if isinstance(v, float):
+                out[k] = int(round(v))
+            elif isinstance(v, str):
+                try:
+                    out[k] = int(round(float(v)))
+                except ValueError:
+                    out[k] = v
+            else:
+                out[k] = v
+        elif isinstance(v, float) and v == int(v):
+            out[k] = int(v)
+        else:
+            out[k] = v
+    return out
+
+
 def extract_json_params(text: str) -> tuple[dict[str, Any], str]:
     """
     Strips code fences, parses JSON parameters, and returns (params_dict, cleaned_text).
@@ -344,14 +384,20 @@ def extract_json_params(text: str) -> tuple[dict[str, Any], str]:
     try:
         data = json.loads(cleaned)
         if isinstance(data, dict):
-            return data, cleaned
+            return normalize_extracted_params(data), cleaned
     except Exception:
         pass
         
     # Regex fallback for key-value extraction
     params = {}
-    for key in ["tool", "category", "year", "month", "day", "start_year", "start_month", "end_year", "end_month", "months", "ignore_rent", "remarks", "n", "min_amount", "y1", "m1", "d1", "y2", "m2", "d2"]:
-        pattern = r'["\']?' + re.escape(key) + r'["\']?\s*[:=]\s*["\']?([^"\'\s,}]+)["\']?'
+    for key in [
+        "tool", "category", "year", "month", "day",
+        "start_year", "start_month", "end_year", "end_month", "months",
+        "ignore_rent", "remarks", "n", "min_amount",
+        "y1", "m1", "d1", "y2", "m2", "d2",
+        "sm1", "em1", "sm2", "em2", "ey1", "ey2",
+    ]:
+        pattern = r'["\']?' + re.escape(key) + r'["\']?\s*[:=]\s*["\']?(-?[^"\'\s,}]+)["\']?'
         match = re.search(pattern, cleaned)
         if match:
             val = match.group(1).strip()
@@ -359,124 +405,17 @@ def extract_json_params(text: str) -> tuple[dict[str, Any], str]:
                 params[key] = True
             elif val.lower() == 'false':
                 params[key] = False
-            elif val.isdigit():
+            elif re.fullmatch(r'-?\d+', val):
                 params[key] = int(val)
             elif val.lower() != 'none' and val.lower() != 'null':
                 params[key] = val
-    return params, cleaned
-
-
-def extract_first_tool_call(text: str) -> tuple[str, dict[str, Any], str]:
-    """
-    Returns (tool_name, kwargs, cleaned_text).
-    Accepts raw function call, or wrapped text.
-    """
-    cleaned = strip_code_fences(text)
-    if not cleaned:
-        return "NONE", {}, cleaned
-
-    call_match = re.search(
-        r"(plot_time_series|plot_distribution|plot_comparison_bars|calculate_total|get_top_expenses)\s*\(",
-        cleaned,
-    )
-    if not call_match:
-        token = cleaned.split()[0].strip().strip("`'\"")
-        return token if token in ALLOWED_TOOLS else token, {}, cleaned
-
-    start = call_match.start(1)
-    candidate = cleaned[start:].strip()
-
-    # Auto-correction for duplicate keyword arguments (e.g., m1 repeated instead of m2)
-    try:
-        if "(" in candidate:
-            first_paren = candidate.find("(")
-            last_paren = candidate.rfind(")")
-            if last_paren > first_paren:
-                prefix = candidate[:first_paren + 1]
-                suffix = candidate[last_paren:]
-                arg_str = candidate[first_paren + 1 : last_paren]
-                
-                # Split arguments quote-safely
-                parts = []
-                current = []
-                in_quote = None
-                for char in arg_str:
-                    if char in ("'", '"'):
-                        if in_quote == char:
-                            in_quote = None
-                        elif in_quote is None:
-                            in_quote = char
-                        current.append(char)
-                    elif char == ',' and in_quote is None:
-                        parts.append("".join(current).strip())
-                        current = []
-                    else:
-                        current.append(char)
-                if current:
-                    parts.append("".join(current).strip())
-                    
-                seen_keys = set()
-                rebuilt_parts = []
-                corrected = False
-                for part in parts:
-                    if '=' in part:
-                        key, val = part.split('=', 1)
-                        key = key.strip()
-                        val = val.strip()
-                        
-                        orig_key = key
-                        if key == 'y1' and 'y1' in seen_keys:
-                            key = 'y2'
-                        elif key == 'm1' and 'm1' in seen_keys:
-                            key = 'm2'
-                        elif key == 'd1' and 'd1' in seen_keys:
-                            key = 'd2'
-                        
-                        if key != orig_key:
-                            corrected = True
-                        seen_keys.add(key)
-                        rebuilt_parts.append(f"{key}={val}")
-                    else:
-                        rebuilt_parts.append(part)
-                        
-                if corrected:
-                    candidate = prefix + ", ".join(rebuilt_parts) + suffix
-    except Exception:
-        pass
-
-    try:
-        tree = ast.parse(f"__x__ = {candidate}")
-        call_node = None
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Call):
-                call_node = node
-                break
-        if call_node is None:
-            return "NONE", {}, cleaned
-        func = call_node.func
-        tool_name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "NONE")
-
-        kwargs: dict[str, Any] = {}
-        for kw in call_node.keywords:
-            if kw.arg is None:
-                continue
-            try:
-                kwargs[kw.arg] = ast.literal_eval(kw.value)
-            except Exception:
-                try:
-                    kwargs[kw.arg] = ast.unparse(kw.value)
-                except Exception:
-                    kwargs[kw.arg] = None
-        return tool_name, kwargs, cleaned
-    except Exception:
-        tool_name = call_match.group(1)
-        kwargs = {}
-        return tool_name, kwargs, cleaned
+    return normalize_extracted_params(params), cleaned
 
 
 def canonicalize_params(params: dict[str, Any]) -> dict[str, Any]:
     """Map major_category -> category for grading consistency."""
     out = dict(params or {})
+    out.pop("tool", None)
     # Map major_category to category if present (for old expected_params in test cases)
     if "major_category" in out and "category" not in out:
         out["category"] = out.pop("major_category")
@@ -633,6 +572,11 @@ def classify_error(
     pred_keys = {k for k in pred.keys() if k != "df"}
 
     if not gt_keys:
+        # If expected params are empty but model emitted extra params, that's
+        # not strictly "CORRECT" — flag as PARAM_EXTRA so the error taxonomy
+        # reflects the spurious output.
+        if pred_keys:
+            return "PARAM_EXTRA"
         return "CORRECT"
 
     missing = gt_keys - pred_keys
@@ -684,6 +628,11 @@ def run_llm(
     model_id: str,
     messages: list[dict[str, str]],
     temperature: Optional[float] = None,
+    top_p: Optional[float] = None,
+    top_k: Optional[int] = None,
+    max_tokens: Optional[int] = None,
+    min_p: Optional[float] = None,
+    stop: Optional[list[str]] = None,
 ) -> tuple[str, float, Optional[str]]:
     t0 = time.perf_counter()
     if temperature is None:
@@ -695,6 +644,11 @@ def run_llm(
             messages=messages,
             temperature=temperature,
             enable_thinking=False,
+            top_p=top_p,
+            top_k=top_k,
+            max_tokens=max_tokens,
+            min_p=min_p,
+            stop=stop,
         )
         if err:
             return text or "", elapsed, err
@@ -714,6 +668,11 @@ class RunConfig:
     output_dir: Path
     output_basename: str
     warmup_reps: int = 1
+    temperature: Optional[float] = None
+    top_p: Optional[float] = None
+    min_p: Optional[float] = None
+    top_k: Optional[int] = None
+    max_tokens: Optional[int] = None
 
 
 def build_model_list(models_arg: Optional[str]) -> list[str]:
@@ -788,6 +747,11 @@ def benchmark_single_agent(
     rep: int,
     current_date: str,
     metadata: str,
+    temperature: Optional[float] = None,
+    top_p: Optional[float] = None,
+    top_k: Optional[int] = None,
+    max_tokens: Optional[int] = None,
+    min_p: Optional[float] = None,
 ) -> dict[str, Any]:
     prompt = build_single_agent_prompt(metadata=metadata, current_date=current_date)
     with ResourceMonitor() as rm:
@@ -797,6 +761,12 @@ def benchmark_single_agent(
                 {"role": "system", "content": prompt},
                 {"role": "user", "content": tc["q"]},
             ],
+            temperature=temperature,
+            top_p=top_p,
+            top_k=top_k,
+            max_tokens=max_tokens,
+            min_p=min_p,
+            stop=["\n\n", "```"],
         )
     # FIX: capture token usage immediately after the LLM call while it's still
     # the "last" call — avoids stale values from earlier calls in the process.
@@ -806,20 +776,30 @@ def benchmark_single_agent(
     params, cleaned = extract_json_params(raw_text)
     
     # Map the tool ID/name to string
-    from utils.tool_registry import TOOL_ID_TO_NAME
     tool_val = params.get("tool", "calculate_total")
     if isinstance(tool_val, int):
         tool = TOOL_ID_TO_NAME.get(tool_val, "calculate_total")
-    elif isinstance(tool_val, str) and tool_val.isdigit():
-        tool = TOOL_ID_TO_NAME.get(int(tool_val), "calculate_total")
-    elif tool_val in TOOL_ID_TO_NAME.values():
-        tool = tool_val
+    elif isinstance(tool_val, str):
+        tool_val_clean = tool_val.strip().lower().replace(" ", "_")
+        if tool_val_clean.isdigit():
+            tool = TOOL_ID_TO_NAME.get(int(tool_val_clean), "calculate_total")
+        else:
+            matched = False
+            for name in TOOL_ID_TO_NAME.values():
+                if name.lower() == tool_val_clean:
+                    tool = name
+                    matched = True
+                    break
+            if not matched:
+                tool = "calculate_total"
+                for name in TOOL_ID_TO_NAME.values():
+                    name_clean = name.lower().replace("_", " ")
+                    raw_text_clean = raw_text.lower().replace("_", " ")
+                    if name_clean in raw_text_clean:
+                        tool = name
+                        break
     else:
         tool = "calculate_total"
-        for name in TOOL_ID_TO_NAME.values():
-            if name in raw_text:
-                tool = name
-                break
                 
     kwargs = {k: v for k, v in params.items() if k != "tool"}
     kwargs = canonicalize_params(kwargs)
@@ -833,8 +813,8 @@ def benchmark_single_agent(
         "total_time_s": elapsed,
         "peak_cpu_pct": rm.peak_cpu_percent,
         "peak_ram_mb": rm.peak_ram_mb,
-        "router_raw": str(tool_val),
-        "specialist_raw": cleaned,
+        "router_raw": "",
+        "specialist_raw": raw_text,
         "pred_tool_raw": tool,
         "pred_params_raw": kwargs,
         "pred_tool_validated": tool,
@@ -855,6 +835,11 @@ def benchmark_dual_agent(
     current_date: str,
     metadata: str,
     router_model_id: Optional[str] = None,
+    temperature: Optional[float] = None,
+    top_p: Optional[float] = None,
+    top_k: Optional[int] = None,
+    max_tokens: Optional[int] = None,
+    min_p: Optional[float] = None,
 ) -> dict[str, Any]:
     router_model = router_model_id or model_id
     specialist_model = model_id
@@ -867,27 +852,35 @@ def benchmark_dual_agent(
                 {"role": "system", "content": ROUTER_PROMPT},
                 {"role": "user", "content": tc["q"]},
             ],
+            temperature=temperature,
+            top_p=top_p,
+            top_k=top_k,
+            max_tokens=max_tokens,
+            min_p=min_p,
+            stop=["\n\n", "```"],
         )
         # FIX: capture router token usage before the specialist call overwrites it.
         router_usage = get_last_usage()
 
-        # Parse number from router
-        from utils.tool_registry import TOOL_ID_TO_NAME
         clean_router = router_raw.strip().replace("`", "").replace("'", "").replace('"', "")
         digit_match = re.search(r'[1-5]', clean_router)
+        router_fallback = False
         if digit_match:
             tool_id = int(digit_match.group(0))
             router_tool = TOOL_ID_TO_NAME.get(tool_id, "calculate_total")
         else:
             logger.warning(f"Router output did not contain a valid tool ID (1-5): '{router_raw}'. Attempting name fallback...")
             fallback_found = False
+            clean_router_lower = clean_router.lower().replace("_", " ")
             for name in TOOL_ID_TO_NAME.values():
-                if name in clean_router:
+                name_clean = name.lower().replace("_", " ")
+                if name_clean in clean_router_lower:
                     router_tool = name
                     fallback_found = True
                     break
             if not fallback_found:
                 router_tool = "calculate_total"
+                router_fallback = True
 
         # Stage 2: Specialist
         predicted_tool_for_prompt = router_tool if router_tool in ALLOWED_TOOLS else "calculate_total"
@@ -907,6 +900,12 @@ def benchmark_dual_agent(
                 {"role": "system", "content": specialist_system_prompt},
                 {"role": "user", "content": tc["q"]},
             ],
+            temperature=temperature,
+            top_p=top_p,
+            top_k=top_k,
+            max_tokens=max_tokens,
+            min_p=min_p,
+            stop=["\n\n", "```"],
         )
         # FIX: capture specialist usage before exiting the monitor context.
         specialist_usage = get_last_usage()
@@ -924,14 +923,17 @@ def benchmark_dual_agent(
         "peak_cpu_pct": rm.peak_cpu_percent,
         "peak_ram_mb": rm.peak_ram_mb,
         "router_raw": router_raw,
-        "specialist_raw": cleaned,
+        "specialist_raw": specialist_raw,
         "pred_tool_raw": router_tool,
         "pred_params_raw": spec_kwargs,
         "pred_tool_validated": router_tool,
         "pred_params_validated": validated_kwargs,
         "warning": warning or "",
-        "raw_parse_ok": 1 if router_tool in ALLOWED_TOOLS else 0,
-        "validated_parse_ok": 1 if router_tool in ALLOWED_TOOLS else 0,
+        # FIX: when the router completely failed to produce a valid tool ID
+        # and silently defaulted to calculate_total, mark parse as failed
+        # to avoid inflating parse success metrics.
+        "raw_parse_ok": 0 if router_fallback else (1 if router_tool in ALLOWED_TOOLS else 0),
+        "validated_parse_ok": 0 if router_fallback else (1 if router_tool in ALLOWED_TOOLS else 0),
         "notes": "; ".join([x for x in [router_err, spec_err] if x]) if (router_err or spec_err) else "",
         # FIX: sum router + specialist token counts so dual-mode reports the full
         # prompt budget consumed, not just the specialist stage.
@@ -969,10 +971,18 @@ def benchmark_model(
         logger.info("TC %s | %s", tc["id"], tc["q"])
         for rep in range(1, cfg.reps + 1):
             if cfg.mode == "single":
-                result = benchmark_single_agent(model_id, tc, rep, current_date, METADATA_TEXT)
+                result = benchmark_single_agent(
+                    model_id, tc, rep, current_date, METADATA_TEXT,
+                    temperature=cfg.temperature, top_p=cfg.top_p, top_k=cfg.top_k, max_tokens=cfg.max_tokens,
+                    min_p=cfg.min_p
+                )
                 benchmark_mode = "single"
             elif cfg.mode == "dual":
-                result = benchmark_dual_agent(model_id, tc, rep, current_date, METADATA_TEXT, router_model_id=router_model_id)
+                result = benchmark_dual_agent(
+                    model_id, tc, rep, current_date, METADATA_TEXT, router_model_id=router_model_id,
+                    temperature=cfg.temperature, top_p=cfg.top_p, top_k=cfg.top_k, max_tokens=cfg.max_tokens,
+                    min_p=cfg.min_p
+                )
                 benchmark_mode = "dual"
             else:
                 raise ValueError(f"Unknown mode: {cfg.mode}")
@@ -1017,8 +1027,8 @@ def benchmark_model(
                 "Peak_RAM_MB": round(result["peak_ram_mb"], 2),
                 "Prompt_Tokens": prompt_tokens,
                 "Completion_Tokens": completion_tokens,
-                "Router_Raw": str(result["router_raw"])[:500],
-                "Specialist_Raw": specialist_raw_text[:1200],
+                "Router_Raw": str(result["router_raw"]),
+                "Specialist_Raw": str(result.get("specialist_raw", "")),
                 "Pred_Tool_Raw": raw_tool,
                 "Pred_Params_Raw_JSON": json.dumps(raw_params, ensure_ascii=False, sort_keys=True),
                 "Pred_Tool_Validated": validated_tool,
@@ -1050,6 +1060,38 @@ def benchmark_model(
                 tc["id"], status, rep, result["total_time_s"], result["peak_cpu_pct"], result["peak_ram_mb"],
                 raw_tool, raw_scores["Task_Acc"], validated_scores["Task_Acc"], error_raw,
             )
+
+    if rows:
+        raw_fsp_avg = mean(r["FSP_Raw"] for r in rows)
+        raw_acs_avg = mean(r["ACS_Raw"] for r in rows)
+        raw_avc_avg = mean(r["AVC_Raw"] for r in rows)
+        raw_ta_avg = mean(r["Task_Acc_Raw"] for r in rows)
+        raw_cr_avg = mean(r["Correct_Ratio_Raw"] for r in rows)
+
+        val_fsp_avg = mean(r["FSP_Validated"] for r in rows)
+        val_acs_avg = mean(r["ACS_Validated"] for r in rows)
+        val_avc_avg = mean(r["AVC_Validated"] for r in rows)
+        val_ta_avg = mean(r["Task_Acc_Validated"] for r in rows)
+        val_cr_avg = mean(r["Correct_Ratio_Validated"] for r in rows)
+
+        logger.info("=" * 60)
+        logger.info("BENCHMARK SUMMARY FOR MODEL: %s (%s mode)", short, cfg.mode)
+        logger.info("Total test runs: %d", len(rows))
+        logger.info("-" * 60)
+        logger.info("RAW METRICS:")
+        logger.info("  FSP (Tool Classification Accuracy): %.4f", raw_fsp_avg)
+        logger.info("  ACS (Argument Constraint Score):    %.4f", raw_acs_avg)
+        logger.info("  AVC (Argument Value Correctness):   %.4f", raw_avc_avg)
+        logger.info("  Task Accuracy:                      %.4f", raw_ta_avg)
+        logger.info("  Correct Ratio (Strict Success):     %.4f", raw_cr_avg)
+        logger.info("-" * 60)
+        logger.info("VALIDATED METRICS:")
+        logger.info("  FSP (Tool Classification Accuracy): %.4f", val_fsp_avg)
+        logger.info("  ACS (Argument Constraint Score):    %.4f", val_acs_avg)
+        logger.info("  AVC (Argument Value Correctness):   %.4f", val_avc_avg)
+        logger.info("  Task Accuracy:                      %.4f", val_ta_avg)
+        logger.info("  Correct Ratio (Strict Success):     %.4f", val_cr_avg)
+        logger.info("=" * 60)
 
     return rows
 
@@ -1217,7 +1259,7 @@ def warmup_model(model_id: str, current_date: str, metadata: str, n_reps: int = 
         if tool_prompt is None:
             continue
         try:
-            formatted = tool_prompt.format(metadata=metadata, current_date=current_date)
+            formatted = tool_prompt.replace("{metadata}", metadata).replace("{current_date}", current_date)
         except KeyError:
             continue
         for _ in range(n_reps):
@@ -1240,9 +1282,9 @@ def write_excel(df: pd.DataFrame, out_path: Path) -> None:
 
     # Raw sheet
     for col_idx, col_name in enumerate(df.columns, start=1):
-        cell = ws.cell(row=1, column=col_idx, value=col_name)
         # FIX: was Font(bold=True) with default black text on dark navy fill —
         # invisible. White text is required for the dark header background.
+        cell = ws.cell(row=1, column=col_idx, value=col_name)
         cell.font = Font(bold=True, color="FFFFFF")
         cell.fill = PatternFill("solid", fgColor="1F2937")
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -1250,7 +1292,10 @@ def write_excel(df: pd.DataFrame, out_path: Path) -> None:
 
     for r_idx, (_, row) in enumerate(df.iterrows(), start=2):
         for c_idx, col_name in enumerate(df.columns, start=1):
-            ws.cell(row=r_idx, column=c_idx, value=row[col_name])
+            val = row[col_name]
+            if isinstance(val, str) and len(val) > 32700:
+                val = val[:32700] + "... [TRUNCATED FOR EXCEL]"
+            ws.cell(row=r_idx, column=c_idx, value=val)
 
     # Summary sheets
     frames = build_summary_frames(df)
@@ -1269,7 +1314,10 @@ def write_excel(df: pd.DataFrame, out_path: Path) -> None:
             ws2.column_dimensions[get_column_letter(c_idx)].width = min(max(len(col_name) + 2, 12), 35)
         for r_idx, (_, row) in enumerate(frame.iterrows(), start=2):
             for c_idx, col_name in enumerate(frame.columns, start=1):
-                ws2.cell(row=r_idx, column=c_idx, value=row[col_name])
+                val = row[col_name]
+                if isinstance(val, str) and len(val) > 32700:
+                    val = val[:32700] + "... [TRUNCATED FOR EXCEL]"
+                ws2.cell(row=r_idx, column=c_idx, value=val)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(out_path)
@@ -1322,6 +1370,16 @@ def main() -> None:
 
     all_rows: list[dict[str, Any]] = []
 
+    # Sanity checks
+    assert set(TOOL_ID_TO_NAME.values()) == ALLOWED_TOOLS, f"Tool registry mismatch: {TOOL_ID_TO_NAME}"
+    logger.info("VALIDATION_DF columns: %s", VALIDATION_DF.columns.tolist())
+    logger.info("VALIDATION_DF head:\n%s", VALIDATION_DF.head(3))
+    logger.info("Available models: %s", get_llamacpp_models())
+    logger.info("TEST_CASES count: %d", len(TEST_CASES))
+    logger.info("Complexity distribution: %s", 
+                {lvl: sum(1 for tc in TEST_CASES if tc["difficulty"] == lvl) 
+                 for lvl in ["L1", "L2", "L3"]})
+
     logger.info("Backend root: %s", BACKEND_ROOT)
     logger.info("Models: %s", models)
     logger.info("Modes: %s", modes)
@@ -1338,6 +1396,11 @@ def main() -> None:
                 cfg = RunConfig(
                     mode=mode, reps=reps, models=models,
                     output_dir=out_dir, output_basename=base,
+                    temperature=TEMPERATURE,
+                    top_p=TOP_P,
+                    min_p=MIN_P,
+                    top_k=TOP_K,
+                    max_tokens=MAX_TOKENS,
                 )
                 rows = benchmark_model(model_id, cfg, ckpt_writer, ckpt_fh, router_model_id=args.router_model)
                 all_rows.extend(rows)

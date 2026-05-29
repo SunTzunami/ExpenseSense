@@ -11,6 +11,8 @@ BASE_INSTRUCTIONS = """You are an automated API parameter extractor. Your ONLY p
 
 ## Date Rules
 - `months=N`: RELATIVE duration (e.g. "past month" -> months=1, "last 3 months" -> months=3, "past year" -> months=12).
+- Fractional years: convert to months. "past 0.5 years" -> months=6, "past 2.5 years" -> months=30. 
+- Abbreviated years: '24 = 2024, 24 = 2024, ALWAYS output the full 4-digit year.
 - `year=YYYY`: specific full calendar year.
 - `year=YYYY, month=M`: specific calendar month (e.g. "Jan 2024").
 - `year=YYYY, month=M, day=D`: specific calendar date.
@@ -71,11 +73,20 @@ Q: "Show spending on combinis for past year"
 {"category": "combini meal", "months": 12}
 
 Q: "Show spending trend for past 4 months exclude rent tho"
-{"months": 4, "ignore_rent": true}"""
+{"months": 4, "ignore_rent": true}
+
+Q: "plot spend on cafes for past 2.5 yrs"
+{"category": "cafe", "months": 30}
+
+Q: "show my ride share costs from '24 to 26"
+{"category": "ride share", "start_year": 2024, "end_year": 2026}
+
+Q: "show electronics spending since 2023"
+{"category": "electronics", "start_year": 2023}"""
     },
 
     "plot_distribution": {
-        "parameters": "category (str, optional), remarks (str, optional), year (int, optional), month (int, optional), day (int, optional), start_year (int, optional), start_month (int, optional), end_year (int, optional), end_month (int, optional), months (int, optional), ignore_rent (bool, optional, defaults to false)",
+        "parameters": "category (str, optional), year (int, optional), month (int, optional), day (int, optional), start_year (int, optional), start_month (int, optional), end_year (int, optional), end_month (int, optional), months (int, optional), ignore_rent (bool, optional, defaults to false)",
         "examples": """Q: "Show me a breakdown of my food expenses in 2024"
 {"category": "Food", "year": 2024}
 
@@ -116,7 +127,13 @@ Q: "Breakdown of fitness spending for 2025"
 {"category": "Fitness", "year": 2025}
 
 Q: "Breakdown of my spending since 2024"
-{"start_year": 2024}"""
+{"start_year": 2024}
+
+Q: "show breakdown of all expenses for mar 2026 (exclude rent tho)"
+{"year": 2026, "month": 3, "ignore_rent": true}
+
+Q: "what does my electronics and furniture spending look like for jan 2025?"
+{"category": "Electronics and Furniture", "year": 2025, "month": 1}"""
     },
 
     "plot_comparison_bars": {
@@ -148,15 +165,27 @@ Q: "Compare gym spending Nov 2024 vs Nov 2025"
 Q: "Compare my spending in 2024 vs 2025 excluding rent"
 {"y1": 2024, "y2": 2025, "ignore_rent": true}
 
+Q: "compare education expenses '24 vs '25"
+{"category": "Education", "y1": 2024, "y2": 2025}
+
+Q: "compare household expenses for april '24 vs apr 2025"
+{"category": "household", "y1": 2024, "m1": 4, "y2": 2025, "m2": 4}
+
 Q: "Compare dining between Jan-Jun 2024 and Jan-Jun 2025"
 {"category": "dining", "y1": 2024, "sm1": 1, "em1": 6, "y2": 2025, "sm2": 1, "em2": 6}
 
+Q: "compare electricity from jan-mar '24 vs jan-mar '25"
+{"category": "electricity bill", "y1": 2024, "sm1": 1, "em1": 3, "y2": 2025, "sm2": 1, "em2": 3}
+
 Q: "Contrast overall spend from Nov 2024 to Feb 2025 vs Nov 2025 to Feb 2026"
-{"y1": 2024, "sm1": 11, "ey1": 2025, "em1": 2, "y2": 2025, "sm2": 11, "ey2": 2026, "em2": 2}"""
+{"y1": 2024, "sm1": 11, "ey1": 2025, "em1": 2, "y2": 2025, "sm2": 11, "ey2": 2026, "em2": 2}
+
+Q: "compare total spend on new years eve 2024 vs for same day on 2025"
+{"y1": 2024, "m1": 12, "d1": 31, "y2": 2025, "m2": 12, "d2": 31}"""
     },
 
     "calculate_total": {
-        "parameters": "category (str, optional), remarks (str, optional), year (int, optional), month (int, optional), day (int, optional), start_year (int, optional), start_month (int, optional), end_year (int, optional), end_month (int, optional), months (int, optional), ignore_rent (bool, optional, defaults to false)",
+        "parameters": "category (str, optional), year (int, optional), month (int, optional), day (int, optional), start_year (int, optional), start_month (int, optional), end_year (int, optional), end_month (int, optional), months (int, optional), ignore_rent (bool, optional, defaults to false)",
         "examples": """Q: "How much did I spend on groceries in Dec 2024?"
 {"category": "grocery", "year": 2024, "month": 12}
 
@@ -188,7 +217,13 @@ Q: "How much did I spend in the last 6 months without rent?"
 {"months": 6, "ignore_rent": true}
 
 Q: "Total spent on dining since 2024"
-{"category": "dining", "start_year": 2024}"""
+{"category": "dining", "start_year": 2024}
+
+Q: "whats the total spend on donations from '23 to 2026?"
+{"category": "donation", "start_year": 2023, "end_year": 2026}
+
+Q: "Excluding rent, what was my total spend in 2025?"
+{"year": 2025, "ignore_rent": true}"""
     },
 
     "get_top_expenses": {
@@ -205,8 +240,8 @@ Q: "Top 10 food expenses in june 2025?"
 Q: "Top 5 expenses for 26 june 2024?"
 {"n": 5, "year": 2024, "month": 6, "day": 26}
 
-Q: "Top expenses from July 2024 to Dec 2024"
-{"start_year": 2024, "start_month": 7, "end_year": 2024, "end_month": 12}
+Q: "Top expenses from July 2023 to Dec 2024"
+{"start_year": 2023, "start_month": 7, "end_year": 2024, "end_month": 12}
 
 Q: "Show my top 10 expenses from 2023 to 2025"
 {"n": 10, "start_year": 2023, "end_year": 2025}
@@ -230,7 +265,13 @@ Q: "Top 5 expenses last month, exclude rent"
 {"n": 5, "months": 1, "ignore_rent": true}
 
 Q: "What were my biggest expenses since 2023?"
-{"n": 10, "start_year": 2023}"""
+{"n": 10, "start_year": 2023}
+
+Q: "show me top 10 expenses from jan 2025 to june '25"
+{"n": 10, "start_year": 2025, "start_month": 1, "end_year": 2025, "end_month": 6}
+
+Q: "tell me the top 15 expenses for 2025, ignore rent plz"
+{"n": 15, "year": 2025, "ignore_rent": true}"""
     }
 }
 

@@ -14,14 +14,20 @@ from typing import Optional
 
 # Monkey-patch Jinja2 Environment to always include loopcontrols 
 # This fixes "Encountered unknown tag 'continue'" in Llama.cpp chat templates (e.g. EXAONE-4.0)
-_original_jinja_init = jinja2.Environment.__init__
-def _patched_jinja_init(self, **kwargs):
-    extensions = kwargs.get("extensions", [])
-    if "jinja2.ext.loopcontrols" not in extensions:
-        extensions = list(extensions) + ["jinja2.ext.loopcontrols"]
-    kwargs["extensions"] = extensions
-    _original_jinja_init(self, **kwargs)
-jinja2.Environment.__init__ = _patched_jinja_init
+# NOTE: This patch applies globally to all Jinja2 usage in the process. It is
+# safe for the benchmark script (the only consumer) but could cause subtle side
+# effects if inference.py is imported into a larger app that also uses Jinja2.
+_JINJA_PATCHED = False
+if not _JINJA_PATCHED:
+    _original_jinja_init = jinja2.Environment.__init__
+    def _patched_jinja_init(self, **kwargs):
+        extensions = kwargs.get("extensions", [])
+        if "jinja2.ext.loopcontrols" not in extensions:
+            extensions = list(extensions) + ["jinja2.ext.loopcontrols"]
+        kwargs["extensions"] = extensions
+        _original_jinja_init(self, **kwargs)
+    jinja2.Environment.__init__ = _patched_jinja_init
+    _JINJA_PATCHED = True
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +40,40 @@ def get_last_usage() -> dict:
     """Return token usage dict from the most recent LLM call.
     Keys: prompt_tokens, completion_tokens, total_tokens."""
     return dict(_last_usage)
+
+
+def reset_model() -> None:
+    """Properly free the LlamaCpp model's C++ memory and reset the singleton.
+
+    This must be called instead of directly manipulating ``_llamacpp_model``
+    from outside the module, because the module-level variable is bound by
+    reference at import time — external assignments won't propagate back.
+
+    Steps:
+    1. Call ``model.close()`` (llama-cpp-python ≥ 0.2.58) to release the C++
+       Metal/GPU memory.
+    2. ``del`` the model reference so Python's ref-count drops to zero.
+    3. Reset the singleton so a fresh model can be loaded on the next call.
+    4. ``gc.collect()`` to sweep any residual cyclic object graphs.
+    """
+    import gc
+
+    global _llamacpp_model
+    if _llamacpp_model is not None:
+        if _llamacpp_model.model is not None:
+            # Prefer .close() for explicit C++ resource release (llama-cpp-python ≥ 0.2.58)
+            if hasattr(_llamacpp_model.model, "close"):
+                try:
+                    _llamacpp_model.model.close()
+                except Exception:
+                    pass
+            del _llamacpp_model.model
+            _llamacpp_model.model = None
+        _llamacpp_model.current_model_path = None
+        # Reset the singleton so LlamaCppModel.__new__ creates a fresh instance
+        LlamaCppModel._instance = None
+        _llamacpp_model = None
+    gc.collect()
 
 
 class LlamaCppModel:
@@ -100,14 +140,33 @@ class LlamaCppModel:
             logger.error(f"Failed to load Llama.cpp model: {e}")
             raise e
 
-    def chat(self, model_identifier: str, messages: list, max_tokens: int = 4096, temperature: float = 0.0) -> str:
+    def chat(
+        self,
+        model_identifier: str,
+        messages: list,
+        max_tokens: int = 4096,
+        temperature: float = 0.0,
+        top_p: Optional[float] = None,
+        top_k: Optional[int] = None,
+        min_p: Optional[float] = None,
+        stop: Optional[list[str]] = None,
+    ) -> str:
         self.load_model(model_identifier)
+        kwargs = {
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+        if top_p is not None:
+            kwargs["top_p"] = top_p
+        if top_k is not None:
+            kwargs["top_k"] = top_k
+        if min_p is not None:
+            kwargs["min_p"] = min_p
+        if stop is not None:
+            kwargs["stop"] = stop
         try:
-            response = self.model.create_chat_completion(
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=temperature,
-            )
+            response = self.model.create_chat_completion(**kwargs)
             self.last_usage = response.get("usage", {})
             return response["choices"][0]["message"]["content"].strip()
         except Exception as e:
@@ -130,17 +189,34 @@ def generate_llamacpp(
     messages: list[dict[str, str]],
     temperature: float = 0.0,
     enable_thinking: bool = False,
+    top_p: Optional[float] = None,
+    top_k: Optional[int] = None,
+    max_tokens: Optional[int] = None,
+    min_p: Optional[float] = None,
+    stop: Optional[list[str]] = None,
 ) -> tuple[str, float, Optional[str]]:
     """Call the LlamaCpp model via local llamacpp_utils singleton and return (response, elapsed_s, error)."""
     try:
         llamacpp_model = _get_llamacpp_model()
 
         t0 = time.perf_counter()
-        response = llamacpp_model.chat(
-            model_id,
-            messages=messages,
-            temperature=temperature
-        )
+        chat_kwargs = {
+            "model_identifier": model_id,
+            "messages": messages,
+            "temperature": temperature,
+        }
+        if top_p is not None:
+            chat_kwargs["top_p"] = top_p
+        if top_k is not None:
+            chat_kwargs["top_k"] = top_k
+        if max_tokens is not None:
+            chat_kwargs["max_tokens"] = max_tokens
+        if min_p is not None:
+            chat_kwargs["min_p"] = min_p
+        if stop is not None:
+            chat_kwargs["stop"] = stop
+
+        response = llamacpp_model.chat(**chat_kwargs)
         elapsed = time.perf_counter() - t0
 
         global _last_usage
@@ -158,16 +234,33 @@ def generate_ollama(
     model_id: str,
     messages: list[dict[str, str]],
     temperature: float = 0.0,
+    top_p: Optional[float] = None,
+    top_k: Optional[int] = None,
+    max_tokens: Optional[int] = None,
+    min_p: Optional[float] = None,
+    stop: Optional[list[str]] = None,
 ) -> tuple[str, float, Optional[str]]:
     """Call Ollama and return (response, elapsed_s, error)."""
     try:
         import ollama
 
+        options = {"temperature": temperature}
+        if top_p is not None:
+            options["top_p"] = top_p
+        if top_k is not None:
+            options["top_k"] = top_k
+        if max_tokens is not None:
+            options["num_predict"] = max_tokens
+        if min_p is not None:
+            options["min_p"] = min_p
+        if stop is not None:
+            options["stop"] = stop
+
         t0 = time.perf_counter()
         response = ollama.chat(
             model=model_id,
             messages=messages,
-            options={"temperature": temperature},
+            options=options,
         )
         elapsed = time.perf_counter() - t0
 
@@ -192,6 +285,10 @@ def generate_google(
     model_id: str,
     messages: list[dict[str, str]],
     temperature: float = 0.0,
+    top_p: Optional[float] = None,
+    top_k: Optional[int] = None,
+    max_tokens: Optional[int] = None,
+    stop: Optional[list[str]] = None,
 ) -> tuple[str, float, Optional[str]]:
     """Call Google Generative AI API and return (response, elapsed_s, error)."""
     try:
@@ -220,10 +317,20 @@ def generate_google(
             system_instruction=system_msg.strip() if system_msg else None,
         )
 
+        gen_config_kwargs = {"temperature": temperature}
+        if top_p is not None:
+            gen_config_kwargs["top_p"] = top_p
+        if top_k is not None:
+            gen_config_kwargs["top_k"] = top_k
+        if max_tokens is not None:
+            gen_config_kwargs["max_output_tokens"] = max_tokens
+        if stop is not None:
+            gen_config_kwargs["stop_sequences"] = stop
+
         t0 = time.perf_counter()
         response = model.generate_content(
             conversation,
-            generation_config=genai.GenerationConfig(temperature=temperature),
+            generation_config=genai.GenerationConfig(**gen_config_kwargs),
         )
         elapsed = time.perf_counter() - t0
 
@@ -254,6 +361,11 @@ def generate(
     messages: list[dict[str, str]],
     temperature: float = 0.0,
     enable_thinking: bool = False,
+    top_p: Optional[float] = None,
+    top_k: Optional[int] = None,
+    max_tokens: Optional[int] = None,
+    min_p: Optional[float] = None,
+    stop: Optional[list[str]] = None,
 ) -> tuple[str, float, Optional[str]]:
     """
     Unified inference dispatch.
@@ -262,10 +374,10 @@ def generate(
     Returns: (response_text, elapsed_seconds, error_string_or_None)
     """
     if backend == "llamacpp":
-        return generate_llamacpp(model_id, messages, temperature, enable_thinking)
+        return generate_llamacpp(model_id, messages, temperature, enable_thinking, top_p, top_k, max_tokens, min_p, stop)
     elif backend == "ollama":
-        return generate_ollama(model_id, messages, temperature)
+        return generate_ollama(model_id, messages, temperature, top_p, top_k, max_tokens, min_p, stop)
     elif backend == "google":
-        return generate_google(model_id, messages, temperature)
+        return generate_google(model_id, messages, temperature, top_p, top_k, max_tokens, stop)
     else:
         return "", 0.0, f"Unknown backend: {backend}"

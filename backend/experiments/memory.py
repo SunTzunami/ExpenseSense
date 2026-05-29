@@ -15,20 +15,17 @@ logger = logging.getLogger(__name__)
 def free_model_memory() -> None:
     """
     Best-effort memory reclamation between models.
-    Evicts cached model from llamacpp_model singleton, then gc.
+    Calls reset_model() from inference.py which properly closes the
+    underlying llama-cpp-python C++ model and resets the singleton,
+    then runs gc.collect() to reclaim GPU/Metal memory.
     """
-    # Clear the inference singleton
     try:
-        from experiments.inference import _llamacpp_model
-        if _llamacpp_model is not None:
-            _llamacpp_model.model = None
-            _llamacpp_model.current_model_path = None
+        from experiments.inference import reset_model
+        reset_model()
     except Exception:
         try:
-            from inference import _llamacpp_model
-            if _llamacpp_model is not None:
-                _llamacpp_model.model = None
-                _llamacpp_model.current_model_path = None
+            from inference import reset_model
+            reset_model()
         except Exception:
             pass
 

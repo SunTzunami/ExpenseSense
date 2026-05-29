@@ -147,6 +147,8 @@ def _short(model_id: str) -> str:
     name = str(model_id).split("/")[-1]
     for pat in ("-MLX-", "-MLX", "-Instruct", "-instruct", ".gguf", ".GGUF"):
         name = name.replace(pat, "")
+    # strip GGUF quantization suffixes like -Q4_K_M, -Q8_0, -IQ3_XS etc.
+    name = re.sub(r"-[QI][\dA-Z_]+$", "", name, flags=re.IGNORECASE)
     return name
 
 
@@ -322,6 +324,13 @@ def _generate_mode_plots(df: pd.DataFrame, out_dir: str, prefix: str) -> None:
     # std can be NaN if only 1 rep — replace with 0
     mg["std_total_s"] = mg["std_total_s"].fillna(0.0)
 
+    # ── Define stages for latency plots and summary panel ───────────────────
+    show_summarizer = mg["avg_sum_s"].sum() > 0
+    stages = [("Router", "avg_router_s", _STAGE_COLORS["Router"]),
+              ("Specialist", "avg_spec_s", _STAGE_COLORS["Specialist"])]
+    if show_summarizer:
+        stages.append(("Summarizer", "avg_sum_s", "#009E73"))
+
     cat_pivot = (
         df.groupby(["Model", "TC_Category"])["Composite_Acc"]
         .mean()
@@ -361,14 +370,9 @@ def _generate_mode_plots(df: pd.DataFrame, out_dir: str, prefix: str) -> None:
     _savefig(fig, out_dir, f"{prefix}acc_vs_latency")
 
     # 2. Latency Breakdown ───────────────────────────────────────────────────
-    show_summarizer = mg["avg_sum_s"].sum() > 0
     fig, ax = plt.subplots(figsize=(max(3.5, len(labels) * 0.9 + 1.5), 3.5))
     x = np.arange(len(labels))
     bottom = np.zeros(len(labels))
-    stages = [("Router", "avg_router_s", _STAGE_COLORS["Router"]),
-              ("Specialist", "avg_spec_s", _STAGE_COLORS["Specialist"])]
-    if show_summarizer:
-        stages.append(("Summarizer", "avg_sum_s", "#009E73"))
     for stage_label, col_key, color in stages:
         vals = mg[col_key].values
         ax.bar(x, vals, 0.55, bottom=bottom, label=stage_label,
@@ -795,6 +799,7 @@ def _generate_validation_plots(df: pd.DataFrame, out_dir: str) -> None:
         len(modes), n_metrics,
         figsize=(n_metrics * max(3.0, n_models * 0.7 + 0.8), len(modes) * 3.5),
         sharey=False,
+        squeeze=False,
     )
 
     for row_idx, mode in enumerate(modes):
@@ -1164,9 +1169,10 @@ def _generate_comparison_plots(df: pd.DataFrame, out_dir: str) -> None:
     fig, ax = plt.subplots(figsize=(max(5, len(cats) * 0.9 + 2), 4))
     for i, mode in enumerate(modes):
         mgrp = grp[grp["Benchmark_Mode"] == mode]
-        vals = [mgrp[mgrp["TC_Category"] == c]["Composite_Acc"].values[0] * 100
-                if c in mgrp["TC_Category"].values else 0.0
-                for c in cats]
+        vals = []
+        for c in cats:
+            subset = mgrp[mgrp["TC_Category"] == c]["Composite_Acc"]
+            vals.append(float(subset.mean() * 100) if not subset.empty else 0.0)
 
         bars = ax.bar(x + offsets[i], vals, w, label=mode.capitalize(),
                       color=_MODE_PALETTE.get(mode, _PALETTE[i % len(_PALETTE)]),

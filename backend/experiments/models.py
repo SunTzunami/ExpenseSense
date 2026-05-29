@@ -1,3 +1,4 @@
+# experiments/models.py
 """
 Model registry for ExpenseSense benchmark experiments.
 
