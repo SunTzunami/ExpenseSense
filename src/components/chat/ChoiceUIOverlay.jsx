@@ -10,37 +10,47 @@ export default function ChoiceUIOverlay({
     if (!showChoiceUI) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-6">
-            <div className="retro-window w-full max-w-sm">
-                <div className="retro-titlebar">
-                    <span>Provider Configuration</span>
-                    <div className="retro-titlebar-buttons">
-                        <div className="retro-titlebar-button" onClick={() => setShowChoiceUI(false)}>X</div>
+        <div className="app-overlay-backdrop">
+            <div className="app-card" style={{ width: '100%', maxWidth: '380px' }}>
+                <div className="app-card-header">
+                    <div className="app-card-title">
+                        <span className="title-dot" />
+                        Provider Configuration
+                    </div>
+                    <div className="app-window-controls">
+                        <button className="app-window-btn close" onClick={() => setShowChoiceUI(false)} title="Close" />
                     </div>
                 </div>
-                
-                <div className="retro-content bg-[#c0c0c0] flex flex-col p-4">
-                    <div className="mb-4 text-[13px]">
-                        Please confirm your provider settings before continuing.
-                    </div>
 
-                    <div className="retro-panel mb-4">
-                        <div className="mb-2 text-[13px] font-bold">Router Provider:</div>
-                        <RetroSelect 
-                            value={routerProvider} 
-                            onChange={val => setRouterProvider && setRouterProvider(val)} 
-                            options={[{ value: 'llamacpp', label: 'LlamaCpp (Local)' }]} 
-                            width="100%" 
-                            className="mb-4"
-                        />
-                        
-                        <div className="mb-2 text-[13px] font-bold">Analyst Provider:</div>
-                        <RetroSelect 
-                            value={specialistProvider} 
-                            onChange={val => setSpecialistProvider && setSpecialistProvider(val)} 
-                            options={[{ value: 'llamacpp', label: 'LlamaCpp (Local)' }]} 
-                            width="100%" 
-                        />
+                <div style={{ padding: '20px 20px 24px' }}>
+                    <p style={{ margin: '0 0 16px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                        Confirm your provider settings before continuing.
+                    </p>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
+                        <div>
+                            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                Router Provider
+                            </label>
+                            <RetroSelect
+                                value={routerProvider}
+                                onChange={val => setRouterProvider && setRouterProvider(val)}
+                                options={[{ value: 'llamacpp', label: 'LlamaCpp (Local)' }]}
+                                width="100%"
+                            />
+                        </div>
+
+                        <div>
+                            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                Analyst Provider
+                            </label>
+                            <RetroSelect
+                                value={specialistProvider}
+                                onChange={val => setSpecialistProvider && setSpecialistProvider(val)}
+                                options={[{ value: 'llamacpp', label: 'LlamaCpp (Local)' }]}
+                                width="100%"
+                            />
+                        </div>
                     </div>
 
                     <button
@@ -50,9 +60,10 @@ export default function ChoiceUIOverlay({
                             localStorage.setItem('specialist_provider', 'llamacpp');
                             setShowChoiceUI(false);
                         }}
-                        className="retro-button justify-center font-bold"
+                        className="app-btn app-btn-primary"
+                        style={{ width: '100%', justifyContent: 'center', padding: '9px' }}
                     >
-                        OK
+                        Confirm & Continue
                     </button>
                 </div>
             </div>

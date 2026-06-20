@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, AlertCircle, RefreshCw, Clock, Settings } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { listLlamaCppModels } from '../utils/llamacpp';
 import { runPythonStream } from '../utils/pythonRunner';
 import { CATEGORY_MAPPING, MAJOR_CATEGORIES } from '../utils/categoryMapping';
@@ -8,6 +8,13 @@ import SettingsPanel from './chat/SettingsPanel';
 import ChoiceUIOverlay from './chat/ChoiceUIOverlay';
 import MessageItem, { PlotlyChart } from './chat/MessageItem';
 import RetroSelect from './chat/RetroSelect';
+
+// Avatar image paths — replace with generated sprites once available
+// Prompt for USER sprite: see below in MessageItem
+const USER_AVATAR = null;   // e.g. '/sprites/user_sprite.png'
+const AI_AVATAR = null;     // e.g. '/sprites/ai_sprite.png'
+
+export { USER_AVATAR, AI_AVATAR };
 
 export default function ChatInterface({ data, visible, currency, onStatusChange }) {
     const [messages, setMessages] = useState([]);
@@ -23,8 +30,8 @@ export default function ChatInterface({ data, visible, currency, onStatusChange 
     const [showSettings] = useState(false);
     const [expandedChart, setExpandedChart] = useState(null);
     const [workflowStatus, setWorkflowStatus] = useState([]);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
 
-    // Provider State - Locked to llamacpp
     const [routerProvider] = useState('llamacpp');
     const [specialistProvider] = useState('llamacpp');
 
@@ -33,25 +40,15 @@ export default function ChatInterface({ data, visible, currency, onStatusChange 
 
     const visibleRef = useRef(visible);
 
-    // Keep ref in sync for use in async closures
     useEffect(() => {
         visibleRef.current = visible;
-        if (visible) {
-            setUnreadCount(0);
-        }
+        if (visible) setUnreadCount(0);
     }, [visible]);
 
-    // Notify parent of status changes
     useEffect(() => {
-        if (onStatusChange) {
-            onStatusChange({
-                loading: isLoading,
-                unreadCount: unreadCount
-            });
-        }
+        if (onStatusChange) onStatusChange({ loading: isLoading, unreadCount });
     }, [isLoading, unreadCount, onStatusChange]);
 
-    // LLM Config
     const [temperature, setTemperature] = useState(0.0);
     const [topP, setTopP] = useState(0.1);
     const [topK, setTopK] = useState(10);
@@ -71,16 +68,11 @@ export default function ChatInterface({ data, visible, currency, onStatusChange 
         scrollToBottom();
         const t1 = setTimeout(scrollToBottom, 300);
         const t2 = setTimeout(scrollToBottom, 1000);
-        return () => {
-            clearTimeout(t1);
-            clearTimeout(t2);
-        };
+        return () => { clearTimeout(t1); clearTimeout(t2); };
     }, [messages, isLoading]);
 
     useEffect(() => {
-        if (visible) {
-            initializeConnections();
-        }
+        if (visible) initializeConnections();
     }, [visible]);
 
     useEffect(() => {
@@ -91,9 +83,6 @@ export default function ChatInterface({ data, visible, currency, onStatusChange 
         if (selectedCodeModel) localStorage.setItem('selected_specialist_model', selectedCodeModel);
     }, [selectedCodeModel]);
 
-
-
-    // Live Timer Effect
     useEffect(() => {
         let interval;
         if (isLoading) {
@@ -112,22 +101,18 @@ export default function ChatInterface({ data, visible, currency, onStatusChange 
         try {
             const availableModels = await listLlamaCppModels();
             const ok = availableModels.length > 0;
-
             setBackendConnected(ok);
             setIsConnected(ok);
 
             if (ok) {
                 setConnectionError(null);
                 setLlamacppModels(availableModels);
-
-                // Check if setup is needed
                 const hasSetup = localStorage.getItem('expense_ai_setup_done');
                 if (!hasSetup) {
                     setShowChoiceUI(true);
                 } else {
                     const savedRouter = localStorage.getItem('selected_router_model');
                     const savedSpecialist = localStorage.getItem('selected_specialist_model');
-
                     setSelectedRouterModel(availableModels.includes(savedRouter) ? savedRouter : availableModels[0]);
                     setSelectedCodeModel(availableModels.includes(savedSpecialist) ? savedSpecialist : availableModels[0]);
                 }
@@ -155,15 +140,12 @@ export default function ChatInterface({ data, visible, currency, onStatusChange 
         try {
             const startTime = performance.now();
             const allCats = Array.from(new Set([...MAJOR_CATEGORIES, ...Object.keys(CATEGORY_MAPPING)])).sort();
-            const metadataStr = `
-### CATEGORIES:
-${allCats.map(c => `- ${c}`).join('\n')}
-`;
+            const metadataStr = `\n### CATEGORIES:\n${allCats.map(c => `- ${c}`).join('\n')}\n`;
 
             const analysisResult = await runPythonStream(null, data, {
                 prompt: currentInput,
                 metadata: metadataStr,
-                currency: currency,
+                currency,
                 model: selectedCodeModel,
                 routerModel: selectedRouterModel,
                 routerProvider: 'llamacpp',
@@ -174,7 +156,6 @@ ${allCats.map(c => `- ${c}`).join('\n')}
             });
 
             const { result, fig, code, router_output, tool_name } = analysisResult;
-
             const endTime = performance.now();
             const durationSec = ((endTime - startTime) / 1000).toFixed(1);
 
@@ -182,18 +163,15 @@ ${allCats.map(c => `- ${c}`).join('\n')}
                 role: 'assistant',
                 content: result || (fig ? "I've generated a visualization for you." : "Analysis complete."),
                 fig: fig ? JSON.parse(fig) : null,
-                code: code,
-                router_output: router_output,
-                tool_name: tool_name,
+                code,
+                router_output,
+                tool_name,
                 executionTime: durationSec,
                 validation_fixes: analysisResult.validation_fixes || null
             };
 
             setMessages(prev => [...prev, newMessage]);
-
-            if (!visibleRef.current) {
-                setUnreadCount(prev => prev + 1);
-            }
+            if (!visibleRef.current) setUnreadCount(prev => prev + 1);
 
         } catch (error) {
             console.error(error);
@@ -205,146 +183,305 @@ ${allCats.map(c => `- ${c}`).join('\n')}
     };
 
     return (
-        <div className="w-full h-full flex flex-col bg-[#c0c0c0]" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
-            <SettingsPanel
-                showSettings={showSettings}
-                temperature={temperature} setTemperature={setTemperature}
-                topP={topP} setTopP={setTopP}
-                topK={topK} setTopK={setTopK}
-                routerProvider={routerProvider}
-                specialistProvider={specialistProvider}
-                backendConnected={backendConnected}
-            />
+        <div className="w-full h-full flex" style={{ fontFamily: 'var(--font-sans)', background: 'var(--bg-surface)' }}>
 
-            <div className="p-1 bg-[#c0c0c0] text-[16px] flex items-center justify-between border-b border-[#808080]">
-                <div className="flex items-center gap-3 px-2">
-                    <div className="flex items-center gap-1.5" title={backendConnected ? "Backend Connected" : "Backend Offline"}>
-                        <div className={`w-2.5 h-2.5 rounded-full ${backendConnected ? 'bg-green-500' : 'bg-red-500'}`} style={{ border: '1px solid black' }} />
-                        <span className="text-[16px] text-black font-medium">LlamaCpp</span>
+            {/* ── Main chat column ── */}
+            <div className="flex flex-col flex-1 min-w-0 h-full">
+                <SettingsPanel
+                    showSettings={showSettings}
+                    temperature={temperature} setTemperature={setTemperature}
+                    topP={topP} setTopP={setTopP}
+                    topK={topK} setTopK={setTopK}
+                    routerProvider={routerProvider}
+                    specialistProvider={specialistProvider}
+                    backendConnected={backendConnected}
+                />
+
+                {/* Thin status bar */}
+                <div style={{
+                    padding: '5px 14px',
+                    borderBottom: '1px solid var(--border-light)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: 'var(--bg-surface-2)',
+                    fontSize: '12px',
+                    gap: '12px',
+                    flexShrink: 0,
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                        <span
+                            className={`status-dot ${backendConnected ? 'online' : 'offline'}`}
+                            title={backendConnected ? 'Backend connected' : 'Backend offline'}
+                        />
+                        <span style={{ fontWeight: 500, color: 'var(--text-secondary)' }}>LlamaCpp</span>
                         {!backendConnected && (
-                            <button onClick={initializeConnections} className="retro-button ml-2">
+                            <button onClick={initializeConnections} className="app-btn" style={{ fontSize: '11px', padding: '2px 7px' }}>
                                 Retry
                             </button>
                         )}
                     </div>
+
+                    {/* Sidebar toggle */}
+                    <button
+                        onClick={() => setSidebarOpen(o => !o)}
+                        className="app-btn"
+                        style={{ fontSize: '11px', padding: '2px 8px', gap: '4px' }}
+                        title={sidebarOpen ? 'Hide model panel' : 'Show model panel'}
+                    >
+                        {sidebarOpen ? 'Hide Models' : 'Models'}
+                        <span style={{ fontSize: '9px', transform: sidebarOpen ? 'none' : 'rotate(180deg)', display: 'inline-block', transition: 'transform 0.2s' }}>
+                            ›
+                        </span>
+                    </button>
                 </div>
 
+                {/* Messages */}
+                <div
+                    ref={scrollContainerRef}
+                    className="flex-1 overflow-y-auto modern-scrollbar"
+                    style={{ padding: '16px', background: 'var(--bg-base)' }}
+                >
+                    {!isConnected && !isLoading && (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '12px', color: 'var(--text-secondary)' }}>
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.35 }}>
+                                <path d="M5 12H3m18 0h-2M12 5V3m0 18v-2M7.05 7.05 5.636 5.636m12.728 12.728L16.95 16.95M7.05 16.95l-1.414 1.414M18.364 5.636 16.95 7.05" />
+                            </svg>
+                            <p style={{ margin: 0, fontSize: '13px', textAlign: 'center' }}>{connectionError || "Local backend unreachable."}</p>
+                            <button onClick={initializeConnections} className="app-btn">Retry Connection</button>
+                        </div>
+                    )}
+
+                    {messages.length === 0 && isConnected && (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '16px' }}>
+                            <p style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                Ask anything about your expenses
+                            </p>
+                            <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>
+                                Try one of the suggestions below or type your own question
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', width: '100%', maxWidth: '420px' }}>
+                                {[
+                                    "How much did I spend in total on gym in 2024?",
+                                    "Compare Groceries 2024 vs 2025",
+                                    "What were my top 5 expenses for past month?"
+                                ].map(q => (
+                                    <button key={q} onClick={() => setInput(q)} className="app-btn" style={{ justifyContent: 'flex-start', textAlign: 'left', fontSize: '13px' }}>
+                                        {q}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {messages.map((msg, i) => (
+                        <MessageItem key={i} msg={msg} setExpandedChart={setExpandedChart} />
+                    ))}
+
+                    {isLoading && messages.length > 0 && (
+                        <div style={{ marginBottom: '16px' }}>
+                            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Assistant
+                            </div>
+                            <div className="msg-assistant-bubble" style={{ display: 'inline-block' }}>
+                                <WorkflowIndicator status={workflowStatus} elapsed={elapsedTime} />
+                            </div>
+                        </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                </div>
+
+                {/* Quick chips */}
                 {isConnected && (
-                    <div className="flex gap-4">
-                        <div className="flex items-center gap-2">
-                            <span className="text-[16px] text-black font-bold">Router</span>
-                            <RetroSelect value={selectedRouterModel} onChange={setSelectedRouterModel} options={llamacppModels} width="150px" />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-[16px] text-black font-bold">Specialist</span>
-                            <RetroSelect value={selectedCodeModel} onChange={setSelectedCodeModel} options={llamacppModels} width="150px" />
-                        </div>
+                    <div style={{ padding: '7px 12px 4px', background: 'var(--bg-surface)', borderTop: '1px solid var(--border-light)', display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                        {["Monthly breakdown", "Top 5 expenses", "Compare Groceries 2024 vs 2025", "Show spending trend", "Total on Transport"].map(q => (
+                            <button
+                                key={q}
+                                onClick={() => setInput(q)}
+                                disabled={isLoading}
+                                className="app-chip"
+                            >
+                                {q}
+                            </button>
+                        ))}
                     </div>
                 )}
+
+                {/* Input bar */}
+                <div style={{
+                    display: 'flex',
+                    gap: '8px',
+                    padding: '10px 12px',
+                    borderTop: '1px solid var(--border-light)',
+                    background: 'var(--bg-surface)',
+                    alignItems: 'center',
+                }}>
+                    <input
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                        placeholder="Ask a question about your expenses…"
+                        disabled={!isConnected || isLoading}
+                        className="app-input"
+                        style={{ flex: 1 }}
+                    />
+                    <button
+                        onClick={handleSend}
+                        disabled={!isConnected || isLoading || !input.trim()}
+                        className="app-btn app-btn-primary"
+                        style={{ flexShrink: 0, padding: '8px 16px' }}
+                    >
+                        Send
+                    </button>
+                </div>
             </div>
 
-            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 retro-panel retro-scrollbar bg-[#ffffff]">
-                {!isConnected && !isLoading && (
-                    <div className="flex flex-col items-center justify-center h-full text-black space-y-2 text-center p-4">
-                        <p>{connectionError || "Local backend unreachable."}</p>
-                        <button onClick={initializeConnections} className="retro-button">
-                            Retry Connection
-                        </button>
+            {/* ── Right Sidebar: Model Selection ── */}
+            {sidebarOpen && (
+                <div style={{
+                    width: '210px',
+                    flexShrink: 0,
+                    borderLeft: '1px solid var(--border-light)',
+                    background: 'var(--bg-surface)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflowY: 'auto',
+                    height: '100%',
+                }}>
+                    {/* Sidebar header */}
+                    <div style={{
+                        padding: '9px 12px',
+                        borderBottom: '1px solid var(--border-light)',
+                        background: 'var(--bg-surface-2)',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: 'var(--text-secondary)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        flexShrink: 0,
+                    }}>
+                        Model Selection
                     </div>
-                )}
 
-                {messages.length === 0 && isConnected && (
-                    <div className="flex flex-col items-center justify-center h-full text-black space-y-4">
-                        <p className="font-bold text-[18px]">Q&A Assistant Ready</p>
-                        <div className="flex flex-col gap-2 w-full max-w-md">
-                            {["How much did I spend in total on gym in 2024?", "Compare Groceries 2024 vs 2025", "What were my top 5 expenses for past month?"].map(q => (
-                                <button key={q} onClick={() => setInput(q)} className="retro-button w-full text-left justify-start">
-                                    "{q}"
-                                </button>
+                    <div style={{ padding: '14px 12px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {/* Connection status */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                            <span className={`status-dot ${backendConnected ? 'online' : 'offline'}`} />
+                            <span>{backendConnected ? 'Connected' : 'Offline'}</span>
+                        </div>
+
+                        {/* Router model */}
+                        <div>
+                            <div style={{
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                color: 'var(--text-muted)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.04em',
+                                marginBottom: '6px',
+                            }}>
+                                Router Model
+                            </div>
+                            <RetroSelect
+                                value={selectedRouterModel}
+                                onChange={setSelectedRouterModel}
+                                options={llamacppModels}
+                                width="100%"
+                            />
+                            <p style={{ margin: '5px 0 0', fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                                Routes queries to the correct tool
+                            </p>
+                        </div>
+
+                        {/* Specialist model */}
+                        <div>
+                            <div style={{
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                color: 'var(--text-muted)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.04em',
+                                marginBottom: '6px',
+                            }}>
+                                Specialist Model
+                            </div>
+                            <RetroSelect
+                                value={selectedCodeModel}
+                                onChange={setSelectedCodeModel}
+                                options={llamacppModels}
+                                width="100%"
+                            />
+                            <p style={{ margin: '5px 0 0', fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                                Generates analysis parameters
+                            </p>
+                        </div>
+
+                        {/* LLM parameters */}
+                        <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '14px' }}>
+                            <div style={{
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                color: 'var(--text-secondary)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.06em',
+                                marginBottom: '12px',
+                            }}>
+                                Parameters
+                            </div>
+                            {[
+                                { label: 'Temperature', value: temperature, setter: setTemperature, min: 0, max: 1, step: 0.1, parse: parseFloat },
+                                { label: 'Top P', value: topP, setter: setTopP, min: 0, max: 1, step: 0.05, parse: parseFloat },
+                                { label: 'Top K', value: topK, setter: setTopK, min: 1, max: 100, step: 1, parse: parseInt },
+                            ].map(({ label, value, setter, min, max, step, parse }) => (
+                                <div key={label} style={{ marginBottom: '12px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{label}</span>
+                                        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent)' }}>{value}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min={min} max={max} step={step} value={value}
+                                        onChange={(e) => setter(parse(e.target.value))}
+                                        style={{ width: '100%', accentColor: 'var(--accent)', cursor: 'pointer' }}
+                                    />
+                                </div>
                             ))}
                         </div>
-                    </div>
-                )}
 
-                {messages.map((msg, i) => (
-                    <MessageItem key={i} msg={msg} setExpandedChart={setExpandedChart} />
-                ))}
-
-                {isLoading && messages.length > 0 && (
-                    <div className="mb-4">
-                        <div className="text-[13px] font-bold mb-1 text-black">Q&A Assistant</div>
-                        <div className="p-2 retro-panel" style={{ borderStyle: 'solid', borderColor: '#808080', borderWidth: '1px' }}>
-                            <WorkflowIndicator status={workflowStatus} elapsed={elapsedTime} />
-                        </div>
-                    </div>
-                )}
-                <div ref={messagesEndRef} />
-            </div>
-
-            {/* Persistent example query chips — always visible above input */}
-            {isConnected && (
-                <div className="px-2 pt-2 pb-0 bg-[#c0c0c0] flex flex-wrap gap-1.5">
-                    {[
-                        "Monthly breakdown",
-                        "Top 5 expenses",
-                        "Compare Groceries 2024 vs 2025",
-                        "Show spending trend",
-                        "Total spending on Transport"
-                    ].map(q => (
+                        {/* Refresh backend */}
                         <button
-                            key={q}
-                            onClick={() => {
-                                // Option A: Fill input for editing before send
-                                setInput(q);
-                                // Option B: Auto-send immediately (uncomment below, comment above)
-                                // setInput(q); setTimeout(() => handleSend(), 0);
-                            }}
-                            disabled={isLoading}
-                            className="retro-button text-[13px] py-1 px-2"
-                            style={{ fontSize: '13px' }}
+                            onClick={initializeConnections}
+                            className="app-btn"
+                            style={{ width: '100%', justifyContent: 'center', fontSize: '12px' }}
                         >
-                            {q}
+                            Refresh Models
                         </button>
-                    ))}
+                    </div>
                 </div>
             )}
 
-            <div className="p-2 bg-[#c0c0c0] border-t border-[#ffffff] flex gap-2">
-                <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                    placeholder="Ask a question..."
-                    disabled={!isConnected || isLoading}
-                    className="retro-input flex-1"
-                />
-                <button
-                    onClick={handleSend}
-                    disabled={!isConnected || isLoading || !input.trim()}
-                    className="retro-button font-bold"
-                >
-                    Send
-                </button>
-            </div>
-
             <ChoiceUIOverlay
-                showChoiceUI={showChoiceUI} setShowChoiceUI={setShowChoiceUI}
+                showChoiceUI={showChoiceUI}
+                setShowChoiceUI={setShowChoiceUI}
                 routerProvider={routerProvider}
                 specialistProvider={specialistProvider}
                 backendConnected={backendConnected}
             />
 
             {expandedChart && (
-                <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-8">
-                    <div className="retro-window w-full h-full max-w-6xl max-h-[85vh] flex flex-col">
-                        <div className="retro-titlebar">
-                            <span>{expandedChart.layout?.title?.text || 'Analysis Result'}</span>
-                            <div className="retro-titlebar-buttons">
-                                <div className="retro-titlebar-button" onClick={() => setExpandedChart(null)}>X</div>
+                <div className="app-overlay-backdrop">
+                    <div className="app-card" style={{ width: '100%', maxWidth: '900px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+                        <div className="app-card-header">
+                            <div className="app-card-title">
+                                <span className="title-dot" />
+                                {expandedChart.layout?.title?.text || 'Analysis Result'}
+                            </div>
+                            <div className="app-window-controls">
+                                <button className="app-window-btn close" onClick={() => setExpandedChart(null)} title="Close" />
                             </div>
                         </div>
-                        <div className="retro-content flex-1 bg-[#ffffff]">
+                        <div style={{ flex: 1, background: 'var(--bg-surface)', padding: '12px', minHeight: 0 }}>
                             <PlotlyChart data={expandedChart} isExpanded={true} />
                         </div>
                     </div>
@@ -354,77 +491,41 @@ ${allCats.map(c => `- ${c}`).join('\n')}
     );
 }
 
-const WORKFLOW_STAGES = [
-    { key: 'router', label: 'Router' },
-    { key: 'specialist', label: 'Specialist' },
-    { key: 'executing', label: 'Executing' },
-];
-
 function WorkflowIndicator({ status, elapsed }) {
     const stages = status || [];
-
     const routerInfo = stages.find(s => s.stage === 'router');
     const specialistInfo = stages.find(s => s.stage === 'specialist');
     const executingInfo = stages.find(s => s.stage === 'executing');
 
-    // 1. Router status
-    let routerStatus = '[   ]';
-    let routerText = 'Router: Intent classification pending';
+    let routerCls = 'pending', routerText = 'Router: pending';
     if (routerInfo) {
-        if (specialistInfo || executingInfo) {
-            const tool = specialistInfo?.tool || routerInfo?.tool || 'unknown';
-            routerStatus = '[OK]';
-            routerText = `Router: Intent classified as ${tool}`;
-        } else {
-            routerStatus = '[...]';
-            routerText = 'Router: Classifying intent...';
-        }
+        if (specialistInfo || executingInfo) { routerCls = 'done'; routerText = `Router → ${specialistInfo?.tool || routerInfo?.tool || 'tool'}`; }
+        else { routerCls = 'running'; routerText = 'Router: classifying…'; }
     }
 
-    // 2. Specialist status
-    let specialistStatus = '[   ]';
-    let specialistText = 'Specialist: Parameter generation pending';
+    let specCls = 'pending', specText = 'Specialist: pending';
     if (specialistInfo) {
-        if (executingInfo) {
-            specialistStatus = '[OK]';
-            specialistText = 'Specialist: Parameters generated';
-        } else {
-            specialistStatus = '[...]';
-            specialistText = 'Specialist: Generating parameters...';
-        }
-    } else if (routerInfo) {
-        specialistStatus = '[...]';
-        specialistText = 'Specialist: Waiting for router...';
-    }
+        if (executingInfo) { specCls = 'done'; specText = 'Specialist: done'; }
+        else { specCls = 'running'; specText = 'Specialist: generating…'; }
+    } else if (routerInfo) { specCls = 'running'; specText = 'Specialist: waiting…'; }
 
-    // 3. Validator status
-    let validatorStatus = '[   ]';
-    let validatorText = 'Validator: Python AST execution pending';
-    if (executingInfo) {
-        validatorStatus = '[...]';
-        validatorText = 'Validator: Executing Python AST...';
-    } else if (specialistInfo) {
-        validatorStatus = '[   ]';
-        validatorText = 'Validator: Waiting for specialist...';
-    }
+    let valCls = 'pending', valText = 'Executor: pending';
+    if (executingInfo) { valCls = 'running'; valText = 'Executor: running…'; }
+    else if (specialistInfo) { valText = 'Executor: waiting…'; }
+
+    const icon = (cls) => cls === 'done' ? '✓' : cls === 'running' ? '…' : '·';
 
     return (
-        <div style={{ fontFamily: "'Consolas', 'Courier New', monospace" }} className="text-[16px] leading-relaxed text-black font-mono">
-            <div className="flex items-center gap-2 mb-1">
-                <span className="font-bold text-[#000080]">{routerStatus}</span>
-                <span>{routerText}</span>
-            </div>
-            <div className="flex items-center gap-2 mb-1">
-                <span className="font-bold text-[#000080]">{specialistStatus}</span>
-                <span>{specialistText}</span>
-            </div>
-            <div className="flex items-center gap-2 mb-1">
-                <span className="font-bold text-[#000080]">{validatorStatus}</span>
-                <span>{validatorText}</span>
-            </div>
-            <div className="flex items-center gap-2 pt-1 border-t border-[#808080] mt-2 text-[#808080] text-[14px]">
-                <Clock size={12} />
-                <span>Elapsed: {elapsed}s</span>
+        <div style={{ fontFamily: 'var(--font-sans)', minWidth: '220px' }}>
+            {[[routerCls, routerText], [specCls, specText], [valCls, valText]].map(([cls, text], i) => (
+                <div key={i} className="workflow-step">
+                    <span className={`step-status ${cls}`}>{icon(cls)}</span>
+                    <span style={{ color: cls === 'running' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '13px' }}>{text}</span>
+                </div>
+            ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', borderTop: '1px solid var(--border-light)', marginTop: '6px', paddingTop: '6px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                <Clock size={10} />
+                <span>{elapsed}s</span>
             </div>
         </div>
     );

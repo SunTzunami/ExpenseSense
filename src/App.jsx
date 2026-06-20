@@ -11,23 +11,22 @@ import './styles/retro.css';
 
 function App() {
   const [rawData, setRawData] = useState(null);
-  const [topHeight, setTopHeight] = useState(250); // Default height in pixels
+  const [topHeight, setTopHeight] = useState(240);
   const [isTopMinimized, setIsTopMinimized] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
-  
+
   const containerRef = useRef(null);
   const isDragging = useRef(false);
   const currency = 'JPY';
 
-  // Digital clock effect (AM/PM)
+  // Clock
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
       let hours = now.getHours();
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const ampm = hours >= 12 ? 'PM' : 'AM';
-      hours = hours % 12;
-      hours = hours ? hours : 12; // the hour '0' should be '12'
+      hours = hours % 12 || 12;
       setCurrentTime(`${hours}:${minutes} ${ampm}`);
     };
     updateTime();
@@ -56,11 +55,8 @@ function App() {
     if (!isDragging.current || !containerRef.current) return;
     const containerRect = containerRef.current.getBoundingClientRect();
     const newHeight = e.clientY - containerRect.top;
-    
-    // Constrain height between 80px and total height - 150px
     const minHeight = 80;
     const maxHeight = containerRect.height - 150;
-    
     if (newHeight >= minHeight && newHeight <= maxHeight) {
       setTopHeight(newHeight);
     }
@@ -82,52 +78,53 @@ function App() {
 
   if (!rawData) {
     return (
-      <div className="retro-bg flex items-center justify-center min-h-screen">
-        <FileUploader onFileUpload={handleFileUpload} onUseDemo={handleUseDemo} />
-      </div>
+      <FileUploader onFileUpload={handleFileUpload} onUseDemo={handleUseDemo} />
     );
   }
 
-  // Take the first 10 rows for display
-  const displayData = rawData.slice(0, 10);
+  const displayData = rawData;
 
   return (
-    <div className="retro-bg flex flex-col justify-between min-h-screen p-0" style={{ paddingBottom: '32px' }}>
-      <div ref={containerRef} className="max-w-6xl mx-auto flex flex-col h-[calc(100vh-32px-40px)] w-full p-4 flex-1">
+    <div className="app-bg flex flex-col min-h-screen p-0" style={{ paddingBottom: '38px' }}>
+      <div ref={containerRef} className="max-w-6xl mx-auto flex flex-col h-[calc(100vh-38px)] w-full p-3 flex-1 gap-1">
 
-        {/* Top Window: Data Preview */}
-        <div 
-          className="retro-window flex-shrink-0 flex flex-col" 
-          style={{ 
-            height: isTopMinimized ? 0 : `${topHeight}px`, 
-            display: isTopMinimized ? 'none' : 'flex' 
-          }}
-        >
-          <div className="retro-titlebar">
-            <span>Microsoft Excel - Data.xls</span>
-            <div className="retro-titlebar-buttons">
-              <div className="retro-titlebar-button" onClick={() => setIsTopMinimized(true)}>_</div>
-              <div className="retro-titlebar-button" onClick={() => setIsTopMinimized(true)}>□</div>
-              <div className="retro-titlebar-button" onClick={() => setRawData(null)}>X</div>
+        {/* Top Panel: Data Preview */}
+        {!isTopMinimized && (
+          <div
+            className="app-card flex-shrink-0 flex flex-col"
+            style={{ height: `${topHeight}px` }}
+          >
+            <div className="app-card-header">
+              <div className="app-card-title">
+                <span className="title-dot" />
+                Data Preview
+                <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--text-muted)', marginLeft: '6px' }}>
+                  {rawData.length} rows
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  className="app-btn"
+                  onClick={() => setRawData(null)}
+                  style={{ fontSize: '11px', padding: '3px 8px' }}
+                >
+                  New File
+                </button>
+                <div className="app-window-controls">
+                  <button className="app-window-btn minimize" onClick={() => setIsTopMinimized(true)} title="Collapse data panel" />
+                  <button className="app-window-btn close" onClick={() => setRawData(null)} title="Close" />
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="retro-content flex-1 h-[calc(100%-25px)] flex flex-col min-h-0">
-            <div className="mb-2 flex items-center gap-2 flex-shrink-0">
-              <button className="retro-button" onClick={() => setRawData(null)}>
-                New File
-              </button>
-              <span className="text-[15px] ml-4 text-gray-700">Previewing first {displayData.length} of {rawData.length} rows</span>
-            </div>
-
-            <div className="retro-panel flex-1 retro-scrollbar">
-              <table className="retro-table">
+            <div className="app-card-body flex-1 min-h-0 overflow-auto modern-scrollbar p-0">
+              <table className="app-table w-full">
                 <thead>
                   <tr>
                     <th>Date</th>
                     <th>Remarks</th>
                     <th>Category</th>
-                    <th>Expense</th>
+                    <th style={{ textAlign: 'right' }}>Expense</th>
                     <th>Onetime</th>
                     <th>For Others</th>
                   </tr>
@@ -135,38 +132,67 @@ function App() {
                 <tbody>
                   {displayData.map((row, i) => (
                     <tr key={i}>
-                      <td>{format(row.Date, 'yyyy-MM-dd')}</td>
+                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>{format(row.Date, 'yyyy-MM-dd')}</td>
                       <td>{row.remarks || ''}</td>
-                      <td>{row.NewCategory || row.Category || ''}</td>
-                      <td className="text-right">{(row.Expense || 0).toLocaleString()} {currency}</td>
-                      <td>{row.Onetime ? 'Yes' : 'No'}</td>
-                      <td>{row['for others'] ? 'Yes' : 'No'}</td>
+                      <td>
+                        <span className="app-chip" style={{ cursor: 'default', fontSize: '11px', padding: '2px 8px' }}>
+                          {row.NewCategory || row.Category || '—'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 500 }}>
+                        {(row.Expense || 0).toLocaleString()} {currency}
+                      </td>
+                      <td>
+                        <span style={{ color: row.Onetime ? 'var(--success)' : 'var(--text-muted)', fontWeight: 500, fontSize: '12px' }}>
+                          {row.Onetime ? 'Yes' : 'No'}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ color: row['for others'] ? 'var(--success)' : 'var(--text-muted)', fontWeight: 500, fontSize: '12px' }}>
+                          {row['for others'] ? 'Yes' : 'No'}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Draggable Divider */}
         {!isTopMinimized && (
-          <div className="retro-divider" onMouseDown={handleMouseDown} />
+          <div className="app-divider" onMouseDown={handleMouseDown} />
         )}
 
-        {/* Bottom Window: Chat/LLM Interface */}
-        <div className="retro-window flex-1 flex flex-col min-h-0">
-          <div className="retro-titlebar">
-            <span>Q&A Assistant</span>
-            <div className="retro-titlebar-buttons">
-              <div className="retro-titlebar-button">_</div>
-              <div className="retro-titlebar-button">□</div>
-              <div className="retro-titlebar-button">X</div>
+        {/* Bottom Panel: Chat Interface */}
+        <div className="app-card flex-1 flex flex-col min-h-0">
+          <div className="app-card-header">
+            <div className="app-card-title">
+              <span className="title-dot" style={{ background: 'var(--success)' }} />
+              ExpenseSense Assistant
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {isTopMinimized && (
+                <button
+                  className="app-btn"
+                  style={{ fontSize: '11px', padding: '3px 8px' }}
+                  onClick={() => setIsTopMinimized(false)}
+                >
+                  Show Data
+                </button>
+              )}
+              <div className="app-window-controls">
+                <button
+                  className="app-window-btn maximize"
+                  onClick={() => setIsTopMinimized(!isTopMinimized)}
+                  title={isTopMinimized ? 'Show data panel' : 'Hide data panel'}
+                />
+              </div>
             </div>
           </div>
 
-          <div className="retro-content flex-1 h-[calc(100%-25px)] p-0 min-h-0">
-            {/* Inline chat interface instead of overlay */}
+          <div className="flex-1 min-h-0 p-0">
             <ChatInterface
               data={rawData}
               currency={currency}
@@ -177,26 +203,16 @@ function App() {
         </div>
       </div>
 
-      {/* Windows 95 Taskbar */}
-      <div className="retro-taskbar">
-        <button className="retro-start-button">
-          <span className="text-[13px] font-bold">Start</span>
-        </button>
-        <div className="retro-taskbar-divider" />
-        <div className="retro-taskbar-windows">
-          <button 
-            className={`retro-taskbar-item ${isTopMinimized ? 'minimized' : 'active'}`}
-            onClick={() => setIsTopMinimized(!isTopMinimized)}
-          >
-            <span>📊 Microsoft Excel - Data.xls</span>
-          </button>
-          <button className="retro-taskbar-item active">
-            <span>💬 Q&A Assistant</span>
-          </button>
-        </div>
-        <div className="retro-taskbar-clock">
-          <span>{currentTime}</span>
-        </div>
+      {/* Bottom Status Bar */}
+      <div className="app-toolbar">
+        <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--accent)', letterSpacing: '-0.01em' }}>
+          ExpenseSense
+        </span>
+        <div style={{ width: '1px', height: '14px', background: 'var(--border-light)', margin: '0 6px' }} />
+        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+          {rawData ? `${rawData.length} records loaded` : ''}
+        </span>
+        <div className="app-toolbar-clock">{currentTime}</div>
       </div>
     </div>
   );
