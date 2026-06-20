@@ -159,8 +159,8 @@ Output: 5
 """
 
 
-def build_single_agent_prompt(metadata: str, current_date: str) -> str:
-    return f"""
+def build_single_agent_prompt(metadata: str, current_date: str, model_id: Optional[str] = None) -> str:
+    prompt = f"""
 You are an intelligent API parameter extractor for an expense analysis system.
 
 Your task is to output a single JSON object containing:
@@ -187,7 +187,7 @@ Your task is to output a single JSON object containing:
 5. `get_top_expenses`: n (int), category (str), year (int), month (int), day (int), start_year (int), start_month (int), end_year (int), end_month (int), months (int), min_amount (int), ignore_rent (bool)
 
 ## Examples
-Q: "How much did I spend on groceries in Dec 2024?"
+Q: "How much did I spend on groceries in Dec 024?"
 {{"tool": 4, "category": "grocery", "year": 2024, "month": 12}}
 
 Q: "Compare total spending 2022 vs 2023"
@@ -214,6 +214,7 @@ Today: {current_date}
 
 FINAL REMINDER: Output ONLY the JSON object. NO MARKDOWN, NO BACKTICKS, NO EXPLANATION, NO CODE!
 """
+    return prompt
 
 
 # -----------------------------------------------------------------------------
@@ -436,10 +437,17 @@ def params_to_call_str(params: dict[str, Any]) -> str:
     return ", ".join(parts)
 
 
+def _canonical_val_str(v: Any) -> str:
+    """Canonical string for set-based scoring — normalises bool/int ambiguity."""
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    return str(v).strip().lower()
+
+
 def expected_set(tool: str, expected_params: dict[str, Any]) -> set[str]:
     s = {tool.lower()}
     for k, v in expected_params.items():
-        s.add(f"{k}={str(v).lower()}")
+        s.add(f"{k}={_canonical_val_str(v)}")
     return s
 
 
@@ -449,7 +457,7 @@ def predicted_set(tool: str, params: dict[str, Any]) -> set[str]:
         # FIX: filter the positional 'df' argument that AST parsing may capture.
         # It is never part of the expected parameter set and would inflate false negatives.
         if v is not None and k.lower() != "df":
-            s.add(f"{k}={str(v).lower()}")
+            s.add(f"{k}={_canonical_val_str(v)}")
     return s
 
 
@@ -753,7 +761,7 @@ def benchmark_single_agent(
     max_tokens: Optional[int] = None,
     min_p: Optional[float] = None,
 ) -> dict[str, Any]:
-    prompt = build_single_agent_prompt(metadata=metadata, current_date=current_date)
+    prompt = build_single_agent_prompt(metadata=metadata, current_date=current_date, model_id=model_id)
     with ResourceMonitor() as rm:
         raw_text, elapsed, err = run_llm(
             model_id,
@@ -884,9 +892,9 @@ def benchmark_dual_agent(
 
         # Stage 2: Specialist
         predicted_tool_for_prompt = router_tool if router_tool in ALLOWED_TOOLS else "calculate_total"
-        tool_prompt_template = get_tool_prompt(predicted_tool_for_prompt)
+        tool_prompt_template = get_tool_prompt(predicted_tool_for_prompt, model_id=specialist_model)
         if tool_prompt_template is None:
-            tool_prompt_template = get_tool_prompt("calculate_total")
+            tool_prompt_template = get_tool_prompt("calculate_total", model_id=specialist_model)
 
         specialist_system_prompt = tool_prompt_template.replace(
             "{metadata}", metadata
@@ -1255,7 +1263,7 @@ def warmup_model(model_id: str, current_date: str, metadata: str, n_reps: int = 
     ])
     # All specialist prompts
     for tool_name in sorted(ALLOWED_TOOLS):
-        tool_prompt = get_tool_prompt(tool_name)
+        tool_prompt = get_tool_prompt(tool_name, model_id=model_id)
         if tool_prompt is None:
             continue
         try:

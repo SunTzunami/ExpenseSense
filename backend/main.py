@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
 from experiments.inference import generate
 from experiments.models import get_llamacpp_models
+from utils.llm_input_validation import validate_and_fix_params
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -193,11 +194,11 @@ async def analyze_stream(request: AnalyzeRequest):
             logger.info(f"Router decided on tool: {tool_name} (raw output: {router_output.strip()})")
 
             # --- STAGE 2: SPECIALIST ---
-            tool_prompt_template = get_tool_prompt(tool_name)
+            tool_prompt_template = get_tool_prompt(tool_name, model_id=request.model)
             if not tool_prompt_template:
                 logger.warning(f"Tool '{tool_name}' not found. Falling back to calculate_total.")
                 tool_name = "calculate_total"
-                tool_prompt_template = get_tool_prompt("calculate_total")
+                tool_prompt_template = get_tool_prompt("calculate_total", model_id=request.model)
 
             yield _sse_event("status", {
                 "stage": "specialist",
@@ -247,7 +248,7 @@ async def analyze_stream(request: AnalyzeRequest):
             except Exception as json_err:
                 logger.error(f"JSON parsing failed: {json_err}. Trying regex fallback...")
                 # Regex fallback parsing
-                for key in ["category", "year", "month", "day", "start_year", "start_month", "end_year", "end_month", "months", "ignore_rent", "remarks", "n", "min_amount", "y1", "m1", "d1", "y2", "m2", "d2"]:
+                for key in ["category", "year", "month", "day", "start_year", "start_month", "end_year", "end_month", "months", "ignore_rent", "remarks", "n", "min_amount", "y1", "m1", "d1", "y2", "m2", "d2", "sm1", "em1", "sm2", "em2", "ey1", "ey2"]:
                     pattern = r'["\']?' + re.escape(key) + r'["\']?\s*[:=]\s*["\']?([^"\'\s,}]+)["\']?'
                     match = re.search(pattern, json_str)
                     if match:
@@ -256,11 +257,16 @@ async def analyze_stream(request: AnalyzeRequest):
                             params[key] = True
                         elif val.lower() == 'false':
                             params[key] = False
-                        elif val.isdigit():
+                        elif re.fullmatch(r'-?\d+', val):
                             params[key] = int(val)
                         elif val.lower() != 'none' and val.lower() != 'null':
                             params[key] = val
                 logger.info(f"Regex fallback parsed params: {params}")
+
+            # --- STAGE 2.5: VALIDATE & FIX PARAMS ---
+            params, validation_warning = validate_and_fix_params(params, df)
+            if validation_warning:
+                logger.info(f"Validation fixes applied: {validation_warning}")
 
             # --- STAGE 3: EXECUTION ---
             yield _sse_event("status", {

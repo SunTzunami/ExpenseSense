@@ -26,3 +26,7 @@ dist-ssr
 .env
 .env.*
 **/backend/utils/archived/
+
+# GGUF models and directories
+*.gguf
+backend/models/

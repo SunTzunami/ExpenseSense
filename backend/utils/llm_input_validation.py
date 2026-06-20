@@ -109,7 +109,7 @@ def validate_and_fix_params(
         if input_cat.lower() != str(match_cat).lower():
             warnings.append(f"Corrected '{input_cat}' → category='{match_cat}'")
 
-    elif score_cat >= 0.35:
+    elif score_cat >= 0.50:
         cleaned_params.pop("major_category", None)
         cleaned_params["category"] = match_cat
         warnings.append(

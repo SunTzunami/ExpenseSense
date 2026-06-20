@@ -114,12 +114,12 @@ def _pub_style() -> None:
     plt.rcParams.update({
         "font.family":        "sans-serif",
         "font.sans-serif":    ["Arial", "Helvetica", "DejaVu Sans"],
-        "font.size":          9,
-        "axes.titlesize":     10,
-        "axes.labelsize":     9,
-        "xtick.labelsize":    8,
-        "ytick.labelsize":    8,
-        "legend.fontsize":    8,
+        "font.size":          12,
+        "axes.titlesize":     14,
+        "axes.labelsize":     12,
+        "xtick.labelsize":    11,
+        "ytick.labelsize":    11,
+        "legend.fontsize":    11,
         "axes.spines.top":    False,
         "axes.spines.right":  False,
         "axes.linewidth":     0.8,
@@ -149,7 +149,17 @@ def _short(model_id: str) -> str:
         name = name.replace(pat, "")
     # strip GGUF quantization suffixes like -Q4_K_M, -Q8_0, -IQ3_XS etc.
     name = re.sub(r"-[QI][\dA-Z_]+$", "", name, flags=re.IGNORECASE)
-    return name
+    
+    # Custom mappings for clean presentation in figures:
+    name_map = {
+        "minicpm5-1b": "MiniCPM 1B",
+        "gemma-3-1b-it": "Gemma-3 1B",
+        "EXAONE-4.0-1.2B": "EXAONE 1.2B",
+        "LFM2-1.2B": "LFM2 1.2B",
+        "Qwen3.5-0.8B": "Qwen3.5 0.8B",
+        "Qwen3.5-2B": "Qwen3.5 2B",
+    }
+    return name_map.get(name, name)
 
 
 def _savefig(fig, out_dir: str, name: str, fmt: str = "png") -> None:
@@ -619,11 +629,11 @@ def _generate_bfcl_radar(df: pd.DataFrame, out_dir: str, prefix: str) -> None:
     fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
-    plt.xticks(angles[:-1], categories, size=8, weight="bold")
+    plt.xticks(angles[:-1], categories, size=11, weight="bold")
     ax.tick_params(axis="x", pad=12)
     ax.set_rlabel_position(0)
     plt.yticks([0.2, 0.4, 0.6, 0.8, 1.0],
-               ["0.2", "0.4", "0.6", "0.8", "1.0"], color="grey", size=7)
+               ["0.2", "0.4", "0.6", "0.8", "1.0"], color="#444444", size=10.5)
     plt.ylim(0, 1.05)
 
     model_ids = pivot.index.tolist()
@@ -636,10 +646,10 @@ def _generate_bfcl_radar(df: pd.DataFrame, out_dir: str, prefix: str) -> None:
         ax.fill(angles, vals, color=color, alpha=0.1)
 
     ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1),
-               title="Models", frameon=True, fontsize=7)
+               title="Models", frameon=True, fontsize=10.5, title_fontsize=11)
     mode_label = prefix.replace("_", "").capitalize()
     ax.set_title(f"Task Footprint — {mode_label} Mode\n(BFCL Radar Style)",
-              size=10, weight="bold", y=1.1)
+              size=13, weight="bold", y=1.1)
 
     _savefig(fig, out_dir, f"{prefix}bfcl_radar")
 
@@ -719,8 +729,8 @@ def _generate_tradeoff_scatter(df: pd.DataFrame, out_dir: str) -> None:
                    s=80, alpha=0.8, edgecolor="white", linewidth=0.8, zorder=3)
 
         for _, row in mdf.iterrows():
-            ax.text(row["avg_time"] + 0.1, row["avg_acc"] * 100 + 0.5,
-                    _short(row["Model"]), fontsize=7, alpha=0.8)
+            ax.text(row["avg_time"] + 0.12, row["avg_acc"] * 100 + 0.6,
+                    _short(row["Model"]), fontsize=10.5, fontweight="bold", alpha=0.9, zorder=5)
 
     # FIX-8: proper Pareto front — sort by latency, keep only points that
     # improve accuracy; then draw as a plain line (not step).
@@ -737,12 +747,12 @@ def _generate_tradeoff_scatter(df: pd.DataFrame, out_dir: str) -> None:
                 color="#888888", linestyle="--", linewidth=1.0, alpha=0.5,
                 label="Pareto Front", zorder=1)
 
-    ax.set_xlabel("Average Latency (s)")
-    ax.set_ylabel("Task Accuracy (%)")
-    ax.set_title("Latency vs Accuracy Tradeoff", fontweight="bold")
+    ax.set_xlabel("Average Latency (s)", fontsize=12)
+    ax.set_ylabel("Task Accuracy (%)", fontsize=12)
+    ax.set_title("Latency vs Accuracy Tradeoff", fontweight="bold", fontsize=13)
     ax.set_ylim(0, 105)
     ax.set_xlim(left=0)
-    ax.legend(fontsize=7, loc="lower right")
+    ax.legend(fontsize=10.5, loc="lower right")
     ax.grid(True, alpha=0.3)
 
     fig.tight_layout()
@@ -1028,21 +1038,21 @@ def _generate_error_taxonomy_plot(df: pd.DataFrame, out_dir: str) -> None:
                 if val > 8:
                     ax.text(x[i_bar], bottoms[i_bar] + val / 2, f"{val:.0f}%",
                             ha="center", va="center", color="white",
-                            fontsize=6.5, fontweight="bold")
+                            fontsize=9.5, fontweight="bold")
 
             bottoms += vals
 
         ax.set_xticks(x)
-        ax.set_xticklabels([_short(m) for m in plot_models], rotation=30, ha="right")
-        ax.set_title(f"{mode.capitalize()} Architecture")
+        ax.set_xticklabels([_short(m) for m in plot_models], rotation=30, ha="right", fontsize=11)
+        ax.set_title(f"{mode.capitalize()} Architecture", fontsize=12, fontweight="bold")
         if ax is axes[0]:
-            ax.set_ylabel("Percentage of Test Cases (%)")
+            ax.set_ylabel("Percentage of Test Cases (%)", fontsize=12)
 
     axes[-1].legend(title="Error Taxonomy", bbox_to_anchor=(1.05, 1),
-                    loc="upper left", fontsize=7.5)
+                    loc="upper left", fontsize=10, title_fontsize=11)
 
     fig.suptitle("Error Breakdown by Architecture and Model",
-                 fontsize=11, fontweight="bold", y=1.02)
+                 fontsize=14, fontweight="bold", y=1.02)
     fig.tight_layout()
     _savefig(fig, out_dir, "error_taxonomy_breakdown")
 
@@ -1082,20 +1092,20 @@ def _generate_difficulty_breakdown(df: pd.DataFrame, out_dir: str) -> None:
 
         for bar, v in zip(bars, vals):
             ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 2,
-                    f"{v:.1f}%", ha="center", va="bottom", fontweight="bold", fontsize=8)
+                    f"{v:.1f}%", ha="center", va="bottom", fontweight="bold", fontsize=11)
 
         ax.set_xticks(x)
         counts = mdf["TC_Difficulty"].value_counts()
-        ax.set_xticklabels([f"{lvl}\n(n={counts.get(lvl, 0)})" for lvl in levels], fontsize=8)
+        ax.set_xticklabels([f"{lvl}\n(n={counts.get(lvl, 0)})" for lvl in levels], fontsize=11)
         ax.set_ylim(0, 115)
         ax.axhline(100, color="#cccccc", ls="--", lw=0.5)
-        ax.set_title(f"{mode.capitalize()} Architecture")
+        ax.set_title(f"{mode.capitalize()} Architecture", fontsize=12, fontweight="bold")
 
         if ax is axes[0]:
-            ax.set_ylabel("Task Accuracy (%)")
+            ax.set_ylabel("Task Accuracy (%)", fontsize=12)
 
     fig.suptitle("Accuracy by Computed Task Complexity",
-                 fontsize=11, fontweight="bold", y=1.05)
+                 fontsize=14, fontweight="bold", y=1.05)
     fig.tight_layout()
     _savefig(fig, out_dir, "difficulty_breakdown")
 
@@ -1246,11 +1256,11 @@ def _generate_combined_bfcl_radar(df: pd.DataFrame, out_dir: str) -> None:
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
 
-    plt.xticks(angles[:-1], categories, size=8, weight="bold")
+    plt.xticks(angles[:-1], categories, size=11, weight="bold")
     ax.tick_params(axis="x", pad=12)
     ax.set_rlabel_position(0)
     plt.yticks([0.2, 0.4, 0.6, 0.8, 1.0],
-               ["0.2", "0.4", "0.6", "0.8", "1.0"], color="grey", size=7)
+               ["0.2", "0.4", "0.6", "0.8", "1.0"], color="#444444", size=10.5)
     plt.ylim(0, 1.05)
 
     for mode in modes:
@@ -1262,9 +1272,9 @@ def _generate_combined_bfcl_radar(df: pd.DataFrame, out_dir: str) -> None:
         ax.fill(angles, vals, color=color, alpha=0.15)
 
     ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1),
-               title="Architectures", frameon=True, fontsize=8)
+               title="Architectures", frameon=True, fontsize=10.5, title_fontsize=11)
     ax.set_title("Combined Task Footprint Comparison\n(Mean across all models)",
-              size=11, weight="bold", y=1.1)
+              size=13, weight="bold", y=1.1)
 
     _savefig(fig, out_dir, "combined_bfcl_radar")
 

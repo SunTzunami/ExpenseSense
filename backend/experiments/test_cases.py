@@ -445,7 +445,7 @@ _RAW_CASES: list[dict[str, Any]] = [
         "id": "DI18", "group": "distribution",
         "q": "plz share distribuution of souvenirs expenses from 2023 jan to 2025/12",
         "tool": "plot_distribution",
-        "expected": {"category": "Souvenirs/Gifts/Treats", "start_year": 2023, "start_month": 1, "end_year": 2025, "end_month": 12},
+        "expected": {"category": "souvenirs/gifts/treats", "start_year": 2023, "start_month": 1, "end_year": 2025, "end_month": 12},
     },
     {
         "id": "DI19", "group": "distribution",

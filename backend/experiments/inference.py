@@ -1,5 +1,5 @@
 """
-inference.py – Unified inference dispatch for LlamaCpp, Ollama, and Google API backends.
+inference.py – Unified inference dispatch for LlamaCpp backend.
 
 All backends return the same (response, elapsed_s, error_or_None) triple.
 Fully standalone — no imports from backend/utils/.
@@ -84,6 +84,7 @@ class LlamaCppModel:
             cls._instance = super(LlamaCppModel, cls).__new__(cls)
             cls._instance.model = None
             cls._instance.current_model_path = None
+            cls._instance.current_enable_thinking = False
             cls._instance.last_usage = {}
         return cls._instance
 
@@ -117,24 +118,62 @@ class LlamaCppModel:
                         
         return os.path.join(models_dir, model_identifier)  # fallback
 
-    def load_model(self, model_identifier: str) -> None:
+    def load_model(self, model_identifier: str, enable_thinking: bool = False) -> None:
         from llama_cpp import Llama
         import gc
             
         model_path = self.resolve_path(model_identifier)
         
-        if self.current_model_path == model_path and self.model is not None:
+        if (self.current_model_path == model_path and 
+            self.model is not None and 
+            getattr(self, "current_enable_thinking", False) == enable_thinking):
             return
 
-        logger.info(f"Loading Llama.cpp model from: {model_path} (Identified as: {model_identifier})")
+        # If a model is already loaded, free it first to avoid out-of-memory
+        if self.model is not None:
+            if hasattr(self.model, "close"):
+                try:
+                    self.model.close()
+                except Exception:
+                    pass
+            del self.model
+            self.model = None
+            gc.collect()
+
+        logger.info(f"Loading Llama.cpp model from: {model_path} (Identified as: {model_identifier}) with enable_thinking={enable_thinking}")
         try:
             self.model = Llama(
                 model_path=model_path,
                 n_gpu_layers=-1, # Accelerate as much as possible
                 n_ctx=4096, # Context window size
-                verbose=False
+                verbose=False,
             )
+            
+            # Apply custom chat formatter to disable thinking for minicpm if needed
+            if not enable_thinking and "minicpm" in model_identifier.lower():
+                template = self.model.metadata.get('tokenizer.chat_template')
+                if template and "enable_thinking" in template:
+                    from llama_cpp.llama_chat_format import Jinja2ChatFormatter
+                    eos_token_id = self.model.token_eos()
+                    bos_token_id = self.model.token_bos()
+                    eos_token = self.model._model.token_get_text(eos_token_id) if eos_token_id != -1 else ""
+                    bos_token = self.model._model.token_get_text(bos_token_id) if bos_token_id != -1 else ""
+                    
+                    class CustomFormatter(Jinja2ChatFormatter):
+                        def __call__(self, **kwargs):
+                            kwargs["enable_thinking"] = False
+                            return super().__call__(**kwargs)
+                            
+                    formatter = CustomFormatter(
+                        template=template,
+                        eos_token=eos_token,
+                        bos_token=bos_token,
+                        stop_token_ids=[eos_token_id]
+                    )
+                    self.model.chat_handler = formatter.to_chat_handler()
+
             self.current_model_path = model_path
+            self.current_enable_thinking = enable_thinking
             logger.info("Llama.cpp model loaded successfully.")
         except Exception as e:
             logger.error(f"Failed to load Llama.cpp model: {e}")
@@ -146,12 +185,13 @@ class LlamaCppModel:
         messages: list,
         max_tokens: int = 4096,
         temperature: float = 0.0,
+        enable_thinking: bool = False,
         top_p: Optional[float] = None,
         top_k: Optional[int] = None,
         min_p: Optional[float] = None,
         stop: Optional[list[str]] = None,
     ) -> str:
-        self.load_model(model_identifier)
+        self.load_model(model_identifier, enable_thinking=enable_thinking)
         kwargs = {
             "messages": messages,
             "max_tokens": max_tokens,
@@ -204,6 +244,7 @@ def generate_llamacpp(
             "model_identifier": model_id,
             "messages": messages,
             "temperature": temperature,
+            "enable_thinking": enable_thinking,
         }
         if top_p is not None:
             chat_kwargs["top_p"] = top_p
@@ -228,131 +269,6 @@ def generate_llamacpp(
         return "", 0.0, str(exc)
 
 
-# ── Ollama inference ─────────────────────────────────────────────────────────
-
-def generate_ollama(
-    model_id: str,
-    messages: list[dict[str, str]],
-    temperature: float = 0.0,
-    top_p: Optional[float] = None,
-    top_k: Optional[int] = None,
-    max_tokens: Optional[int] = None,
-    min_p: Optional[float] = None,
-    stop: Optional[list[str]] = None,
-) -> tuple[str, float, Optional[str]]:
-    """Call Ollama and return (response, elapsed_s, error)."""
-    try:
-        import ollama
-
-        options = {"temperature": temperature}
-        if top_p is not None:
-            options["top_p"] = top_p
-        if top_k is not None:
-            options["top_k"] = top_k
-        if max_tokens is not None:
-            options["num_predict"] = max_tokens
-        if min_p is not None:
-            options["min_p"] = min_p
-        if stop is not None:
-            options["stop"] = stop
-
-        t0 = time.perf_counter()
-        response = ollama.chat(
-            model=model_id,
-            messages=messages,
-            options=options,
-        )
-        elapsed = time.perf_counter() - t0
-
-        global _last_usage
-        _last_usage = {
-            "prompt_tokens": response.get("prompt_eval_count", 0),
-            "completion_tokens": response.get("eval_count", 0),
-            "total_tokens": response.get("prompt_eval_count", 0) + response.get("eval_count", 0),
-        }
-
-        return response["message"]["content"].strip(), elapsed, None
-    except ImportError:
-        return "", 0.0, "ollama package not installed. Run: pip install ollama"
-    except Exception as exc:
-        logger.error(f"Ollama inference error: {exc}")
-        return "", 0.0, str(exc)
-
-
-# ── Google API inference ─────────────────────────────────────────────────────
-
-def generate_google(
-    model_id: str,
-    messages: list[dict[str, str]],
-    temperature: float = 0.0,
-    top_p: Optional[float] = None,
-    top_k: Optional[int] = None,
-    max_tokens: Optional[int] = None,
-    stop: Optional[list[str]] = None,
-) -> tuple[str, float, Optional[str]]:
-    """Call Google Generative AI API and return (response, elapsed_s, error)."""
-    try:
-        import google.generativeai as genai
-        import os
-
-        api_key = os.environ.get("GOOGLE_API_KEY")
-        if not api_key:
-            return "", 0.0, "GOOGLE_API_KEY environment variable not set"
-
-        genai.configure(api_key=api_key)
-
-        # Convert messages to Google format
-        system_msg = ""
-        conversation = []
-        for msg in messages:
-            if msg["role"] == "system":
-                system_msg += msg["content"] + "\n"
-            elif msg["role"] == "user":
-                conversation.append({"role": "user", "parts": [msg["content"]]})
-            elif msg["role"] == "assistant":
-                conversation.append({"role": "model", "parts": [msg["content"]]})
-
-        model = genai.GenerativeModel(
-            model_id,
-            system_instruction=system_msg.strip() if system_msg else None,
-        )
-
-        gen_config_kwargs = {"temperature": temperature}
-        if top_p is not None:
-            gen_config_kwargs["top_p"] = top_p
-        if top_k is not None:
-            gen_config_kwargs["top_k"] = top_k
-        if max_tokens is not None:
-            gen_config_kwargs["max_output_tokens"] = max_tokens
-        if stop is not None:
-            gen_config_kwargs["stop_sequences"] = stop
-
-        t0 = time.perf_counter()
-        response = model.generate_content(
-            conversation,
-            generation_config=genai.GenerationConfig(**gen_config_kwargs),
-        )
-        elapsed = time.perf_counter() - t0
-
-        global _last_usage
-        usage_metadata = getattr(response, "usage_metadata", None)
-        if usage_metadata:
-            _last_usage = {
-                "prompt_tokens": usage_metadata.prompt_token_count,
-                "completion_tokens": usage_metadata.candidates_token_count,
-                "total_tokens": usage_metadata.total_token_count,
-            }
-        else:
-            _last_usage = {}
-
-        return response.text.strip(), elapsed, None
-    except ImportError:
-        return "", 0.0, "google-generativeai package not installed. Run: pip install google-generativeai"
-    except Exception as exc:
-        logger.error(f"Google API inference error: {exc}")
-        return "", 0.0, str(exc)
-
-
 # ── Unified dispatch ─────────────────────────────────────────────────────────
 
 def generate(
@@ -370,14 +286,10 @@ def generate(
     """
     Unified inference dispatch.
 
-    backend: 'llamacpp', 'ollama', 'google'
+    backend: 'llamacpp'
     Returns: (response_text, elapsed_seconds, error_string_or_None)
     """
     if backend == "llamacpp":
         return generate_llamacpp(model_id, messages, temperature, enable_thinking, top_p, top_k, max_tokens, min_p, stop)
-    elif backend == "ollama":
-        return generate_ollama(model_id, messages, temperature, top_p, top_k, max_tokens, min_p, stop)
-    elif backend == "google":
-        return generate_google(model_id, messages, temperature, top_p, top_k, max_tokens, stop)
     else:
         return "", 0.0, f"Unknown backend: {backend}"

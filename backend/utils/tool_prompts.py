@@ -275,14 +275,38 @@ Q: "tell me the top 15 expenses for 2025, ignore rent plz"
     }
 }
 
-def get_tool_prompt(tool_name):
+def is_minicpm_model(model_id: str) -> bool:
+    if not model_id:
+        return False
+    model_id_lower = model_id.lower()
+    if "minicpm" in model_id_lower:
+        return True
+    
+    # Try importing get_model_info dynamically to see if we can resolve the family registry
+    try:
+        from experiments.models import get_model_info
+        info = get_model_info(model_id)
+        if info:
+            family = info.get("family", "")
+            if family and "minicpm" in family.lower():
+                return True
+            m_id = info.get("id", "")
+            if m_id and "minicpm" in m_id.lower():
+                return True
+    except Exception:
+        pass
+    return False
+
+
+def get_tool_prompt(tool_name, model_id=None):
     if tool_name not in TOOL_PROMPTS:
         return None
 
     tool_data = TOOL_PROMPTS[tool_name]
-    return BASE_INSTRUCTIONS.format(
+    prompt = BASE_INSTRUCTIONS.format(
         metadata="{metadata}",
         current_date="{current_date}",
         parameters=tool_data["parameters"],
         examples=tool_data["examples"]
     )
+    return prompt

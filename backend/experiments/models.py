@@ -48,6 +48,18 @@ MODEL_REGISTRY: dict[str, dict[str, Any]] = {
         "ram_gb": 1.3,
     },
 
+    # MiniCPM
+    "minicpm5-1b-q8": {
+        "id": "minicpm5-1b-Q8_0.gguf",
+        "params": "1B",
+        "quant": "Q8_0",
+        "family": "MiniCPM",
+        "arch": "Dense transformer",
+        "backend": "llamacpp",
+        "supports_thinking": True,
+        "ram_gb": 1.1,
+    },
+
     # Qwen3.5
     "qwen3.5-0.8b-q8": {
         "id": "Qwen3.5-0.8B-Q8_0.gguf",
@@ -73,16 +85,6 @@ MODEL_REGISTRY: dict[str, dict[str, Any]] = {
 
 
     # ── API models ──────────────────────────────────────────────────────
-    "gemini-3-flash": {
-        "id": "gemini-3-flash-preview",
-        "params": "N/A",
-        "quant": "N/A",
-        "family": "Gemini",
-        "arch": "MoE",
-        "backend": "google",
-        "supports_thinking": False,
-        "ram_gb": 0,
-    },
 }
 
 
@@ -103,24 +105,6 @@ def get_llamacpp_models() -> list[str]:
         v["id"]
         for v in MODEL_REGISTRY.values()
         if v["backend"] == "llamacpp"
-    ]
-
-
-def get_ollama_models() -> list[str]:
-    """Return model IDs for all Ollama models."""
-    return [
-        v["id"]
-        for v in MODEL_REGISTRY.values()
-        if v["backend"] == "ollama"
-    ]
-
-
-def get_api_models() -> list[dict[str, str]]:
-    """Return (provider, model_id) pairs for API models."""
-    return [
-        {"provider": v["backend"], "id": v["id"]}
-        for v in MODEL_REGISTRY.values()
-        if v["backend"] in ("google",)
     ]
 
 
