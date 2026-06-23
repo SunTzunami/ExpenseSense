@@ -36,12 +36,12 @@ MODEL_REGISTRY: dict[str, dict[str, Any]] = {
         "ram_gb": 1.1,
     },
 
-    # LFM2
-    "lfm2-1.2b-q8": {
-        "id": "LFM2-1.2B-Q8_0.gguf",
+    # LFM2.5
+    "lfm2.5-1.2b-instruct-q8": {
+        "id": "LFM2.5-1.2B-Instruct-Q8_0.gguf",
         "params": "1.2B",
         "quant": "Q8_0",
-        "family": "LFM2",
+        "family": "LFM2.5",
         "arch": "Dense transformer",
         "backend": "llamacpp",
         "supports_thinking": False,

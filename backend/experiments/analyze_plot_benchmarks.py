@@ -155,6 +155,7 @@ def _short(model_id: str) -> str:
         "minicpm5-1b": "MiniCPM 1B",
         "gemma-3-1b-it": "Gemma-3 1B",
         "EXAONE-4.0-1.2B": "EXAONE 1.2B",
+        "LFM2.5-1.2B": "LFM2.5 Instruct 1.2B",
         "LFM2-1.2B": "LFM2 1.2B",
         "Qwen3.5-0.8B": "Qwen3.5 0.8B",
         "Qwen3.5-2B": "Qwen3.5 2B",
@@ -191,15 +192,18 @@ _NEW_COLS = {
 }
 
 
-def load_and_clean_data(excel_path: str) -> pd.DataFrame:
-    print(f"Reading '{excel_path}' ...")
-    try:
-        df = pd.read_excel(excel_path, sheet_name="Raw")
-    except Exception:
+def load_and_clean_data(file_path: str) -> pd.DataFrame:
+    print(f"Reading '{file_path}' ...")
+    if file_path.lower().endswith(".csv"):
+        df = pd.read_csv(file_path)
+    else:
         try:
-            df = pd.read_excel(excel_path, sheet_name="Raw Observations")
+            df = pd.read_excel(file_path, sheet_name="Raw")
         except Exception:
-            df = pd.read_excel(excel_path, sheet_name=0)
+            try:
+                df = pd.read_excel(file_path, sheet_name="Raw Observations")
+            except Exception:
+                df = pd.read_excel(file_path, sheet_name=0)
 
     present = set(df.columns)
 
@@ -1509,7 +1513,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--input", required=True,
-        help="Path to combined (or single/dual) Excel file from expense_benchmark.py",
+        help="Path to combined (or single/dual) Excel or CSV file from expense_benchmark.py",
     )
     parser.add_argument(
         "--output", default="figures/",

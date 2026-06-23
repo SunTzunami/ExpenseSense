@@ -160,56 +160,72 @@ Output: 5
 
 
 def build_single_agent_prompt(metadata: str, current_date: str, model_id: Optional[str] = None) -> str:
-    prompt = f"""
-You are an intelligent API parameter extractor for an expense analysis system.
+    from utils.tool_prompts import BASE_INSTRUCTIONS, TOOL_PROMPTS
+    import re
+    global ROUTER_PROMPT
+    
+    # 1. Extract "Available Tools" from ROUTER_PROMPT
+    tools_match = re.search(r"(## Available Tools.*?)(?=## Output Format|$)", ROUTER_PROMPT, re.DOTALL)
+    available_tools_text = tools_match.group(1).strip() if tools_match else "## Available Tools\n1. plot_time_series (1)\n2. plot_distribution (2)\n3. plot_comparison_bars (3)\n4. calculate_total (4)\n5. get_top_expenses (5)"
+    
+    # 2. Extract base rules from BASE_INSTRUCTIONS
+    base_instructions_text = BASE_INSTRUCTIONS.replace(
+        "{{\"category\": \"Food\", \"months\": 6}}",
+        "{{\"tool\": 1, \"category\": \"Food\", \"months\": 6}}"
+    )
+    base_rules_match = re.search(r"(.*?)(?=## Available Parameters)", base_instructions_text, re.DOTALL)
+    base_rules = base_rules_match.group(1).strip() if base_rules_match else base_instructions_text
+    base_rules = base_rules.replace("{{", "{").replace("}}", "}")
+    
+    # 3. Build the combined examples and parameters
+    tool_map = {
+        "plot_time_series": 1,
+        "plot_distribution": 2,
+        "plot_comparison_bars": 3,
+        "calculate_total": 4,
+        "get_top_expenses": 5
+    }
+    
+    combined_examples = []
+    parameters_text = []
+    for tool_name, tool_id in tool_map.items():
+        if tool_name in TOOL_PROMPTS:
+            params = TOOL_PROMPTS[tool_name]["parameters"]
+            parameters_text.append(f"{tool_id}. `{tool_name}`: {params}")
+            
+            examples_str = TOOL_PROMPTS[tool_name]["examples"]
+            def replace_json(match):
+                inner = match.group(1)
+                if not inner.strip():
+                    return f'{{"tool": {tool_id}}}'
+                return f'{{"tool": {tool_id}, {inner}}}'
+            
+            modified_examples = re.sub(r'^\{([^}]*)\}$', replace_json, examples_str, flags=re.MULTILINE)
+            combined_examples.append(f"### Tool {tool_id} ({tool_name}) Examples:\n{modified_examples}")
+            
+    all_examples = "\n\n".join(combined_examples)
+    all_parameters = "\n".join(parameters_text)
+    
+    prompt = f"""{base_rules}
 
-Your task is to output a single JSON object containing:
+Your task is to determine which ONE tool is best suited to answer the user's question AND extract the required parameters.
+You must output a single JSON object containing:
 1. "tool": The numeric ID (1-5) of the best tool suited for the query.
 2. The parameters for that tool.
 
-## TOOL IDs (1-5)
-1 = `plot_time_series`
-2 = `plot_distribution`
-3 = `plot_comparison_bars`
-4 = `calculate_total`
-5 = `get_top_expenses`
-
-## CRITICAL RULES (READ CAREFULLY)
-1. DO NOT write any Python code. DO NOT wrap the output in markdown. NO backticks (```).
-2. Output EXACTLY and ONLY a JSON object.
-3. Use EXACT category names from the metadata below. If not an exact match, map it to the closest one.
+{available_tools_text}
 
 ## PARAMETERS DEFINITIONS FOR EACH TOOL
-1. `plot_time_series`: category (str), year (int), month (int), start_year (int), start_month (int), end_year (int), end_month (int), months (int), ignore_rent (bool)
-2. `plot_distribution`: category (str), remarks (str), year (int), month (int), day (int), start_year (int), start_month (int), end_year (int), end_month (int), months (int), ignore_rent (bool)
-3. `plot_comparison_bars`: category (str), y1 (int), m1 (int), d1 (int), y2 (int), m2 (int), d2 (int), sm1 (int), em1 (int), sm2 (int), em2 (int), ey1 (int), ey2 (int), ignore_rent (bool)
-4. `calculate_total`: category (str), remarks (str), year (int), month (int), day (int), start_year (int), start_month (int), end_year (int), end_month (int), months (int), ignore_rent (bool)
-5. `get_top_expenses`: n (int), category (str), year (int), month (int), day (int), start_year (int), start_month (int), end_year (int), end_month (int), months (int), min_amount (int), ignore_rent (bool)
+{all_parameters}
 
 ## Examples
-Q: "How much did I spend on groceries in Dec 024?"
-{{"tool": 4, "category": "grocery", "year": 2024, "month": 12}}
+{all_examples}
 
-Q: "Compare total spending 2022 vs 2023"
-{{"tool": 3, "y1": 2022, "y2": 2023}}
-
-Q: "Compare dining between Jan-Jun 2024 and Jan-Jun 2025"
-{{"tool": 3, "category": "dining", "y1": 2024, "sm1": 1, "em1": 6, "y2": 2025, "sm2": 1, "em2": 6}}
-
-Q: "Show me food spending trend for the last 6 months"
-{{"tool": 1, "category": "Food", "months": 6}}
-
-Q: "What were my top 5 expenses excluding rent last month?"
-{{"tool": 5, "n": 5, "months": 1, "ignore_rent": true}}
-
-Q: "Split of spending for feb 2026"
-{{"tool": 2, "year": 2026, "month": 2}}
-
---------------------------------------------------
-
-## CONTEXT
+## Context
+```
 {metadata}
-
+```
+Currency: JPY
 Today: {current_date}
 
 FINAL REMINDER: Output ONLY the JSON object. NO MARKDOWN, NO BACKTICKS, NO EXPLANATION, NO CODE!

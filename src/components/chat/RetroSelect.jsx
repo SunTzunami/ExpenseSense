@@ -9,6 +9,7 @@ function getShortModelName(modelName) {
     if (clean.toLowerCase().includes("exaone")) return "EXAONE 1.2B";
     if (clean.toLowerCase().includes("gemma-4")) return "Gemma-4 2B";
     if (clean.toLowerCase().includes("gemma-3") || clean.toLowerCase().includes("gemma")) return "Gemma-3 1B";
+    if (clean.toLowerCase().includes("lfm2.5")) return "LFM2.5 Instruct 1.2B";
     if (clean.toLowerCase().includes("lfm2")) return "LFM2 1.2B";
     if (clean.toLowerCase().includes("minicpm")) return "MiniCPM 1B";
     if (clean.toLowerCase().includes("qwen3.5-0.8b")) return "Qwen3.5 0.8B";

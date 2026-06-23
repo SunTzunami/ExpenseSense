@@ -145,7 +145,7 @@ class LlamaCppModel:
             self.model = Llama(
                 model_path=model_path,
                 n_gpu_layers=-1, # Accelerate as much as possible
-                n_ctx=4096, # Context window size
+                n_ctx=8192, # Context window size (raised from 4096 to fit single-agent prompt ~5900 tokens)
                 verbose=False,
             )
             
