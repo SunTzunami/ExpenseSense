@@ -22,33 +22,25 @@
 \maketitle
 
 \begin{abstract}
-Personal finance data---spending habits, health-related purchases,
-temporal patterns---is among the most sensitive information people
-generate daily.
-Yet natural-language financial assistants today require transmitting
-these queries to cloud-hosted LLMs, exposing users to inference
-attacks, data retention, and third-party data flows that violate the
-contextual norms under which that data was created.
-We introduce \textbf{ExpenseSense}, a privacy-first personal finance
-assistant that runs entirely on-device, ensuring that no financial
+Personal finance data - detailed records of when, where, and how a user spends money - is among the most sensitive information individuals possess, making cloud-based LLM inference undesirable for many users.
+Yet natural-language personal finance assistants currently require transmitting these queries to cloud-hosted
+LLMs, exposing users to data retention and third-party data flows.
+We introduce \textbf{ExpenseSense}, a personal finance Q\&A assistant that runs entirely on-device, ensuring that no financial
 records, query text, or model outputs leave the user's device.
 To evaluate whether this privacy architecture is practically viable,
 we benchmark on-device tool calling using a 115-question test suite
-across six sub-2B quantized SLMs (0.8B--2B), comparing single-agent
+across six sub-2B quantized SLMs (0.8B-2B), comparing single-agent
 (joint routing and parameter extraction) against dual-agent
-(router-specialist) pipelines.
+(router-specialist) architectures.
 Architectural decomposition substantially improves both accuracy and
 safety: dual-agent Qwen3.5-2B achieves 77.6\% strict Correct Ratio
 (+17.4~pp over single-agent) while reducing average latency by 48\%,
 and dual-agent Qwen3.5-0.8B reaches 89.1\% Task Accuracy in 3.0~s
 with 1.2\,GB RAM.
-Critically, dual-agent architectures shift error modes toward safer
-failures---missing rather than spurious parameters---a property that
-directly reduces the risk of silent incorrect financial output
-reaching users.
+Critically, dual-agent architectures shift errors from spurious parameters to safer,
+missing parameters, reducing the risk of silent incorrect outputs.
 Our results demonstrate that private, high-quality financial analytics
 is achievable on consumer hardware today, with no cloud dependency.
-All code, data, and prompts are available on GitHub.
 \end{abstract}
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -58,11 +50,11 @@ All code, data, and prompts are available on GitHub.
 Large language models (LLMs) have rapidly advanced tool-augmented AI
 \citep{schick2024toolformer, patil2023gorilla, qin2023toolllm},
 enabling agents to invoke structured APIs from natural language.
-However, research primarily targets large cloud-hosted models, which
-is problematic for personal finance where local inference is crucial
+However, research primarily targets large cloud-hosted models which
+is problematic for personal finance where local inference is necessary
 for privacy.
-Expense records reveal sensitive behavioral patterns, yet users expect
-natural language interfaces (e.g., asking ``how much did I spend on
+Expense records reveal sensitive behavioral patterns (e.g., health-related purchases). 
+Users expect natural language interfaces (e.g., asking ``how much did I spend on
 food last month?'') that map to structured queries over local data
 \citep{li2024personal}.
 This creates an underexplored problem: can \emph{sub-2B quantized
@@ -71,7 +63,7 @@ domain-specific financial tools from informal, colloquial language,
 and in doing so, serve as practical privacy infrastructure for real
 users?
 
-Existing benchmarks \citep{yan2024bfcl, qin2023toolllm,
+Existing benchmarks \citep{qin2023toolllm,
 finmcpbench2026, fintrace2026} focus on models above 7B parameters,
 which are prohibitively slow for local deployment.
 Conversely, on-device models like Octopus~v2 \citep{chen2024octopus}
@@ -84,7 +76,7 @@ We address three research questions (\textbf{RQ}):
 \begin{itemize}\itemsep=0pt \parskip=0pt \parsep=0pt
   \item \textbf{RQ1}: Does on-device inference with sub-2B SLMs
         provide a practically viable privacy protection for personal
-        finance tool use---i.e., can users obtain accurate financial
+        finance tool use-i.e., can users obtain accurate financial
         analytics without surrendering query data to cloud providers?
   \item \textbf{RQ2}: Does decomposing intent classification from
         parameter extraction (dual-agent) yield significant accuracy
@@ -101,22 +93,21 @@ contributions:
     \item Empirical \textbf{on-device deployment guidelines for
           privacy}: Qwen3.5-0.8B in dual mode achieves 89.1\% Task
           Accuracy with 3.0~s latency and $\approx$1.2\,GB RAM,
-          demonstrating that private, high-quality financial analytics
-          can run locally on consumer hardware---making on-device
-          inference a practical privacy protection, not merely a
-          theoretical one.
+          demonstrating that private, high-quality personal finance analytics
+          can run locally on consumer hardware - making on-device
+          inference a practical privacy protection feature.
 
     \item A \textbf{fine-grained error taxonomy} of 7 categories
           showing that dual-agent architectures consolidate errors into
-          predictable, safer failure modes---shifting from spurious
+          predictable, safer failure modes-shifting from spurious
           parameter additions (which silently corrupt query results and
-          can mislead financial decisions) toward missing parameters
+          can mislead the user) toward missing parameters
           (which are visible omissions). This error-mode shift is the
           central human-safety argument for architectural decomposition.
 
     \item A comparative evaluation of \textbf{single-agent
           vs.\ dual-agent} architectures across six quantized SLMs
-          (0.8B--2.0B parameters), showing that dual-agent
+          (0.8B-2.0B parameters), showing that dual-agent
           decomposition reduces latency (by up to 48\% for
           Qwen3.5-2B), improves exact-match correctness (+17.4~pp
           Correct Ratio), and stabilizes sub-1B models without
@@ -135,20 +126,20 @@ contributions:
 
 The deployment of LLMs in personal finance exposes a structural
 tension: the same conversational interface that makes financial
-analytics accessible to users also makes their most sensitive
+analytics accessible to users also makes their sensitive
 behavioral data accessible to cloud providers.
-When a user types ``how much did I spend on therapy last month?'' into
+When a user types "how much did I spend on therapy last month?" into
 a cloud-hosted assistant, they are not merely querying a
-database---they transmit evidence of a health condition, a temporal 
+database-they transmit evidence of a health condition, a temporal 
 pattern, and financial commitment to a third-party infrastructure 
-they did not choose and cannot audit. The query is the disclosure.
+they did not choose and cannot audit. The query is a disclosure.
 
 \citet{staab2024memorization} demonstrated that LLMs can infer
-sensitive personal attributes---including location, income, and
-demographic characteristics---from seemingly innocuous text, and
+sensitive personal attributes-including location, income, and
+demographic characteristics-from seemingly innocuous texts, and
 \citet{yao2024survey} catalog privacy risks including data leakage,
 memorization, and inference attacks.
-The implication for financial assistants is direct: even if the
+The implication for personal financial assistants is direct: even if the
 database never leaves the device, routing natural-language queries
 through cloud LLMs leaks behavioral signals that can be retained,
 aggregated, and exploited beyond the user's control or knowledge.
@@ -160,32 +151,20 @@ hardware (tested on an Apple M1 with 8\,GB unified memory), all user
 data, query text, and model outputs remain strictly local.
 No financial records, queries or inferences leave the device.
 
-This local-first design instantiates \citeauthor{nissenbaum2004privacy}'s
-framework of \emph{contextual integrity}: financial data generated for
-personal expense tracking should remain within that context rather
-than flowing to third-party providers operating under different
-informational norms~\citep{nissenbaum2004privacy}.
-Routing a query like ``did I overspend on food this month?'' through a
-cloud LLM provider violates contextual integrity even when the
-underlying expense database is local---the query, not just the data,
-carries private information.
+The local-first design preserves \emph{contextual integrity}
+\citep{nissenbaum2004privacy} by ensuring financial queries and data
+remain within their original context.
 
-The practical threat model we address covers three distinct risks for
-users:
-\textbf{(1)} cloud provider data retention and secondary use of query
-logs;
-\textbf{(2)} query-level inference attacks that reconstruct user
-attributes from financial language patterns \citep{staab2024memorization};
-and
-\textbf{(3)} third-party exposure by provider breaches or subpoenas.
+The practical threat model covers three risks: cloud data retention, query-level
+inference attacks \citep{staab2024memorization}, and third-party exposure.
 On-device inference eliminates all three by ensuring queries never
-reach external infrastructure.
+leave for external infrastructure.
 
 The key challenge is that on-device inference with sub-2B models has
 historically been unreliable for structured tool calling
 \citep{kavathekar2025small}.
-Our work demonstrates that architectural decomposition---separating
-intent classification from parameter extraction---bridges this
+Our work demonstrates that architectural decomposition-separating
+intent classification from parameter extraction-bridges this
 reliability gap, making private on-device inference not merely
 possible but practical.
 
@@ -200,7 +179,7 @@ tool-use learning; Gorilla \citep{patil2023gorilla} and ToolLLM
 HuggingGPT \citep{shen2024hugginggpt} and ToolAlpaca
 \citep{tang2024toolalpaca} explored multi-step orchestration.
 APIGen \citep{liu2024apigen} introduced a verified pipeline for
-generating function-calling training data, showing that 1B-parameter
+generating function-calling training data, showcasing that 1B-parameter
 models fine-tuned on high-quality synthetic data can surpass
 GPT-3.5-Turbo on structured tool invocation.
 These approaches rely on cloud-hosted models ($\ge$7B), leaving the
@@ -212,17 +191,17 @@ established a benchmark using AST substring matching and
 execution-based validation.
 \citet{kavathekar2025small} proposed an evaluation suite (FSP, ACS,
 AVC, Task Accuracy, and Correct Ratio) to evaluate small model
-function calling without code execution; we adopt these metrics
+function calling; we adopt these metrics
 directly.
 CallNavi \citep{callnavi2025} proposed a two-stage router+specialist
-approach---similar to our dual-agent design---but evaluates models
+approach-similar to our dual-agent design-but evaluates models
 $\geq$7B on general-purpose APIs.
 In contrast, we focus on sub-2B models for domain-specific,
-single-turn financial tasks under strict privacy constraints.
+single-turn personal finance related tasks.
 
 \paragraph{On-Device Function Calling.}
 MobileLLM \citep{liu2024mobilellm}, Phi-3 \citep{abdin2024phi3}, and
-related surveys \citep{xu2024ondevice} have explored sub-4B parameter
+related surveys \citep{xu2024ondevice} have explored sub 4B parameter
 models for mobile deployment.
 Octopus~v2 \citep{chen2024octopus} fine-tuned a 2B model for
 on-device API calling via functional tokens, achieving competitive
@@ -234,13 +213,12 @@ Apple Intelligence \citep{gunter2024apple} validated on-device tool
 calling at scale with a $\sim$3B model, demonstrating the viability
 of the paradigm.
 \citet{kavathekar2025small} found that structured output compliance is
-the primary bottleneck for SLMs, which motivates our dual-agent
-architecture.
+the primary bottleneck for SLMs.
 
 \paragraph{Financial NLP and Privacy.}
 FinQA \citep{chen2022finqa} and FinGPT \citep{yang2023fingpt} target
 financial numerical reasoning and generation, but focus on text
-generation rather than tool calling under privacy constraints.
+generation rather than tool calling.
 FinMCP-Bench \citep{finmcpbench2026} and FinTrace \citep{fintrace2026}
 evaluate LLM agents for financial tool use, but target cloud-scale
 models.
@@ -248,16 +226,16 @@ Personal finance assistants \citep{li2024personal} require strict
 privacy, making local execution crucial.
 
 \paragraph{Human-Centered Privacy for Language Models.}
-A growing body of work examines privacy not as a technical property of
+A growing body of work has seen privacy not as a technical property of
 models but as a human-centered concern shaped by user expectations and
 social context.
-\citet{nissenbaum2004privacy}'s contextual integrity framework has
-been applied to conversational AI to show that data flows violate
+\citet{nissenbaum2004privacy}'s contextual integrity framework can be 
+applied to conversational AI to show that data flows violate
 privacy when they cross contextual norms, even when no explicit PII is
 transmitted.
 \citet{staab2024memorization} demonstrated that LLMs act as inference
 engines, reconstructing sensitive personal attributes from ordinary
-text---a threat particularly acute when financial queries are routed
+text- a threat particularly acute when personal finance queries are routed
 through cloud providers.
 \citet{yao2024survey} surveys the resulting landscape of data
 leakage, memorization, and inference risks in deployed LLM systems.
@@ -273,12 +251,10 @@ all query data local to the user's device.
 \subsection{Tool Inventory}
 
 ExpenseSense exposes five analytical tools over a user's expense
-dataframe (columns: date, amount, major category, subcategory,
-remarks).
+database.
 Table~\ref{tab:tools} summarises each tool and its parameter space.
 These tools span core personal finance use cases: time series
-analysis, proportional breakdown, period-over-period comparison, sum
-aggregation, and ranked retrieval.
+analysis, categorical breakdown, period comparison, aggregation, and ranked retrieval.
 
 \begin{table}[t]
 \centering
@@ -311,9 +287,9 @@ The single-agent pipeline uses a single prompt with all five tool
 definitions, parameter schemas, and joint few-shot examples.
 The model must select the tool and extract parameters in a single
 pass, outputting a JSON object containing the tool ID (1--5) and
-arguments.
+arguments for the chosen tool.
 The prompt includes structured output rules, date-handling
-instructions, and 7 tool-specific examples aggregated across all 5
+instructions, and 73 tool-specific examples aggregated across all 5
 tools.
 Prompt length: $\approx$5,500 tokens (context window inclusive).
 
@@ -325,7 +301,7 @@ The task is decomposed into two sequential inference calls:
           (e.g., ``compare'' requires two distinct time periods) elicits
           a single digit (1--5).
     \item \textbf{Specialist}: The predicted tool ID selects a
-          tool-specific prompt containing 12--15 examples for that
+          tool-specific prompt containing 13--16 examples for that
           \emph{one} tool, along with detailed parameter definitions
           and date-handling rules.
 \end{enumerate}
@@ -366,7 +342,7 @@ All results report both raw (pre-validation) and validated
 
 The benchmark contains 115 test cases across five task groups
 (Table~\ref{tab:tc_distribution}).
-Queries are written in naturalistic, informal language: abbreviations
+Queries are written in natural and informal language: abbreviations
 (\emph{``compare electricity '24 vs '25''}), colloquialisms
 (\emph{``can ya tell me''}), misspellings (\emph{``distribuution''}),
 and domain-specific terms (\emph{``combinis''}, \emph{``nomikais''},
@@ -484,8 +460,7 @@ Apple Metal.
 \subsection{Hardware and Inference Protocol}
 
 Experiments run on an Apple M1 (8-core CPU, 8-core GPU, 8\,GB unified
-memory)-a consumer laptop representative of privacy-constrained
-deployment environments.
+memory).
 Parameters: temperature $= 0.1$, min\_p $= 0.05$, n\_ctx $= 4096$,
 stop tokens \texttt{[``\textbackslash n\textbackslash n'', ```'']}.
 Each model is warmed up through all six prompt templates (one router +
@@ -501,7 +476,7 @@ observations.
 \subsection{Overall Performance}
 
 Table~\ref{tab:main_results} presents the full results.
-Figure~\ref{fig:overall_visuals} shows the accuracy--latency Pareto
+Figure~\ref{fig:overall_visuals} shows the accuracy-latency Pareto
 frontier and the error taxonomy breakdown.
 
 \begin{figure*}[t]
@@ -509,7 +484,7 @@ frontier and the error taxonomy breakdown.
   \begin{subfigure}[b]{0.49\textwidth}
     \centering
     \includegraphics[width=\textwidth]{tradeoff_pareto.png}
-    \caption{Accuracy--latency Pareto frontier. The dual-mode
+    \caption{Accuracy-latency Pareto frontier. The dual-mode
     Qwen3.5-0.8B (orange square, $\approx$3~s, 89\%) sits on the
     efficient frontier, offering the best accuracy per unit latency.
     Single-mode Qwen3.5-2B reaches the highest Task Accuracy (92\%)
@@ -570,21 +545,20 @@ Latency and RAM are per-query averages.}
 \end{table*}
 
 \paragraph{Key findings (RQ1, RQ2).}
-\textbf{(1)} Sub-2B SLMs can reliably call financial tools on consumer
-hardware (\textbf{RQ1}), with the Qwen3.5 family achieving $>$89\%
+\textbf{(1)} Sub-2B SLMs can reliably call tools to perform personal finance analytics
+on consumer hardware (\textbf{RQ1}), with the Qwen3.5 family achieving $>$89\%
 Task Accuracy in dual mode.
 This demonstrates that cloud reliance can be avoided while keeping
-all data---queries and results---private to the user's device.
-\textbf{(2)} While optimized single-agent prompts allow Qwen3.5-2B to
+all data-queries and results-private to the user's device.
+\textbf{(2)} While single-agent prompts allow Qwen3.5-2B to
 reach 92.0\% Task Accuracy, dual-agent decomposition is still
 preferred for two reasons (\textbf{RQ2}):
-\emph{(a)} Strict correctness---Correct Ratio improves from 60.2\%
+\emph{(a)} Strict correctness-Correct Ratio improves from 60.2\%
 to 77.6\% (+17.4~pp) for Qwen3.5-2B, representing a significant
-reduction in silent parameter errors that could produce incorrect
-financial analytics.
-\emph{(b)} Enabling smaller models---Qwen3.5-0.8B improves from
-79.8\% to 89.1\% Task Accuracy (+9.3~pp) while halving latency
-(5.8~s to 3.0~s) in dual mode, making sub-1B models viable on
+reduction in silent parameter errors that could produce incorrect outputs.
+\emph{(b)} Enabling smaller models-Qwen3.5-0.8B improves from
+79.8\% to 89.1\% Task Accuracy (+9.3~pp) while almost halving latency
+(5.8~s to 3.0~s) in dual mode, making sub-1B models viable for 
 low-memory devices.
 
 \subsection{Per-Tool-Group Analysis}
@@ -627,7 +601,7 @@ Task Accuracy, CR = Correct Ratio.}
   \includegraphics[width=\columnwidth]{dual_category_heatmap.png}
   \caption{Task Accuracy (\%) by Model $\times$ Tool Category in
   dual mode. Qwen3.5 models achieve $>$74\% across all categories,
-  while weaker models show pronounced gaps in comparison and time
+  while weaker models show marked gaps in comparison and time
   series tasks.}
   \label{fig:category_heatmap}
 \end{figure}
@@ -639,8 +613,8 @@ breakdown across complexity tiers in dual mode.
 Task Accuracy decreases from 96\% (L1) to 82\% (L3) for
 Qwen3.5-2B, and from 95\% to 84\% for Qwen3.5-0.8B.
 L3 queries involve constructs like cross-year range comparisons
-(\emph{``compare groceries nov 2024 to apr 2025 vs nov 2025 to apr
-2026''}), which require extracting up to 10 parameters with complex
+(\emph{``compare groceries nov 2024 to april 2025 vs nov 2025 to april 2026''}), 
+which require extracting up to 10 parameters with complex
 temporal constraints.
 
 \begin{figure}[t]
@@ -663,8 +637,8 @@ The error distribution shifts significantly between configurations
   \includegraphics[width=\textwidth]{error_taxonomy_breakdown.png}
   \caption{Error taxonomy breakdown (\% of test cases) per model
   and architecture. Single-agent Qwen3.5-2B (right panel) produces
-  22.6\% \texttt{PARAM\_EXTRA} errors---spurious parameters that
-  could lead to incorrect financial calculations. Dual-agent (left)
+  22.6\% \texttt{PARAM\_EXTRA} errors- spurious parameters that
+  could lead to incorrect computations. Dual-agent (left)
   eliminates most of these, consolidating residual errors into the
   more predictable \texttt{PARAM\_MISSING} category.}
   \label{fig:error_plot}
@@ -678,8 +652,8 @@ at 8.0\%.
 The human-facing implications of this shift are significant.
 A \texttt{PARAM\_EXTRA} error is a silent corruption: when a model
 adds a spurious \texttt{months=1} filter to the query ``how much did I
-spend on food?'', the system returns an answer---last month's food
-spending---that looks correct but answers a different question.
+spend on food?'', the system returns an answer- last month's food
+spending- that looks correct but answers a different question.
 A user relying on this figure for tax preparation, expense reporting,
 or budgeting receives a plausible but wrong number, with no indication
 that the scope was silently restricted.
@@ -687,7 +661,7 @@ In contrast, a \texttt{PARAM\_MISSING} error produces a visibly
 broader result (e.g., all-time food spending when a month was
 intended), which is more likely to trigger user scrutiny.
 The dual-agent architecture's shift from extra-parameter to
-missing-parameter failures therefore represents a qualitative
+missing-parameter failures thus represents a qualitative
 improvement in user-facing safety, not just a numerical accuracy
 improvement.
 
@@ -702,7 +676,7 @@ Figure~\ref{fig:token_efficiency} shows that despite using
 $\approx$2,700 prompt tokens per query (vs.\ $\approx$5,500 for
 single-agent), the dual-agent architecture achieves equivalent or
 superior accuracy.
-The single-agent pipeline processes larger contexts but exhibits lower
+The single-agent pipeline gets access to larger contexts but exhibits lower
 performance per token since the model must simultaneously attend to
 all five tool schemas and disambiguation instructions.
 The dual-agent architecture decomposes the context, focusing each pass
@@ -744,9 +718,8 @@ mode). Gains are modest but consistent for capable models.}
 
 The validation layer (Table~\ref{tab:validation}) contributes modest
 gains, primarily correcting category casing and normalisation.
-This reveals that argument extraction rather than string normalisation
-remains the primary bottleneck, since validation cannot recover
-missing parameters (\texttt{PARAM\_MISSING}).
+This reveals that argument extraction remains the primary bottleneck,
+since validation cannot recover missing parameters (\texttt{PARAM\_MISSING}).
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Discussion}
@@ -754,44 +727,21 @@ missing parameters (\texttt{PARAM\_MISSING}).
 % ─────────────────────────────────────────────────────────────────────────────
 
 \paragraph{Privacy through Task Decomposition.}
-The dual-agent architecture both improves accuracy and makes local
+The dual-agent architecture improves accuracy and makes local
 inference viable.
 By separating routing (single-digit output) from extraction (focused
 JSON), the dual-agent setup reduces the generation complexity per
 call, addressing the primary bottleneck of small models.
 Decomposing the task helps sub-2B models perform reliably on
-domain-specific schemas---and by doing so, makes on-device inference
+domain-specific schemas and by doing so, makes on-device inference
 a practical privacy guarantee rather than an aspirational one.
 
-\paragraph{Why dual-agent still matters despite strong single-agent prompts.}
-Although prompt optimisation increases single-agent performance,
-dual-agent configurations remain preferable for several reasons:
-\textbf{(1)} The 17.4~pp gap in Correct Ratio (60.2\%$\to$77.6\%)
-means that single-agent produces wrong parameters in 40\% of queries
-vs.\ 22\% for dual-agent.
-\textbf{(2)} For the privacy-optimal Qwen3.5-0.8B (which fits in
-$<$1.5\,GB RAM), dual-agent provides a +9.3~pp Task Accuracy boost
-\emph{and} halves latency, because shorter, more focused prompts
-generate faster on small models.
-\textbf{(3)} The error taxonomy shift from \texttt{PARAM\_EXTRA}
-(dangerous in finance) to \texttt{PARAM\_MISSING} (safer) represents
-a qualitative improvement in user-facing safety that aggregate
-accuracy numbers do not capture.
-
-\paragraph{Analyzing the EXAONE Failure.}
-EXAONE-4.0-1.2B achieves 90.6\% FSP in dual mode---excellent
-routing---but averages near-empty specialist outputs (ACS = 3.7\%).
-This likely points to formatting or parsing issues with the quantized
-model's template rather than a capacity limit.
-Fine-tuning techniques, such as function masking or functional tokens,
-could help resolve these formatting failures.
-
 \paragraph{Addressing Highly Complex Queries.}
-Even the best model achieves only 59.6\% strict Correct Ratio on L3
-queries in dual mode, which involve cross-year range comparisons
+Even the best model only achieves 59.6\% strict Correct Ratio on L3
+queries in dual mode, which involves complex cross-year range comparisons
 requiring up to 10 interdependent parameters.
 Fine-tuning on domain-specific examples using verified synthetic data
-\citep{liu2024apigen} is a potential avenue to improve performance on
+\citep{liu2024apigen} could be a potential method to improve performance on
 complex queries.
 
 \paragraph{Deployment Recommendations.}
@@ -805,17 +755,16 @@ Acc, 43.5\% CR, 3.9~s, 1.5\,GB RAM.
 All configurations keep user data entirely on-device.
 
 \paragraph{Case Study.}
-Figure~\ref{fig:case_study} shows a usage session of ExpenseSense.
-A user queried the system in informal language---``can ya plot spending
-on snacks for past 14 months?''---which the dual-agent Qwen3.5-0.8B
-pipeline correctly routed to \texttt{plot\_time\_series} and extracted
-the parameters \texttt{\{category: snacks, months: 14\}}.
-The resulting visualization revealed a clear declining trend in weekly
-snack expenditure (from peaks of \textyen3,000--4,000 to under
-\textyen1,000), showing how local analytics can guide budgeting.
-Crucially, this entire interaction---query, inference, and
-result---remained on the user's device; no data was transmitted
-externally at any point.
+Figure~\ref{fig:case_study} shows an authentic usage session of ExpenseSense.
+As a real-world deployment test in February 2026, an author used the system to query their own personal finance data in informal language-``can ya plot spending
+on snacks for past X months?''. The dual-agent Qwen3.5-0.8B
+pipeline correctly routed this to \texttt{plot\_time\_series} and extracted
+the parameters \texttt{\{category: snacks, months: 14\}} - all in 6 seconds.
+As shown in the plot, the resulting visualization revealed a clear trend in weekly
+snack expenditure. By surfacing this data locally, the author was able to reflect on their habits and successfully reduce their spending over time (from peaks of \textyen3,000--4,000 to under
+\textyen1,000). Crucially, this entire interaction- query, inference, and
+plotting - remained strictly on the user's device; no sensitive data was transmitted
+externally at any point. Connecting technical mechanisms to human needs, this demonstrates how private, local analytics can directly support personal budgeting workflows.
 
 \begin{figure*}[t]
   \centering
@@ -871,20 +820,12 @@ financial AI accessible on lower capacity devices such as smartphones.
     \item All models use Q8\_0 quantisation; lower-bit formats
           (Q4\_K\_M) may yield different accuracy--efficiency
           tradeoffs.
-    \item Queries are in English and reflect a Japan-based personal
-          finance context. Multilingual and cross-cultural diversity
-          is not covered.
+    \item Test cases were authored by a single developer in English, reflecting a
+          Japan-based context; crowdsourcing and multilingual support would improve diversity.
     \item Ground-truth labels are deterministic; some queries may
           admit legitimate alternative tool selections.
-    \item Test cases were authored by a single developer; crowdsourcing
-          or user study collection would improve query diversity.
-    \item We do not evaluate the \emph{downstream correctness} of the
-          financial analytics produced only whether the tool call is
-          correctly formed. Production deployment would require
-          additional safeguards against calculation errors.
-    \item Our privacy analysis is architectural (no data leaves the
-          device) rather than cryptographic; we do not address model
-          inversion or side-channel attacks on the local device itself.
+    \item We evaluate tool-call formation, not downstream financial calculation correctness.
+    \item Our privacy guarantee is architectural (no data leaves the device) rather than cryptographic.
 \end{itemize}
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -950,7 +891,7 @@ $d_{\text{hol}}$   & $0{-}2$   & Holiday/calendar knowledge required \\
 \centering
 \small
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{@{}p{0.8cm}p{5.0cm}p{3.5cm}p{5.5cm}p{0.7cm}@{}}
+\begin{tabular}{@{}p{0.8cm}p{5.0cm}p{4.0cm}p{5.0cm}p{0.7cm}@{}}
 \toprule
 \textbf{ID} & \textbf{Query} & \textbf{Tool} &
 \textbf{Expected Params} & \textbf{Tier} \\
@@ -961,8 +902,8 @@ DI06 & show breakdown of expenses for june 21 2024 &
 \texttt{plot\_distribution} & year=2024, month=6, day=21 & L2 \\
 CP24 & compare groceries nov 2024 to apr 2025 vs nov 2025 to apr 2026 &
 \texttt{plot\_comparison\_bars} &
-category=grocery, y1=2024, sm1=11, ey1=2025, em1=4, y2=2025, sm2=11,
-ey2=2026, em2=4 & L3 \\
+category=grocery, y1=2024, sm1=11,\newline
+ey1=2025, em1=4, y2=2025, sm2=11, ey2=2026, em2=4 & L3 \\
 CT07 & sum total spent on metro for july 2024? &
 \texttt{calculate\_total} & category=tokyo metro, year=2024, month=7 & L2 \\
 TP06 & top 5 expenses past month? disregard rent &
@@ -1016,5 +957,501 @@ returning a plausible but incorrect figure that a user may act on
 without realising the scope was changed.}
 \label{tab:error_examples}
 \end{table}
+
+\clearpage
+\section{Supplementary Figures}
+\label{sec:supplementary_figures}
+
+Figure~\ref{fig:dual_confusion_matrix} provides the routing confusion matrix across tools, while Figure~\ref{fig:combined_model_radar_grid} shows the per-category footprint across all evaluated models. Figure~\ref{fig:validation_delta_heatmap} illustrates the metrics improvement provided by the post-hoc validation layer.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\textwidth]{dual_confusion_matrix.png}
+  \caption{Normalized routing confusion matrix for the dual-agent router. The moderately high diagonal accuracy (76--90\%) validates that the sequential classification step introduces negligible routing error propagation.}
+  \label{fig:dual_confusion_matrix}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{combined_model_radar_grid.png}
+  \caption{Per-model task footprint across all five task categories (Single vs. Dual mode). The dual-agent architecture provides near-universal improvement across models and tasks.}
+  \label{fig:combined_model_radar_grid}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\textwidth]{validation_delta_heatmap.png}
+  \caption{Validation $\Delta$ Heatmap, showing absolute percentage point improvement across metrics after applying post-hoc fuzzy matching.}
+  \label{fig:validation_delta_heatmap}
+\end{figure}
+
+\clearpage
+\section{Prompt Templates}
+\label{sec:prompts}
+
+The on-device prompts utilized for routing and parameter extraction tasks are detailed below.
+
+\subsection{Router Prompt}
+\label{sec:router_prompt}
+The router receives a focused intent-classification prompt:
+\begin{scriptsize}
+\begin{verbatim}
+You are an expert intent classifier for an expense analysis assistant.
+Your job is to determine which ONE tool is best suited to answer the user's
+question.
+
+## Available Tools
+
+1. **`plot_time_series`** (ID: 1)
+   - Use when user asks about: trends, spending over time, "past X months",
+     "since 2023", date ranges.
+   - Keywords: trend, over time, plot, show spending, changed, since.
+   - NOTE: if user says "trend" or "over time" WITH "exclude rent", still
+     use this tool.
+
+2. **`plot_distribution`** (ID: 2)
+   - Use when user asks for: breakdown, distribution, proportions, pie
+     chart, "how is X split", "what does X look like".
+   - Keywords: breakdown, distribution, distro, pie chart, split, look like.
+   - NOTE: if user says "breakdown" or "split" WITH "exclude rent", still
+     use this tool.
+
+3. **`plot_comparison_bars`** (ID: 3)
+   - Use ONLY when comparing TWO different time periods (e.g. "Dec 2024 vs
+     Dec 2025" or ranges like "Jan-Jun 2024 vs Jan-Jun 2025").
+   - REQUIRES two distinct periods. If the user only mentions one month or
+     one year, DO NOT use this tool.
+   - Keywords: compare, contrast, vs, versus, difference between.
+
+4. **`calculate_total`** (ID: 4)
+   - Use when user asks for: simple totals, sums, specific amounts "how
+     much did I spend".
+   - Keywords: how much, total, sum, cost.
+
+5. **`get_top_expenses`** (ID: 5)
+   - Use when user asks for: biggest/largest expenses, top X items, most
+     expensive.
+   - Keywords: biggest, largest, top, most expensive, highest.
+   - NOTE: if user says "top X" WITH "exclude rent", still use this tool.
+
+## Output Format
+Output ONLY the tool number (1-5). Do not output anything else, NO
+MARKDOWN, NO BACKTICKS, NO EXPLANATION, NO CODE!
+
+## WRONG outputs (NEVER do this):
+[X] I think the best tool is 4
+[X] `4`
+[X] Based on the query, I would use 1 because...
+[X] ```4```
+[X] The answer is: 2
+
+## CORRECT outputs:
+[v] 4
+[v] 1
+
+## Examples
+User: "How much did I spend on food?"
+Output: 4
+
+User: "Total cost of internet for the last 3 months"
+Output: 4
+
+User: "How much did I spend in the last 6 months without rent?"
+Output: 4
+
+User: "Show me my spending trend for groceries"
+Output: 1
+
+User: "How has my rent changed over the last 6 months?"
+Output: 1
+
+User: "Show spending trend for past 4 months exclude rent tho"
+Output: 1
+
+User: "Compare food spending in 2024 and 2025"
+Output: 3
+
+User: "Difference in spending between Dec 2023 and Dec 2024"
+Output: 3
+
+User: "Compare overall spend in '24 vs '25 (exclude rent tho)"
+Output: 3
+
+User: "Compare dining between Jan-Jun 2024 and Jan-Jun 2025"
+Output: 3
+
+User: "Contrast spending from Nov 2024 to Feb 2025 vs Nov 2025 to Feb 2026"
+Output: 3
+
+User: "What were my biggest expenses?"
+Output: 5
+
+User: "Show me my top 5 largest purchases this year"
+Output: 5
+
+User: "Top 10 items without rent"
+Output: 5
+
+User: "Pie chart of transportation"
+Output: 2
+
+User: "How is my spending split in 2023?"
+Output: 2
+
+User: "Show me my spending breakdown excluding rent for the past 6 months"
+Output: 2
+
+User: "what does my electronics spending look like for jan 2025?"
+Output: 2
+
+User: "share distro of household expenses"
+Output: 2
+\end{verbatim}
+\end{scriptsize}
+
+\subsection{Specialist Base Template}
+\label{sec:specialist_base}
+Each specialist prompt instantiates a shared template defining output structure and relative date handling. The \texttt{\{metadata\}} placeholder is populated dynamically with the categories present in the user-uploaded dataset:
+\begin{scriptsize}
+\begin{verbatim}
+You are an automated API parameter extractor. Your ONLY purpose is to extract
+parameters from the user's request and output a SINGLE JSON object containing
+those parameters.
+
+## CRITICAL RULES (READ CAREFULLY)
+1. DO NOT write any Python code or function calls. DO NOT import anything.
+2. DO NOT wrap the output in markdown. NO backticks (```).
+3. Output EXACTLY and ONLY a JSON object representing the parameters.
+   E.g. {"category": "Food", "months": 6}
+4. Use EXACT category names from the metadata below. If not an exact match,
+   map it to the closest valid category (e.g. 'groceries' -> 'grocery',
+   'dining out' -> 'dining').
+
+## Date Rules
+- `months=N`: RELATIVE duration (e.g. "past month" -> months=1, "last 3
+  months" -> months=3, "past year" -> months=12).
+- Fractional years: convert to months. "past 0.5 years" -> months=6, "past
+  2.5 years" -> months=30.
+- Abbreviated years: '24 = 2024, 24 = 2024, ALWAYS output the full 4-digit
+  year.
+- `year=YYYY`: specific full calendar year.
+- `year=YYYY, month=M`: specific calendar month (e.g. "Jan 2024").
+- `year=YYYY, month=M, day=D`: specific calendar date.
+- `start_year=YYYY, end_year=YYYY`: specific year range.
+- `start_year=YYYY, start_month=M, end_year=YYYY, end_month=M`: specific
+  month-to-month range.
+- For comparing two ranges (e.g., comparing Jan-Jun 2024 vs Jan-Jun 2025),
+  use comparison range parameters: `y1=2024, sm1=1, em1=6, y2=2025, sm2=1,
+  em2=6`.
+- For comparing cross-year ranges (e.g., Nov 2024-Jan 2025 vs Nov 2025-Jan
+  2026), use `ey1` and `ey2`: `y1=2024, sm1=11, ey1=2025, em1=1, y2=2025,
+  sm2=11, ey2=2026, em2=1`.
+- CRITICAL: For relative queries like "past month", "last month", "last 6
+  months", ALWAYS use `months=N`. Do NOT use `month=M`.
+- Pick ONLY ONE time filter. Do not mix `months` with `year`.
+
+## Available Parameters
+{parameters}
+
+## Examples
+{examples}
+
+## Context
+```
+{metadata}
+```
+Currency: JPY
+Today: {current_date}
+
+FINAL REMINDER: Output ONLY the JSON object. NO MARKDOWN, NO BACKTICKS,
+NO EXPLANATION, NO CODE!
+\end{verbatim}
+\end{scriptsize}
+
+\subsection{Specialist Tool Prompts}
+\label{sec:tool_prompts_appendix}
+Each tool-specific specialist appends its unique parameter definitions and few-shot examples to the base template. The precise specifications for each tool are detailed below.
+
+\subsubsection{plot\_time\_series}
+\begin{scriptsize}
+\begin{verbatim}
+Parameters:
+  category (str, optional), year (int, optional), month (int, optional),
+  start_year (int, optional), start_month (int, optional),
+  end_year (int, optional), end_month (int, optional),
+  months (int, optional), ignore_rent (bool, optional, defaults to false)
+
+## Examples
+Q: "How much did I spend on futsal for the past 6 months?"
+{"category": "futsal game", "months": 6}
+
+Q: "Show me food spending from 2023 to 2025"
+{"category": "Food", "start_year": 2023, "end_year": 2025}
+
+Q: "Plot spending on snacks from oct 2024 to dec 2025"
+{"category": "snacks", "start_year": 2024, "start_month": 10, "end_year": 2025, "end_month": 12}
+
+Q: "Can ya plot spending on futsal on dec 2024?"
+{"category": "futsal game", "year": 2024, "month": 12}
+
+Q: "Gym expenses in 2024?"
+{"category": "gym", "year": 2024}
+
+Q: "Show me my spending trend for the last 3 months"
+{"months": 3}
+
+Q: "plot spending from june 2023 to dec 2025"
+{"start_year": 2023, "start_month": 6, "end_year": 2025, "end_month": 12}
+
+Q: "Trend of electricity bills since 2022"
+{"category": "electricity bill", "start_year": 2022}
+
+Q: "How has my transportation spending changed over time?"
+{"category": "Transportation"}
+
+Q: "Show spending on combinis for past year"
+{"category": "combini meal", "months": 12}
+
+Q: "Show spending trend for past 4 months exclude rent tho"
+{"months": 4, "ignore_rent": true}
+
+Q: "plot spend on cafes for past 2.5 yrs"
+{"category": "cafe", "months": 30}
+
+Q: "show my ride share costs from '24 to 26"
+{"category": "ride share", "start_year": 2024, "end_year": 2026}
+
+Q: "show electronics spending since 2023"
+{"category": "electronics", "start_year": 2023}
+\end{verbatim}
+\end{scriptsize}
+
+\subsubsection{plot\_distribution}
+\begin{scriptsize}
+\begin{verbatim}
+Parameters:
+  category (str, optional), year (int, optional), month (int, optional),
+  day (int, optional), start_year (int, optional), start_month (int, optional),
+  end_year (int, optional), end_month (int, optional), months (int, optional),
+  ignore_rent (bool, optional, defaults to false)
+
+## Examples
+Q: "Show me a breakdown of my food expenses in 2024"
+{"category": "Food", "year": 2024}
+
+Q: "Pie chart of all expenses from Nov 2024 to Feb 2025"
+{"start_year": 2024, "start_month": 11, "end_year": 2025, "end_month": 2}
+
+Q: "Show me my spending breakdown for last month"
+{"months": 1}
+
+Q: "Show me my spending breakdown for groceries for past 6 months"
+{"category": "Grocery", "months": 6}
+
+Q: "show spend distribution for 2026 feb"
+{"year": 2026, "month": 2}
+
+Q: "show breakdown of all expenses from 2024 to 2025"
+{"start_year": 2024, "end_year": 2025}
+
+Q: "Show me a breakdown of expenses for Dec 2024 (exclude rent tho)"
+{"year": 2024, "month": 12, "ignore_rent": true}
+
+Q: "Show spending breakdown for 2023/06/22"
+{"year": 2023, "month": 6, "day": 22}
+
+Q: "Spending distribution for the last 3 months"
+{"months": 3}
+
+Q: "Breakdown of transportation spending from 2022 to 2024"
+{"category": "Transportation", "start_year": 2022, "end_year": 2024}
+
+Q: "How did I split my money between categories in 2023?"
+{"year": 2023}
+
+Q: "Show me my spending breakdown excluding rent for the past 6 months"
+{"months": 6, "ignore_rent": true}
+
+Q: "Breakdown of fitness spending for 2025"
+{"category": "Fitness", "year": 2025}
+
+Q: "Breakdown of my spending since 2024"
+{"start_year": 2024}
+
+Q: "show breakdown of all expenses for mar 2026 (exclude rent tho)"
+{"year": 2026, "month": 3, "ignore_rent": true}
+
+Q: "what does my electronics and furniture spending look like for jan 2025?"
+{"category": "Electronics and Furniture", "year": 2025, "month": 1}
+\end{verbatim}
+\end{scriptsize}
+
+\subsubsection{plot\_comparison\_bars}
+\begin{scriptsize}
+\begin{verbatim}
+Parameters:
+  category (str, optional), y1 (int, optional), m1 (int, optional),
+  d1 (int, optional), y2 (int, optional), m2 (int, optional),
+  d2 (int, optional), sm1 (int, optional), em1 (int, optional),
+  sm2 (int, optional), em2 (int, optional), ey1 (int, optional),
+  ey2 (int, optional), ignore_rent (bool, optional, defaults to false)
+
+## Examples
+Q: "Compare food spending in 2024 vs 2025"
+{"category": "Food", "y1": 2024, "y2": 2025}
+
+Q: "Compare dining Jan 2024 vs Jan 2025"
+{"category": "dining", "y1": 2024, "m1": 1, "y2": 2025, "m2": 1}
+
+Q: "How does my spend on snacks compare between jan 2024 and jan 2026?"
+{"category": "snacks", "y1": 2024, "m1": 1, "y2": 2026, "m2": 1}
+
+Q: "Compare total spending 2022 vs 2023"
+{"y1": 2022, "y2": 2023}
+
+Q: "Compare overall expenses from jan 2025 vs jan 2026"
+{"y1": 2025, "m1": 1, "y2": 2026, "m2": 1}
+
+Q: "Compare transportation on 21 July 2024 vs 21 July 2025"
+{"category": "Transportation", "y1": 2024, "m1": 7, "d1": 21, "y2": 2025, "m2": 7, "d2": 21}
+
+Q: "Compare spend on electricity 2024 vs 2025"
+{"category": "electricity bill", "y1": 2024, "y2": 2025}
+
+Q: "Compare gym spending Nov 2024 vs Nov 2025"
+{"category": "gym", "y1": 2024, "m1": 11, "y2": 2025, "m2": 11}
+
+Q: "Compare my spending in 2024 vs 2025 excluding rent"
+{"y1": 2024, "y2": 2025, "ignore_rent": true}
+
+Q: "compare education expenses '24 vs '25"
+{"category": "Education", "y1": 2024, "y2": 2025}
+
+Q: "compare household expenses for april '24 vs apr 2025"
+{"category": "household", "y1": 2024, "m1": 4, "y2": 2025, "m2": 4}
+
+Q: "Compare dining between Jan-Jun 2024 and Jan-Jun 2025"
+{"category": "dining", "y1": 2024, "sm1": 1, "em1": 6, "y2": 2025, "sm2": 1, "em2": 6}
+
+Q: "compare electricity from jan-mar '24 vs jan-mar '25"
+{"category": "electricity bill", "y1": 2024, "sm1": 1, "em1": 3, "y2": 2025, "sm2": 1, "em2": 3}
+
+Q: "Contrast overall spend from Nov 2024 to Feb 2025 vs Nov 2025 to Feb 2026"
+{"y1": 2024, "sm1": 11, "ey1": 2025, "em1": 2, "y2": 2025, "sm2": 11, "ey2": 2026, "em2": 2}
+
+Q: "compare total spend on new years eve 2024 vs for same day on 2025"
+{"y1": 2024, "m1": 12, "d1": 31, "y2": 2025, "m2": 12, "d2": 31}
+\end{verbatim}
+\end{scriptsize}
+
+\subsubsection{calculate\_total}
+\begin{scriptsize}
+\begin{verbatim}
+Parameters:
+  category (str, optional), year (int, optional), month (int, optional),
+  day (int, optional), start_year (int, optional), start_month (int, optional),
+  end_year (int, optional), end_month (int, optional), months (int, optional),
+  ignore_rent (bool, optional, defaults to false)
+
+## Examples
+Q: "How much did I spend on groceries in Dec 2024?"
+{"category": "grocery", "year": 2024, "month": 12}
+
+Q: "Total spending from Oct 2024 to March 2025"
+{"start_year": 2024, "start_month": 10, "end_year": 2025, "end_month": 3}
+
+Q: "What is my total spending in 2025?"
+{"year": 2025}
+
+Q: "How much did I spend on food in past month?"
+{"category": "Food", "months": 1}
+
+Q: "Total cost of electricity in 2023"
+{"category": "electricity bill", "year": 2023}
+
+Q: "Total spent on 15 Jan 2024?"
+{"year": 2024, "month": 1, "day": 15}
+
+Q: "How much spent on rent in the last 6 months?"
+{"category": "rent", "months": 6}
+
+Q: "Sum of all transportation expenses in 2025"
+{"category": "Transportation", "year": 2025}
+
+Q: "Total spent on combini food for 2025?"
+{"category": "combini meal", "year": 2025}
+
+Q: "How much did I spend in the last 6 months without rent?"
+{"months": 6, "ignore_rent": true}
+
+Q: "Total spent on dining since 2024"
+{"category": "dining", "start_year": 2024}
+
+Q: "whats the total spend on donations from '23 to 2026?"
+{"category": "donation", "start_year": 2023, "end_year": 2026}
+
+Q: "Excluding rent, what was my total spend in 2025?"
+{"year": 2025, "ignore_rent": true}
+\end{verbatim}
+\end{scriptsize}
+
+\subsubsection{get\_top\_expenses}
+\begin{scriptsize}
+\begin{verbatim}
+Parameters:
+  n (int, optional, defaults to 10), category (str, optional),
+  year (int, optional), month (int, optional), day (int, optional),
+  start_year (int, optional), start_month (int, optional),
+  end_year (int, optional), end_month (int, optional),
+  months (int, optional), min_amount (int, optional),
+  ignore_rent (bool, optional, defaults to false)
+
+## Examples
+Q: "What were my biggest expenses in Dec 2024?"
+{"n": 10, "year": 2024, "month": 12}
+
+Q: "Top 5 food expenses in 2024?"
+{"n": 5, "category": "Food", "year": 2024}
+
+Q: "Top 10 food expenses in june 2025?"
+{"n": 10, "category": "Food", "year": 2025, "month": 6}
+
+Q: "Top 5 expenses for 26 june 2024?"
+{"n": 5, "year": 2024, "month": 6, "day": 26}
+
+Q: "Top expenses from July 2023 to Dec 2024"
+{"start_year": 2023, "start_month": 7, "end_year": 2024, "end_month": 12}
+
+Q: "Show my top 10 expenses from 2023 to 2025"
+{"n": 10, "start_year": 2023, "end_year": 2025}
+
+Q: "Top 10 expenses of past month?"
+{"n": 10, "months": 1}
+
+Q: "What are my top expenses excluding rent?"
+{"n": 10, "ignore_rent": true}
+
+Q: "Show my top 3 largest transactions in 2023"
+{"n": 3, "year": 2023}
+
+Q: "What were the biggest expenses over the last 3 months, without rent?"
+{"n": 10, "months": 3, "ignore_rent": true}
+
+Q: "Top 7 futsal expenses for 2025?"
+{"n": 7, "category": "futsal game", "year": 2025}
+
+Q: "Top 5 expenses last month, exclude rent"
+{"n": 5, "months": 1, "ignore_rent": true}
+
+Q: "What were my biggest expenses since 2023?"
+{"n": 10, "start_year": 2023}
+
+Q: "show me top 10 expenses from jan 2025 to june '25"
+{"n": 10, "start_year": 2025, "start_month": 1, "end_year": 2025, "end_month": 6}
+
+Q: "tell me the top 15 expenses for 2025, ignore rent plz"
+{"n": 15, "year": 2025, "ignore_rent": true}
+\end{verbatim}
+\end{scriptsize}
 
 \end{document}

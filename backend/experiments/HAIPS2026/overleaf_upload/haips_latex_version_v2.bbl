@@ -1,0 +1,222 @@
+\begin{thebibliography}{30}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Abdin et~al.(2024)Abdin, Aneja, Awadalla et~al.}]{abdin2024phi3}
+Marah Abdin, Jyoti Aneja, Hany Awadalla, and 1 others. 2024.
+\newblock Phi-3 technical report: A highly capable language model locally on
+  your phone.
+\newblock \emph{arXiv preprint arXiv:2404.14219}.
+
+\bibitem[{Cao et~al.(2026)Cao, Li, Liu, Cao, Xu, Qian et~al.}]{fintrace2026}
+Yupeng Cao, Haohang Li, Weijin Liu, Wenbo Cao, Anke Xu, Lingfei Qian, and 1
+  others. 2026.
+\newblock {FinTrace}: Holistic trajectory-level evaluation of {LLM} tool
+  calling for long-horizon financial tasks.
+\newblock \emph{arXiv preprint arXiv:2604.10015}.
+
+\bibitem[{Chen and Li(2024)}]{chen2024octopus}
+Wei Chen and Zhiyuan Li. 2024.
+\newblock Octopus v2: On-device language model for super agent.
+\newblock \emph{arXiv preprint arXiv:2404.01744}.
+
+\bibitem[{Chen et~al.(2021)Chen, Chen, Smiley, Shah, Borova, Langdon, Moussa,
+  Beane, Huang, Routledge, and Wang}]{chen2022finqa}
+Zhiyu Chen, Wenhu Chen, Charese Smiley, Sameena Shah, Iana Borova, Dylan
+  Langdon, Reema Moussa, Matt Beane, Ting-Hao Huang, Bryan Routledge, and
+  William~Yang Wang. 2021.
+\newblock \href {https://doi.org/10.18653/v1/2021.emnlp-main.300} {{FinQA}: A
+  dataset of numerical reasoning over financial data}.
+\newblock In \emph{Proceedings of the 2021 Conference on Empirical Methods in
+  Natural Language Processing}, pages 3697--3711.
+
+\bibitem[{Efron(1979)}]{efron1979bootstrap}
+B.~Efron. 1979.
+\newblock Bootstrap methods: Another look at the jackknife.
+\newblock \emph{The Annals of Statistics}, 7(1):1--26.
+
+\bibitem[{{Gemma Team}(2025)}]{team2025gemma}
+{Gemma Team}. 2025.
+\newblock Gemma 3 technical report.
+\newblock \emph{arXiv preprint arXiv:2503.19786}.
+
+\bibitem[{Gerganov(2023)}]{llamacpp2023}
+Georgi Gerganov. 2023.
+\newblock \href {https://github.com/ggerganov/llama.cpp} {llama.cpp}.
+
+\bibitem[{Gunter et~al.(2024)Gunter, Wang, Wang et~al.}]{gunter2024apple}
+Tom Gunter, Zirui Wang, Chong Wang, and 1 others. 2024.
+\newblock Apple intelligence foundation language models.
+\newblock \emph{arXiv preprint arXiv:2407.21075}.
+
+\bibitem[{Hu et~al.(2024)Hu, Tu, Han, He, Cui, Long et~al.}]{minicpm2024}
+Shengding Hu, Yuge Tu, Xu~Han, Chaoqun He, Ganqu Cui, Xiang Long, and 1 others.
+  2024.
+\newblock {MiniCPM}: Unveiling the potential of small language models with
+  scalable training strategies.
+\newblock \emph{arXiv preprint arXiv:2404.06395}.
+
+\bibitem[{Kavathekar et~al.(2025)Kavathekar, Donakanti, Kumaraguru, and
+  Vaidhyanathan}]{kavathekar2025small}
+Ishan Kavathekar, Raghav Donakanti, Ponnurangam Kumaraguru, and Karthik
+  Vaidhyanathan. 2025.
+\newblock \href {https://doi.org/10.1145/3756681.3757001} {Small models, big
+  tasks: An exploratory empirical study on small language models for function
+  calling}.
+\newblock In \emph{Proceedings of the 29th International Conference on
+  Evaluation and Assessment in Software Engineering}, pages 1117--1126.
+
+\bibitem[{{LG AI Research}(2025)}]{lgai2025exaone}
+{LG AI Research}. 2025.
+\newblock {EXAONE} 4.0: Unified large language models integrating non-reasoning
+  and reasoning modes.
+\newblock \emph{arXiv preprint arXiv:2507.11407}.
+
+\bibitem[{Li et~al.(2024)Li, Wen, Wang, Li, Yuan, Liu, Liu, Xu, Wang, Sun
+  et~al.}]{li2024personal}
+Yuanchun Li, Hao Wen, Weijun Wang, Xiangyu Li, Yizhen Yuan, Guohong Liu,
+  Jiacheng Liu, Wenxing Xu, Xiang Wang, Yi~Sun, and 1 others. 2024.
+\newblock Personal {LLM} agents: Insights and survey about the capability,
+  efficiency and security.
+\newblock \emph{arXiv preprint arXiv:2401.05459}.
+
+\bibitem[{Lin et~al.(2024)Lin, Wen, Peng, Nie, Liao, Wang
+  et~al.}]{lin2024hammer}
+Qiqiang Lin, Muning Wen, Qiuying Peng, Guanyu Nie, Junwei Liao, Jun Wang, and 1
+  others. 2024.
+\newblock Hammer: Robust function-calling for on-device language models via
+  function masking.
+\newblock \emph{arXiv preprint arXiv:2410.04587}.
+
+\bibitem[{{Liquid AI}(2026)}]{liquidai2026lfm25}
+{Liquid AI}. 2026.
+\newblock {LFM2.5} technical report.
+\newblock \emph{Liquid AI Blog}.
+
+\bibitem[{Liu et~al.(2024{\natexlab{a}})Liu, Zhao, Iandola, Lai, Tian, Fedorov,
+  Xiong, Chang, Shi, Krishnamoorthi, Lai, and Chandra}]{liu2024mobilellm}
+Zechun Liu, Changsheng Zhao, Forrest Iandola, Chen Lai, Yuandong Tian, Igor
+  Fedorov, Yunyang Xiong, Ernie Chang, Yangyang Shi, Raghuraman Krishnamoorthi,
+  Liangzhen Lai, and Vikas Chandra. 2024{\natexlab{a}}.
+\newblock \href {https://proceedings.mlr.press/v235/liu24ce.html} {{MobileLLM}:
+  Optimizing sub-billion parameter language models for on-device use cases}.
+\newblock In \emph{Proceedings of the 41st International Conference on Machine
+  Learning}, pages 32431--32454.
+
+\bibitem[{Liu et~al.(2024{\natexlab{b}})Liu, Hoang, Zhang, Zhu, Lan
+  et~al.}]{liu2024apigen}
+Zuxin Liu, Thai Hoang, Jianguo Zhang, Ming Zhu, Tian Lan, and 1 others.
+  2024{\natexlab{b}}.
+\newblock {APIGen}: Automated pipeline for generating verifiable and diverse
+  function-calling datasets.
+\newblock \emph{Advances in Neural Information Processing Systems}, 37.
+
+\bibitem[{Nissenbaum(2004)}]{nissenbaum2004privacy}
+Helen Nissenbaum. 2004.
+\newblock Privacy as contextual integrity.
+\newblock \emph{Washington Law Review}, 79(1):119--158.
+
+\bibitem[{Patil et~al.(2025)Patil, Mao, Yan, Ji, Suresh, Stoica, and
+  Gonzalez}]{yan2024bfcl}
+Shishir~G. Patil, Huanzhi Mao, Fanjia Yan, Charlie Cheng-Jie Ji, Vishnu Suresh,
+  Ion Stoica, and Joseph~E. Gonzalez. 2025.
+\newblock \href {https://proceedings.mlr.press/v267/patil25a.html} {The
+  {Berkeley} function calling leaderboard ({BFCL}): From tool use to agentic
+  evaluation of large language models}.
+\newblock In \emph{Proceedings of the 42nd International Conference on Machine
+  Learning}, pages 48371--48392.
+
+\bibitem[{Patil et~al.(2023)Patil, Zhang, Wang, and
+  Gonzalez}]{patil2023gorilla}
+Shishir~G. Patil, Tianjun Zhang, Xin Wang, and Joseph~E. Gonzalez. 2023.
+\newblock \href {https://arxiv.org/abs/2305.15334} {Gorilla: Large language
+  model connected with massive {API}s}.
+\newblock \emph{arXiv preprint arXiv:2305.15334}.
+
+\bibitem[{Qin et~al.(2024)Qin, Liang, Ye, Zhu, Yan, Lu, Lin, Cong, Tang, Qian
+  et~al.}]{qin2023toolllm}
+Yujia Qin, Shihao Liang, Yining Ye, Kunlun Zhu, Lan Yan, Yaxi Lu, Yankai Lin,
+  Xin Cong, Xiangru Tang, Bill Qian, and 1 others. 2024.
+\newblock \href {https://arxiv.org/abs/2307.16789} {{ToolLLM}: Facilitating
+  large language models to master 16000+ real-world {API}s}.
+\newblock In \emph{Proceedings of the Twelfth International Conference on
+  Learning Representations ({ICLR} 2024)}.
+
+\bibitem[{{Qwen Team}(2026)}]{qwen2026qwen35}
+{Qwen Team}. 2026.
+\newblock \href {https://qwen.ai/blog?id=qwen3.5} {{Qwen3.5}: Towards native
+  multimodal agents}.
+\newblock Qwen Blog.
+
+\bibitem[{Schick et~al.(2023)Schick, Dwivedi-Yu, Dess{\`i}, Raileanu, Lomeli,
+  Hambro, Zettlemoyer, Cancedda, and Scialom}]{schick2024toolformer}
+Timo Schick, Jane Dwivedi-Yu, Roberto Dess{\`i}, Roberta Raileanu, Maria
+  Lomeli, Eric Hambro, Luke Zettlemoyer, Nicola Cancedda, and Thomas Scialom.
+  2023.
+\newblock Toolformer: Language models can teach themselves to use tools.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~36.
+
+\bibitem[{Shen et~al.(2023)Shen, Song, Tan, Li, Lu, and
+  Zhuang}]{shen2024hugginggpt}
+Yongliang Shen, Kaitao Song, Xu~Tan, Dongsheng Li, Weiming Lu, and Yueting
+  Zhuang. 2023.
+\newblock {HuggingGPT}: Solving {AI} tasks with {ChatGPT} and its friends in
+  {Hugging Face}.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~36.
+
+\bibitem[{Song et~al.(2025)Song, Tang, Lothritz, Ezzini, Klein, Bissyand{\'e},
+  Boytsov, Ble, and Goujon}]{callnavi2025}
+Yewei Song, Xunzhu Tang, Cedric Lothritz, Saad Ezzini, Jacques Klein,
+  Tegawend{\'e}~F. Bissyand{\'e}, Andrey Boytsov, Ulrick Ble, and Anne Goujon.
+  2025.
+\newblock \href {https://doi.org/10.1145/3756681.3756975} {{CallNavi}: A
+  challenge and empirical study on {LLM} function calling and routing}.
+\newblock In \emph{Proceedings of the 29th International Conference on
+  Evaluation and Assessment in Software Engineering}.
+
+\bibitem[{Staab et~al.(2024)Staab, Vero, Balunovi{\'c}, and
+  Vechev}]{staab2024memorization}
+Robin Staab, Mark Vero, Mislav Balunovi{\'c}, and Martin Vechev. 2024.
+\newblock Beyond memorization: Violating privacy via inference with large
+  language models.
+\newblock In \emph{Proceedings of the 12th International Conference on Learning
+  Representations}.
+
+\bibitem[{Tang et~al.(2023)Tang, Deng, Lin, Han, Liang, and
+  Sun}]{tang2024toolalpaca}
+Qiaoyu Tang, Ziliang Deng, Hongyu Lin, Xianpei Han, Qiao Liang, and Le~Sun.
+  2023.
+\newblock {ToolAlpaca}: Generalized tool learning for language models with 3000
+  simulated cases.
+\newblock \emph{arXiv preprint arXiv:2306.05301}.
+
+\bibitem[{Xu et~al.(2024)Xu, Li, Chen, Wang, Gao, Cai, and
+  Ling}]{xu2024ondevice}
+Jiajun Xu, Zhiyuan Li, Wei Chen, Qun Wang, Xin Gao, Qi~Cai, and Ziyuan Ling.
+  2024.
+\newblock On-device language models: A comprehensive review.
+\newblock \emph{arXiv preprint arXiv:2409.00088}.
+
+\bibitem[{Yang et~al.(2023)Yang, Liu, and Wang}]{yang2023fingpt}
+Hongyang Yang, Xiao-Yang Liu, and Christina~Dan Wang. 2023.
+\newblock \href {https://arxiv.org/abs/2306.06031} {{FinGPT}: Open-source
+  financial large language models}.
+\newblock In \emph{International Symposium on Large Language Models for
+  Financial Services ({FinLLM} 2023) at {IJCAI} 2023}.
+
+\bibitem[{Yao et~al.(2024)Yao, Duan, Xu, Cai, Sun, and Zhang}]{yao2024survey}
+Yifan Yao, Jinhao Duan, Kaidi Xu, Yuanfang Cai, Zhibo Sun, and Yue Zhang. 2024.
+\newblock A survey on large language model ({LLM}) security and privacy: The
+  good, the bad, and the ugly.
+\newblock \emph{High-Confidence Computing}, 4(2):100211.
+
+\bibitem[{Zhu et~al.(2026)Zhu, Tian, Li, Wu, Liang, Li, Zhang, Guo, Chen, Liu,
+  and Zhang}]{finmcpbench2026}
+Jie Zhu, Yimin Tian, Boyang Li, Kehao Wu, Zhongzhi Liang, Junhui Li, Xianyin
+  Zhang, Lifan Guo, Feng Chen, Yong Liu, and Chi Zhang. 2026.
+\newblock {FinMCP-Bench}: Benchmarking {LLM} agents for real-world financial
+  tool use under the model context protocol.
+\newblock \emph{arXiv preprint arXiv:2603.24943}.
+
+\end{thebibliography}

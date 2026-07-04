@@ -317,7 +317,7 @@ def generate_plots(df: pd.DataFrame, out_dir: str, mode_filter: Optional[str] = 
 
 
 def _generate_mode_plots(df: pd.DataFrame, out_dir: str, prefix: str) -> None:
-    model_col  = df["Model"].unique().tolist()
+    model_col  = sorted(df["Model"].unique().tolist(), key=_short)
     color_map  = {m: _PALETTE[i % len(_PALETTE)] for i, m in enumerate(model_col)}
     marker_map = {m: ["o","s","^","D","v","p","P","*","X"][i % 9] for i, m in enumerate(model_col)}
     labels     = [_short(m) for m in model_col]
@@ -429,15 +429,15 @@ def _generate_mode_plots(df: pd.DataFrame, out_dir: str, prefix: str) -> None:
 
     # 4. Category Heatmap ────────────────────────────────────────────────────
     # FIX-7: use a grey bad-colour so NaN cells are clearly marked, not blank white.
-    fig, ax = plt.subplots(figsize=(max(4, len(categories) * 0.9 + 1.5),
-                                    max(2.5, len(labels) * 0.6 + 1.0)))
+    fig, ax = plt.subplots(figsize=(max(5.5, len(categories) * 1.1 + 1.5),
+                                    max(3.5, len(labels) * 0.7 + 1.0)))
     cmap = plt.cm.RdYlGn.copy()
     cmap.set_bad("#dddddd")
     im = ax.imshow(cat_pivot.values, aspect="auto", cmap=cmap, vmin=0, vmax=100)
     ax.set_xticks(np.arange(len(categories)))
     ax.set_yticks(np.arange(len(labels)))
-    ax.set_xticklabels(categories, rotation=35, ha="right", fontsize=8)
-    ax.set_yticklabels(labels, fontsize=8)
+    ax.set_xticklabels(categories, rotation=35, ha="right", fontsize=12)
+    ax.set_yticklabels(labels, fontsize=12)
     ax.tick_params(length=0)
     ax.spines[:].set_visible(False)
     for i in range(len(labels)):
@@ -446,11 +446,11 @@ def _generate_mode_plots(df: pd.DataFrame, out_dir: str, prefix: str) -> None:
             if not np.isnan(v):
                 tc_c = "white" if v < 40 or v > 80 else "black"
                 ax.text(j, i, f"{v:.0f}", ha="center", va="center",
-                        fontsize=7.5, color=tc_c, fontweight="bold")
+                        fontsize=11, color=tc_c, fontweight="bold")
     cbar = fig.colorbar(im, ax=ax, fraction=0.03, pad=0.02)
-    cbar.set_label("Task Accuracy (%)", fontsize=8)
-    cbar.ax.tick_params(labelsize=7)
-    ax.set_title("Task Accuracy by Model × Task Category")
+    cbar.set_label("Task Accuracy (%)", fontsize=12)
+    cbar.ax.tick_params(labelsize=10)
+    ax.set_title("Task Accuracy by Model × Task Category", fontsize=14, fontweight="bold")
     fig.tight_layout()
     _savefig(fig, out_dir, f"{prefix}category_heatmap")
 
@@ -679,19 +679,21 @@ def _generate_confusion_matrix(df: pd.DataFrame, out_dir: str, prefix: str) -> N
         cm_norm = np.where(cm.sum(axis=1, keepdims=True) > 0,
                            cm / cm.sum(axis=1, keepdims=True), 0.0)
 
-    fig, ax = plt.subplots(figsize=(6, 5))
+    fig, ax = plt.subplots(figsize=(7.5, 6.5))
     im = ax.imshow(cm_norm, interpolation="nearest", cmap="Blues", vmin=0, vmax=1)
-    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("Proportion", size=8)
+    cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    cbar.set_label("Proportion", size=11, weight="bold")
+    cbar.ax.tick_params(labelsize=10)
 
     ax.set_xticks(range(len(short_names)))
     ax.set_yticks(range(len(short_names)))
-    ax.set_xticklabels(short_names, rotation=35, ha="right", fontsize=8)
-    ax.set_yticklabels(short_names, fontsize=8)
-    ax.set_xlabel("Predicted Tool", fontsize=9)
-    ax.set_ylabel("True Tool", fontsize=9)
+    ax.set_xticklabels(short_names, rotation=35, ha="right", fontsize=10)
+    ax.set_yticklabels(short_names, fontsize=10)
+    ax.set_xlabel("Predicted Tool", fontsize=11, weight="bold")
+    ax.set_ylabel("True Tool", fontsize=11, weight="bold")
 
     mode_label = prefix.replace("_", "").capitalize()
-    ax.set_title(f"Tool Routing Confusion — {mode_label} Mode", fontsize=10, weight="bold")
+    ax.set_title(f"Tool Routing Confusion — {mode_label} Mode", fontsize=12, weight="bold", pad=12)
 
     for i in range(len(ALLOWED_TOOLS)):
         for j in range(len(ALLOWED_TOOLS)):
@@ -700,7 +702,7 @@ def _generate_confusion_matrix(df: pd.DataFrame, out_dir: str, prefix: str) -> N
             if count > 0:
                 color = "white" if val > 0.5 else "black"
                 ax.text(j, i, f"{val:.2f}\n({count})",
-                        ha="center", va="center", fontsize=7, color=color)
+                        ha="center", va="center", fontsize=9, color=color, fontweight="semibold")
 
     fig.tight_layout()
     _savefig(fig, out_dir, f"{prefix}confusion_matrix")
@@ -733,8 +735,21 @@ def _generate_tradeoff_scatter(df: pd.DataFrame, out_dir: str) -> None:
                    s=80, alpha=0.8, edgecolor="white", linewidth=0.8, zorder=3)
 
         for _, row in mdf.iterrows():
-            ax.text(row["avg_time"] + 0.12, row["avg_acc"] * 100 + 0.6,
-                    _short(row["Model"]), fontsize=10.5, fontweight="bold", alpha=0.9, zorder=5)
+            model_name = _short(row["Model"])
+            dx, dy = 0.12, 0.6
+            ha, va = "left", "bottom"
+            
+            # Prevent label overlap or obscuring
+            if mode == "dual" and model_name == "Gemma-3 1B":
+                dx, dy = -0.12, -1.8
+                ha, va = "right", "top"
+            elif mode == "dual" and model_name == "LFM2.5 Instruct 1.2B":
+                dx, dy = 0.12, 1.2
+                ha, va = "left", "bottom"
+
+            ax.text(row["avg_time"] + dx, row["avg_acc"] * 100 + dy,
+                    model_name, fontsize=10.5, fontweight="bold", alpha=0.9, zorder=5,
+                    ha=ha, va=va)
 
     # FIX-8: proper Pareto front — sort by latency, keep only points that
     # improve accuracy; then draw as a plain line (not step).
@@ -756,7 +771,7 @@ def _generate_tradeoff_scatter(df: pd.DataFrame, out_dir: str) -> None:
     ax.set_title("Latency vs Accuracy Tradeoff", fontweight="bold", fontsize=13)
     ax.set_ylim(0, 105)
     ax.set_xlim(left=0)
-    ax.legend(fontsize=10.5, loc="lower right")
+    ax.legend(fontsize=10.5, loc="center right", bbox_to_anchor=(1.02, 0.38))
     ax.grid(True, alpha=0.3)
 
     fig.tight_layout()
@@ -876,16 +891,16 @@ def _generate_validation_plots(df: pd.DataFrame, out_dir: str) -> None:
     delta_df     = pd.DataFrame(delta_rows).set_index("Label")
     metric_labels = [p[0] for p in _METRIC_PAIRS]
 
-    fig, ax = plt.subplots(figsize=(len(metric_labels) * 1.5 + 1.5,
-                                    len(delta_rows) * 0.7 + 1.2))
+    fig, ax = plt.subplots(figsize=(len(metric_labels) * 1.6 + 1.6,
+                                    len(delta_rows) * 0.85 + 1.5))
     vmax = max(abs(delta_df.values.max()), abs(delta_df.values.min()), 5)
     im   = ax.imshow(delta_df.values, aspect="auto",
                      cmap="RdYlGn", vmin=-vmax, vmax=vmax)
 
     ax.set_xticks(np.arange(len(metric_labels)))
     ax.set_yticks(np.arange(len(delta_rows)))
-    ax.set_xticklabels(metric_labels, fontsize=9)
-    ax.set_yticklabels(delta_df.index.tolist(), fontsize=8)
+    ax.set_xticklabels(metric_labels, fontsize=11, fontweight="bold")
+    ax.set_yticklabels(delta_df.index.tolist(), fontsize=10)
     ax.tick_params(length=0)
     ax.spines[:].set_visible(False)
 
@@ -895,14 +910,14 @@ def _generate_validation_plots(df: pd.DataFrame, out_dir: str) -> None:
             sign = "+" if v >= 0 else ""
             tc_c = "white" if abs(v) > vmax * 0.6 else "black"
             ax.text(j, i, f"{sign}{v:.1f}",
-                    ha="center", va="center", fontsize=9,
+                    ha="center", va="center", fontsize=11,
                     color=tc_c, fontweight="bold")
 
     cbar = fig.colorbar(im, ax=ax, fraction=0.04, pad=0.03)
-    cbar.set_label("Validated − Raw (pp)", fontsize=8)
-    cbar.ax.tick_params(labelsize=7)
+    cbar.set_label("Validated − Raw (pp)", fontsize=11, weight="bold")
+    cbar.ax.tick_params(labelsize=10)
     ax.set_title("Validation Δ Heatmap\n(positive = validation helped, negative = hurt)",
-                 fontsize=10, fontweight="bold")
+                 fontsize=12, fontweight="bold", pad=12)
     fig.tight_layout()
     _savefig(fig, out_dir, "validation_delta_heatmap")
 
@@ -999,15 +1014,17 @@ def _generate_error_taxonomy_plot(df: pd.DataFrame, out_dir: str) -> None:
     if "Error_Type_Validated" not in df.columns:
         return
 
+    import matplotlib.patheffects as path_effects
+
     modes = sorted(df["Benchmark_Mode"].unique())
-    plot_models = sorted(df["Model"].unique())
+    plot_models = sorted(df["Model"].unique(), key=_short)
 
     if not modes:
         return
 
     fig, axes = plt.subplots(
         1, len(modes),
-        figsize=(max(6, len(plot_models) * 1.0 + 1) * len(modes), 4.5),
+        figsize=(max(7, len(plot_models) * 1.2 + 1) * len(modes), 5),
         sharey=True,
     )
     if len(modes) == 1:
@@ -1040,23 +1057,25 @@ def _generate_error_taxonomy_plot(df: pd.DataFrame, out_dir: str) -> None:
 
             for i_bar, val in enumerate(vals):
                 if val > 8:
-                    ax.text(x[i_bar], bottoms[i_bar] + val / 2, f"{val:.0f}%",
-                            ha="center", va="center", color="white",
-                            fontsize=9.5, fontweight="bold")
+                    txt = ax.text(x[i_bar], bottoms[i_bar] + val / 2, f"{val:.0f}%",
+                                  ha="center", va="center", color="white",
+                                  fontsize=11, fontweight="bold")
+                    txt.set_path_effects([path_effects.withStroke(linewidth=1.5, foreground="black")])
 
             bottoms += vals
 
         ax.set_xticks(x)
-        ax.set_xticklabels([_short(m) for m in plot_models], rotation=30, ha="right", fontsize=11)
-        ax.set_title(f"{mode.capitalize()} Architecture", fontsize=12, fontweight="bold")
+        ax.set_xticklabels([_short(m) for m in plot_models], rotation=30, ha="right", fontsize=13)
+        ax.tick_params(axis="y", labelsize=11)
+        ax.set_title(f"{mode.capitalize()} Architecture", fontsize=14, fontweight="bold")
         if ax is axes[0]:
-            ax.set_ylabel("Percentage of Test Cases (%)", fontsize=12)
+            ax.set_ylabel("Percentage of Test Cases (%)", fontsize=14)
 
     axes[-1].legend(title="Error Taxonomy", bbox_to_anchor=(1.05, 1),
-                    loc="upper left", fontsize=10, title_fontsize=11)
+                    loc="upper left", fontsize=12, title_fontsize=13)
 
     fig.suptitle("Error Breakdown by Architecture and Model",
-                 fontsize=14, fontweight="bold", y=1.02)
+                 fontsize=16, fontweight="bold", y=1.02)
     fig.tight_layout()
     _savefig(fig, out_dir, "error_taxonomy_breakdown")
 
@@ -1127,7 +1146,7 @@ def _generate_token_efficiency_plot(df: pd.DataFrame, out_dir: str) -> None:
     if agg.empty:
         return
 
-    fig, ax = plt.subplots(figsize=(6, 4.5))
+    fig, ax = plt.subplots(figsize=(6.5, 5))
 
     modes   = sorted(agg["Benchmark_Mode"].unique())
     markers = {"single": "o", "dual": "s"}
@@ -1144,16 +1163,37 @@ def _generate_token_efficiency_plot(df: pd.DataFrame, out_dir: str) -> None:
                    s=100, alpha=0.8, edgecolor="white", linewidth=1.0, zorder=3)
 
         for _, row in mdf.iterrows():
-            ax.text(row["avg_tokens"] * 1.02, row["avg_acc"] * 100,
-                    _short(row["Model"]), fontsize=7, alpha=0.8, va="center")
+            model_name = _short(row["Model"])
+            dx, dy = row["avg_tokens"] * 0.02, 0.0
+            ha, va = "left", "center"
 
-    ax.set_xlabel("Average Prompt Tokens per Task")
-    ax.set_ylabel("Task Accuracy (%)")
-    ax.set_title("Token Efficiency: Accuracy vs Context Size", fontweight="bold")
+            # Custom offsets to prevent overlap
+            if mode == "dual":
+                if model_name == "Gemma-3 1B":
+                    dx, dy = -row["avg_tokens"] * 0.025, -1.8
+                    ha, va = "right", "top"
+                elif model_name == "LFM2.5 Instruct 1.2B":
+                    dx, dy = row["avg_tokens"] * 0.025, 1.2
+                    ha, va = "left", "bottom"
+                elif model_name == "Qwen3.5 0.8B":
+                    dx, dy = -row["avg_tokens"] * 0.025, -1.8
+                    ha, va = "right", "top"
+                elif model_name == "Qwen3.5 2B":
+                    dx, dy = row["avg_tokens"] * 0.025, 1.2
+                    ha, va = "left", "bottom"
+
+            ax.text(row["avg_tokens"] + dx, row["avg_acc"] * 100 + dy,
+                    model_name, fontsize=10.5, fontweight="bold", alpha=0.9, zorder=5,
+                    ha=ha, va=va)
+
+    ax.set_xlabel("Average Prompt Tokens per Task", fontsize=12, labelpad=12)
+    ax.set_ylabel("Task Accuracy (%)", fontsize=12)
+    ax.tick_params(axis="both", labelsize=11)
+    ax.set_title("Token Efficiency: Accuracy vs Context Size", fontweight="bold", fontsize=13)
     ax.set_ylim(0, 105)
     x_max = agg["avg_tokens"].max()
     ax.set_xlim(left=0, right=x_max * 1.2)
-    ax.legend(fontsize=8, loc="lower right")
+    ax.legend(fontsize=11, loc="upper left")
     ax.grid(True, alpha=0.3)
 
     fig.tight_layout()
@@ -1264,7 +1304,7 @@ def _generate_combined_bfcl_radar(df: pd.DataFrame, out_dir: str) -> None:
     ax.tick_params(axis="x", pad=12)
     ax.set_rlabel_position(0)
     plt.yticks([0.2, 0.4, 0.6, 0.8, 1.0],
-               ["0.2", "0.4", "0.6", "0.8", "1.0"], color="#444444", size=10.5)
+               ["0.2", "0.4", "0.6", "0.8", "1.0"], color="#343434", size=11)
     plt.ylim(0, 1.05)
 
     for mode in modes:
@@ -1306,16 +1346,16 @@ def _generate_model_radar_grid(df: pd.DataFrame, out_dir: str) -> None:
     cols = 3
     rows = (n_models + cols - 1) // cols
 
-    fig = plt.figure(figsize=(cols * 4, rows * 4))
+    fig = plt.figure(figsize=(cols * 4.5, rows * 4.5))
 
     for i, model in enumerate(models):
         ax = fig.add_subplot(rows, cols, i + 1, polar=True)
         ax.set_theta_offset(np.pi / 2)
         ax.set_theta_direction(-1)
 
-        plt.xticks(angles[:-1], categories, size=7)
+        plt.xticks(angles[:-1], categories, size=9, weight="bold")
         ax.set_rlabel_position(0)
-        plt.yticks([0.2, 0.4, 0.6, 0.8, 1.0], [], color="grey", size=6)
+        plt.yticks([0.2, 0.4, 0.6, 0.8, 1.0], [], color="grey", size=8)
         plt.ylim(0, 1.05)
 
         for mode in modes:
@@ -1323,16 +1363,16 @@ def _generate_model_radar_grid(df: pd.DataFrame, out_dir: str) -> None:
                 vals  = full_pivot.loc[(model, mode)].values.flatten().tolist()
                 vals += [vals[0]]
                 color = _MODE_PALETTE.get(mode, "#555555")
-                ax.plot(angles, vals, linewidth=1.5, label=mode.capitalize(),
+                ax.plot(angles, vals, linewidth=1.8, label=mode.capitalize(),
                         color=color, alpha=0.8)
                 ax.fill(angles, vals, color=color, alpha=0.1)
 
-        ax.set_title(_short(model), size=10, weight="bold", pad=15)
+        ax.set_title(_short(model), size=12, weight="bold", pad=20)
         if i == 0:
-            ax.legend(loc="upper left", bbox_to_anchor=(-0.1, 1.1), fontsize=7)
+            ax.legend(loc="upper left", bbox_to_anchor=(-0.15, 1.15), fontsize=10)
 
     fig.suptitle("Per-Model Task Footprint: Architecture Comparison",
-                 fontsize=14, fontweight="bold", y=1.02)
+                 fontsize=16, fontweight="bold", y=1.02)
     fig.tight_layout()
     _savefig(fig, out_dir, "combined_model_radar_grid")
 
@@ -1461,7 +1501,7 @@ def _generate_model_difficulty_breakdown_comparison(df: pd.DataFrame, out_dir: s
     if "TC_Difficulty" not in df.columns:
         return
 
-    models = sorted(df["Model"].unique())
+    models = sorted(df["Model"].unique(), key=_short)
     levels = [lvl for lvl in ["L1", "L2", "L3"] if lvl in df["TC_Difficulty"].unique()]
 
     if not levels or not models:
@@ -1471,7 +1511,7 @@ def _generate_model_difficulty_breakdown_comparison(df: pd.DataFrame, out_dir: s
     x        = np.arange(n_models)
     w        = 0.25
 
-    fig, ax = plt.subplots(figsize=(max(5, n_models * 1.2 + 2), 4))
+    fig, ax = plt.subplots(figsize=(max(6, n_models * 1.3 + 2), 6.5))
 
     palette = {"L1": "#2CA02C", "L2": "#FF7F0E", "L3": "#D62728"}
 
@@ -1488,16 +1528,17 @@ def _generate_model_difficulty_breakdown_comparison(df: pd.DataFrame, out_dir: s
         for bar, v in zip(bars, vals):
             if v > 0:
                 ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 1,
-                        f"{v:.0f}", ha="center", va="bottom", fontsize=7)
+                        f"{v:.0f}", ha="center", va="bottom", fontsize=14, fontweight="bold")
 
     ax.set_xticks(x)
-    ax.set_xticklabels([_short(m) for m in models], rotation=25, ha="right")
-    ax.set_ylabel("Task Accuracy (%)")
+    ax.set_xticklabels([_short(m) for m in models], rotation=25, ha="right", fontsize=16)
+    ax.set_ylabel("Task Accuracy (%)", fontsize=17)
+    ax.tick_params(axis="y", labelsize=15)
     ax.set_title("Model Comparison — Accuracy by Task Complexity",
-                 fontweight="bold")
+                 fontweight="bold", fontsize=18)
     ax.set_ylim(0, 115)
     ax.axhline(100, color="#cccccc", ls="--", lw=0.6)
-    ax.legend(title="Complexity", loc="upper left", bbox_to_anchor=(1, 1))
+    ax.legend(title="Complexity", loc="upper left", bbox_to_anchor=(1, 1), fontsize=15, title_fontsize=16)
 
     fig.tight_layout()
     _savefig(fig, out_dir, "model_difficulty_breakdown")
