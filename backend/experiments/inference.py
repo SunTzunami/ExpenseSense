@@ -103,6 +103,17 @@ class LlamaCppModel:
         if os.path.exists(potential_path):
             return potential_path
             
+        # Check via MODEL_REGISTRY in models.py
+        try:
+            from experiments.models import get_model_info
+            info = get_model_info(model_identifier)
+            if info and "id" in info:
+                reg_path = os.path.join(models_dir, info["id"])
+                if os.path.exists(reg_path):
+                    return reg_path
+        except Exception:
+            pass
+            
         # Check LM studio caches, just in case
         lm_studio_base = os.path.expanduser("~/.lmstudio/models")
         if os.path.exists(lm_studio_base):
@@ -149,8 +160,8 @@ class LlamaCppModel:
                 verbose=False,
             )
             
-            # Apply custom chat formatter to disable thinking for minicpm if needed
-            if not enable_thinking and "minicpm" in model_identifier.lower():
+            # Apply custom chat formatter to disable thinking for any model if needed
+            if not enable_thinking:
                 template = self.model.metadata.get('tokenizer.chat_template')
                 if template and "enable_thinking" in template:
                     from llama_cpp.llama_chat_format import Jinja2ChatFormatter

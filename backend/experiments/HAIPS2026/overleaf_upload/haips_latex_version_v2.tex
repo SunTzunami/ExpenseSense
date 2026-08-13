@@ -1,6 +1,6 @@
 \documentclass[11pt,twocolumn]{article}
 
-\usepackage[review]{acl}
+\usepackage[preprint]{acl}
 \usepackage{times}
 \usepackage{latexsym}
 \usepackage[T1]{fontenc}
@@ -14,9 +14,18 @@
 \usepackage{xcolor}
 \usepackage{subcaption}
 
-\title{ExpenseSense: Privacy-Preserving On-Device Personal Finance Tool Calling \\ with Sub-2B LLMs}
+% Tighten float spacing to prevent page overflow
+\setlength{\textfloatsep}{12pt plus 1.0pt minus 2.0pt}
+\setlength{\floatsep}{12pt plus 1.0pt minus 2.0pt}
+\setlength{\intextsep}{12pt plus 1.0pt minus 2.0pt}
+\setlength{\dbltextfloatsep}{12pt plus 1.0pt minus 2.0pt}
+\setlength{\dblfloatsep}{12pt plus 1.0pt minus 2.0pt}
 
-\author{Anonymous}
+\title{ExpenseSense: Privacy-Preserving On-Device Personal Finance Tool Calling with Sub-2B LLMs}
+
+\author{Sajag Swami \qquad Yash Pandey \\
+  Independent Researchers \\
+  \texttt{sajagswami@gmail.com} \qquad \texttt{ya.pandey@outlook.com}}
 
 \begin{document}
 \maketitle
@@ -32,13 +41,15 @@ we benchmark on-device tool calling using a 115-question test suite
 across six sub-2B quantized SLMs (0.8B-2B), comparing single-agent
 (joint routing and parameter extraction) against dual-agent
 (router-specialist) architectures.
-Architectural decomposition substantially improves both accuracy and
-safety: dual-agent Qwen3.5-2B achieves 77.6\% strict Correct Ratio
-(+17.4~pp over single-agent) while reducing average latency by 48\%,
-and dual-agent Qwen3.5-0.8B reaches 89.1\% Task Accuracy in 3.0~s
-with 1.2\,GB RAM.
-Critically, dual-agent architectures shift errors from spurious parameters to safer,
-missing parameters, reducing the risk of silent incorrect outputs.
+The dual-agent advantage is metric-specific:
+while optimised single-agent Qwen3.5-2B reaches the highest Task
+Accuracy (92.0\%), dual-agent Qwen3.5-2B achieves 77.6\% strict
+Correct Ratio (+17.4~pp over single-agent) while reducing average
+latency by 48\%, and dual-agent Qwen3.5-0.8B reaches 89.1\% Task
+Accuracy in 3.0~s with 1.2\,GB RAM.
+Critically, dual-agent architectures shift errors from spurious
+parameters to safer, missing parameters, reducing the risk of silent
+incorrect outputs.
 Our results demonstrate that private, high-quality financial analytics
 is achievable on consumer hardware today, with no cloud dependency.
 \end{abstract}
@@ -64,7 +75,7 @@ and in doing so, serve as practical privacy infrastructure for real
 users?
 
 Existing benchmarks \citep{qin2023toolllm,
-finmcpbench2026, fintrace2026} focus on models above 7B parameters,
+finmcpbench2026, fintrace2026} focus primarily on multi-step trajectories across financial APIs for cloud-scale models,
 which are prohibitively slow for local deployment.
 Conversely, on-device models like Octopus~v2 \citep{chen2024octopus}
 and Hammer \citep{lin2024hammer} demonstrate the potential of smaller
@@ -91,32 +102,20 @@ contributions:
 
 \begin{enumerate}
     \item Empirical \textbf{on-device deployment guidelines for
-          privacy}: Qwen3.5-0.8B in dual mode achieves 89.1\% Task
-          Accuracy with 3.0~s latency and $\approx$1.2\,GB RAM,
-          demonstrating that private, high-quality personal finance analytics
-          can run locally on consumer hardware - making on-device
-          inference a practical privacy protection feature.
+          privacy}: Demonstrating that sub-2B SLMs on consumer hardware
+          (e.g., Qwen3.5-0.8B in dual mode achieving 89.1\% Task Accuracy
+          in 3.0~s with 1.2\,GB RAM) provide a practical privacy protection,
+          eliminating cloud data transmission for personal finance.
 
-    \item A \textbf{fine-grained error taxonomy} of 7 categories
-          showing that dual-agent architectures consolidate errors into
-          predictable, safer failure modes-shifting from spurious
-          parameter additions (which silently corrupt query results and
-          can mislead the user) toward missing parameters
-          (which are visible omissions). This error-mode shift is the
-          central human-safety argument for architectural decomposition.
+    \item A comparative \textbf{architectural evaluation} of single- vs.\
+          dual-agent setups across six sub-2B models using a \textbf{7-feature
+          complexity scoring model} (L1--L3 tiers) to systematically benchmark
+          performance under realistic, informal query constraints.
 
-    \item A comparative evaluation of \textbf{single-agent
-          vs.\ dual-agent} architectures across six quantized SLMs
-          (0.8B-2.0B parameters), showing that dual-agent
-          decomposition reduces latency (by up to 48\% for
-          Qwen3.5-2B), improves exact-match correctness (+17.4~pp
-          Correct Ratio), and stabilizes sub-1B models without
-          cloud resources.
-
-    \item A \textbf{115-question dataset} for financial tool calling
-          across five analytical tools, with a 7-feature complexity
-          scoring function categorising queries into three difficulty
-          tiers (L1--L3) that simulate real-world user interactions.
+    \item A fine-grained \textbf{error taxonomy} of 7 categories showing
+          that dual-agent decomposition consolidates errors into safer, predictable
+          failure modes---shifting from dangerous spurious parameter additions
+          (\texttt{PARAM\_EXTRA}) toward visible omissions (\texttt{PARAM\_MISSING}).
 \end{enumerate}
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -220,8 +219,8 @@ FinQA \citep{chen2022finqa} and FinGPT \citep{yang2023fingpt} target
 financial numerical reasoning and generation, but focus on text
 generation rather than tool calling.
 FinMCP-Bench \citep{finmcpbench2026} and FinTrace \citep{fintrace2026}
-evaluate LLM agents for financial tool use, but target cloud-scale
-models.
+evaluate LLM agents for financial tool use, focusing primarily on multi-step,
+long-horizon trajectories across cloud-scale models.
 Personal finance assistants \citep{li2024personal} require strict
 privacy, making local execution crucial.
 
@@ -351,6 +350,12 @@ This mimics the Japan-based personal finance context of the target
 application and tests robustness to spelling variations,
 colloquialisms, and cultural terms.
 
+\paragraph{Benchmark Construction.}
+The 115 test cases were manually authored by a developer based on daily expense tracking patterns across 30+ categories (including terms like ``combini meals'' and ``nomikai'').
+Queries range from simple totals to complex cross-year range comparisons, paired with deterministic ground-truth tool calls.
+Cases cover all five tools with varied linguistic styles (abbreviations, misspellings) and 1--10 parameters per query.
+Single-author creation is acknowledged as a limitation.
+
 \begin{table}[t]
 \centering
 \small
@@ -443,7 +448,7 @@ of on-device financial assistants with respect to real-user harm.
 EXAONE-4.0-1.2B & EXAONE-4.0 \citeyearpar{lgai2025exaone} & 1.2B & 2.0\,GB \\
 Gemma-3-1B-it   & Gemma-3 \citeyearpar{team2025gemma}     & 1B   & 1.6\,GB \\
 LFM2.5-1.2B     & LFM2.5 \citeyearpar{liquidai2026lfm25}  & 1.2B & 1.4\,GB \\
-MiniCPM5-1B     & MiniCPM \citeyearpar{minicpm2024}       & 1B   & 1.5\,GB \\
+MiniCPM5-1B     & MiniCPM5 \citeyearpar{openbmb2026minicpm5}       & 1B   & 1.5\,GB \\
 Qwen3.5-0.8B    & Qwen3.5 \citeyearpar{qwen2026qwen35}    & 0.8B & 1.3\,GB \\
 Qwen3.5-2B      & Qwen3.5 \citeyearpar{qwen2026qwen35}    & 2B   & 2.1\,GB \\
 \bottomrule
@@ -461,7 +466,7 @@ Apple Metal.
 
 Experiments run on an Apple M1 (8-core CPU, 8-core GPU, 8\,GB unified
 memory).
-Parameters: temperature $= 0.1$, min\_p $= 0.05$, n\_ctx $= 4096$,
+Parameters: temperature $= 0.1$, min\_p $= 0.05$, n\_ctx $= 8192$,
 stop tokens \texttt{[``\textbackslash n\textbackslash n'', ```'']}.
 Each model is warmed up through all six prompt templates (one router +
 five specialists) before evaluation begins.
@@ -478,6 +483,18 @@ observations.
 Table~\ref{tab:main_results} presents the full results.
 Figure~\ref{fig:overall_visuals} shows the accuracy-latency Pareto
 frontier and the error taxonomy breakdown.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.7\textwidth]{error_taxonomy_breakdown.png}
+  \caption{Error taxonomy breakdown (\% of test cases) per model
+  and architecture. Single-agent Qwen3.5-2B (right panel) produces
+  22.6\% \texttt{PARAM\_EXTRA} errors- spurious parameters that
+  could lead to incorrect computations. Dual-agent (left)
+  eliminates most of these, consolidating residual errors into the
+  more predictable \texttt{PARAM\_MISSING} category.}
+  \label{fig:error_plot}
+\end{figure*}
 
 \begin{figure*}[t]
   \centering
@@ -549,17 +566,22 @@ Latency and RAM are per-query averages.}
 on consumer hardware (\textbf{RQ1}), with the Qwen3.5 family achieving $>$89\%
 Task Accuracy in dual mode.
 This demonstrates that cloud reliance can be avoided while keeping
-all data-queries and results-private to the user's device.
-\textbf{(2)} While single-agent prompts allow Qwen3.5-2B to
-reach 92.0\% Task Accuracy, dual-agent decomposition is still
-preferred for two reasons (\textbf{RQ2}):
-\emph{(a)} Strict correctness-Correct Ratio improves from 60.2\%
-to 77.6\% (+17.4~pp) for Qwen3.5-2B, representing a significant
+all data---queries and results---private to the user's device.
+\textbf{(2)} The dual-agent advantage is metric-specific
+(\textbf{RQ2}): single-agent Qwen3.5-2B achieves the highest
+Task Accuracy (92.0\% vs.\ 90.4\% dual), but dual-agent decomposition
+is preferred for stricter correctness and safety:
+\emph{(a)} Correct Ratio improves from 60.2\% to 77.6\% (+17.4~pp)
+for Qwen3.5-2B, representing a significant
 reduction in silent parameter errors that could produce incorrect outputs.
-\emph{(b)} Enabling smaller models-Qwen3.5-0.8B improves from
-79.8\% to 89.1\% Task Accuracy (+9.3~pp) while almost halving latency
-(5.8~s to 3.0~s) in dual mode, making sub-1B models viable for 
+\emph{(b)} For smaller models, Qwen3.5-0.8B improves from
+79.8\% to 89.1\% Task Accuracy (+9.3~pp) while nearly halving latency
+(5.8~s to 3.0~s) in dual mode, making sub-1B models viable for
 low-memory devices.
+\emph{(c)} The error taxonomy shift from dangerous
+\texttt{PARAM\_EXTRA} errors to safer \texttt{PARAM\_MISSING}
+errors (\S\ref{sec:discussion}) represents a qualitative safety
+improvement not captured by aggregate accuracy.
 
 \subsection{Per-Tool-Group Analysis}
 
@@ -598,13 +620,43 @@ Task Accuracy, CR = Correct Ratio.}
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\columnwidth]{dual_category_heatmap.png}
+  \includegraphics[width=0.98\columnwidth]{dual_category_heatmap.png}
   \caption{Task Accuracy (\%) by Model $\times$ Tool Category in
   dual mode. Qwen3.5 models achieve $>$74\% across all categories,
   while weaker models show marked gaps in comparison and time
   series tasks.}
   \label{fig:category_heatmap}
 \end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\columnwidth]{model_difficulty_breakdown.png}
+  \caption{Task Accuracy by complexity tier (L1/L2/L3) per model in
+  dual mode. The Qwen3.5 family degrades gracefully with increasing
+  complexity.}
+  \label{fig:difficulty_plot}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\columnwidth]{token_efficiency_scatter.png}
+  \caption{Token efficiency: Task Accuracy vs.\ average prompt tokens
+  per query. Dual-agent configurations (red) achieve higher accuracy
+  with fewer total tokens than their single-agent counterparts
+  (blue), demonstrating superior context utilisation.}
+  \label{fig:token_efficiency}
+\end{figure}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.68\textwidth]{og_case_cropped.png}
+  \caption{Real usage session: a user queries snack spending trends
+  in informal language. The dual-agent Qwen3.5-0.8B pipeline
+  correctly invokes \texttt{plot\_time\_series}, producing an
+  actionable spending trend---entirely on-device with no data
+  transmitted externally.}
+  \label{fig:case_study}
+\end{figure*}
 
 \subsection{Complexity Tier Analysis}
 
@@ -617,32 +669,12 @@ L3 queries involve constructs like cross-year range comparisons
 which require extracting up to 10 parameters with complex
 temporal constraints.
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\columnwidth]{model_difficulty_breakdown.png}
-  \caption{Task Accuracy by complexity tier (L1/L2/L3) per model in
-  dual mode. The Qwen3.5 family degrades gracefully with increasing
-  complexity.}
-  \label{fig:difficulty_plot}
-\end{figure}
 
 \subsection{Error Taxonomy Analysis}
 
 Figure~\ref{fig:error_plot} visualises the full error distribution.
 The error distribution shifts significantly between configurations
 (\textbf{RQ3}).
-
-\begin{figure*}[t]
-  \centering
-  \includegraphics[width=\textwidth]{error_taxonomy_breakdown.png}
-  \caption{Error taxonomy breakdown (\% of test cases) per model
-  and architecture. Single-agent Qwen3.5-2B (right panel) produces
-  22.6\% \texttt{PARAM\_EXTRA} errors- spurious parameters that
-  could lead to incorrect computations. Dual-agent (left)
-  eliminates most of these, consolidating residual errors into the
-  more predictable \texttt{PARAM\_MISSING} category.}
-  \label{fig:error_plot}
-\end{figure*}
 
 For Qwen3.5-2B: single-agent produces 22.6\% \texttt{PARAM\_EXTRA}
 and 7.3\% \texttt{PARAM\_MISSING}; dual-agent reduces
@@ -682,15 +714,6 @@ all five tool schemas and disambiguation instructions.
 The dual-agent architecture decomposes the context, focusing each pass
 on a single subtask to achieve higher accuracy-per-token.
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\columnwidth]{token_efficiency_scatter.png}
-  \caption{Token efficiency: Task Accuracy vs.\ average prompt tokens
-  per query. Dual-agent configurations (red) achieve higher accuracy
-  with fewer total tokens than their single-agent counterparts
-  (blue), demonstrating superior context utilisation.}
-  \label{fig:token_efficiency}
-\end{figure}
 
 \subsection{Validation Layer Impact}
 
@@ -722,8 +745,10 @@ This reveals that argument extraction remains the primary bottleneck,
 since validation cannot recover missing parameters (\texttt{PARAM\_MISSING}).
 
 % ─────────────────────────────────────────────────────────────────────────────
+\vspace{-5pt}
 \section{Discussion}
 \label{sec:discussion}
+\vspace{-3pt}
 % ─────────────────────────────────────────────────────────────────────────────
 
 \paragraph{Privacy through Task Decomposition.}
@@ -735,6 +760,44 @@ call, addressing the primary bottleneck of small models.
 Decomposing the task helps sub-2B models perform reliably on
 domain-specific schemas and by doing so, makes on-device inference
 a practical privacy guarantee rather than an aspirational one.
+
+\paragraph{Metric-Specific Trade-offs.}
+We note that the dual-agent advantage is not uniform across metrics.
+Optimised single-agent Qwen3.5-2B achieves the highest Task Accuracy
+(92.0\% vs.\ 90.4\% dual), because its joint prompt gives the model
+access to all tool schemas simultaneously, enabling cross-tool
+reasoning.
+However, this advantage comes at a cost: single-agent produces
+22.6\% \texttt{PARAM\_EXTRA} errors (vs.\ 1.9\% dual), which are
+silent corruptions in financial contexts.
+The dual-agent architecture is therefore preferred not because it
+uniformly outperforms single-agent, but because it delivers
+higher \emph{strict} correctness (Correct Ratio: 77.6\% vs.\ 60.2\%),
+safer error modes, and substantially lower latency (6.2~s vs.\ 12.0~s
+for Qwen3.5-2B)---properties that matter more for user-facing
+financial applications.
+
+\paragraph{Router vs.\ Simpler Intent Classifiers.}
+To validate the LLM-based router, we benchmarked a lightweight
+embedding-similarity baseline using
+\texttt{all-MiniLM-L6-v2} (23M parameters).
+Cosine similarity between query embeddings and tool-description
+embeddings achieves 75.7\% tool-selection accuracy (87/115),
+compared with $\geq$90\% for the LLM router across all Qwen3.5
+configurations.
+The embedding baseline's errors concentrate on
+\texttt{plot\_time\_series} (52.2\% per-tool accuracy),
+which it systematically confuses with
+\texttt{plot\_comparison\_bars} when queries mention date ranges---a
+contextual disambiguation task (``from 2024 to 2025'' denotes a
+\emph{range} for time series, not a \emph{comparison} of two
+periods) that requires pragmatic reasoning beyond lexical overlap.
+Accuracy also degrades with query complexity (L1: 83.3\%,
+L2: 75.6\%, L3: 71.7\%), confirming that an LLM-based router is
+warranted for our domain.
+
+\paragraph{Absence of Cloud LLM Baselines.}
+We omit cloud-hosted baselines (GPT-4, Claude) because transmitting expense categories in the prompt would expose user spending patterns to third parties, violating our privacy model. Synthetic-schema cloud comparisons to quantify privacy--accuracy trade-offs are left for future work.
 
 \paragraph{Addressing Highly Complex Queries.}
 Even the best model only achieves 59.6\% strict Correct Ratio on L3
@@ -766,19 +829,10 @@ snack expenditure. By surfacing this data locally, the author was able to reflec
 plotting - remained strictly on the user's device; no sensitive data was transmitted
 externally at any point. Connecting technical mechanisms to human needs, this demonstrates how private, local analytics can directly support personal budgeting workflows.
 
-\begin{figure*}[t]
-  \centering
-  \includegraphics[width=0.95\textwidth]{example_case.png}
-  \caption{Real usage session: a user queries snack spending trends
-  in informal language. The dual-agent Qwen3.5-0.8B pipeline
-  correctly invokes \texttt{plot\_time\_series}, producing an
-  actionable spending trend---entirely on-device with no data
-  transmitted externally.}
-  \label{fig:case_study}
-\end{figure*}
-
-% ─────────────────────────────────────────────────────────────────────────────
+\vspace{-5pt}
 \section{Conclusion}
+\label{sec:conclusion}
+\vspace{-3pt}
 % ─────────────────────────────────────────────────────────────────────────────
 
 We presented ExpenseSense, a human-centered evaluation of
@@ -790,44 +844,36 @@ mode achieves 89.1\% Task Accuracy with 3.0~s latency, keeping all
 user data---queries, context, and results---strictly on-device.
 Architectural decomposition into intent routing and parameter
 extraction further improves strict correctness (from 60.2\% to 77.6\%
-Correct Ratio) and, critically, shifts error modes toward safer
-failures: spurious parameter additions, which can silently corrupt
-financial analytics and mislead user decisions, are replaced by 
-missing-parameter errors that are more visible and less harmful.
+Correct Ratio)---though single-agent Qwen3.5-2B retains a slight
+Task Accuracy edge (92.0\% vs.\ 90.4\%)---and, critically, shifts
+error modes toward safer failures: spurious parameter additions,
+which can silently corrupt financial analytics and mislead user
+decisions, are replaced by missing-parameter errors that are more
+visible and less harmful.
 
-Several directions warrant future investigation.
-First, \emph{fine-tuning} the best-performing models on
-domain-specific function-calling data could address the residual L3
-failures while preserving on-device deployment.
-Second, extending the benchmark to \emph{multi-turn} interactions
-would capture realistic conversational patterns, including follow-up
-queries where prior context affects parameter inference.
-Third, \emph{user studies} examining how people understand and verify
-on-device privacy guarantees would complement our architectural
-analysis with evidence about user trust and mental models of local
-inference.
-Fourth, \emph{multilingual} query support would broaden applicability
-across diverse user populations.
-Finally, evaluating lower-bit quantisation formats (Q4\_K\_M) could
-further reduce the memory footprint, making privacy-preserving
-financial AI accessible on lower capacity devices such as smartphones.
+Several directions warrant future investigation:
+(1) \emph{Fine-tuning} on domain-specific function-calling data to address residual L3 failures.
+(2) Extending to \emph{multi-turn} interactions with conversational context.
+(3) Conducting \emph{user studies} on trust and mental models of on-device privacy.
+(4) Adding \emph{multilingual} query support.
+(5) Evaluating generalisability to other \emph{privacy-sensitive domains} (e.g., healthcare, legal).
+(6) Controlled comparisons against cloud LLMs using synthetic schemas to quantify privacy--accuracy trade-offs.
+(7) Testing lower-bit quantization (Q4\_K\_M) for mobile deployment.
 
-% ─────────────────────────────────────────────────────────────────────────────
-\section*{Limitations}
+\vspace{-5pt}
+\section*{Limitations \& Ethics}
+\vspace{-3pt}
 % ─────────────────────────────────────────────────────────────────────────────
 
 \begin{itemize}\itemsep=0pt \parskip=0pt \parsep=0pt
-    \item All models use Q8\_0 quantisation; lower-bit formats
-          (Q4\_K\_M) may yield different accuracy--efficiency
-          tradeoffs.
-    \item Test cases were authored by a single developer in English, reflecting a
-          Japan-based context; crowdsourcing and multilingual support would improve diversity.
-    \item Ground-truth labels are deterministic; some queries may
-          admit legitimate alternative tool selections.
-    \item We evaluate tool-call formation, not downstream financial calculation correctness.
-    \item Our privacy guarantee is architectural (no data leaves the device) rather than cryptographic.
+    \item Quantisation is fixed at Q8\_0; lower-bit formats (Q4\_K\_M) may yield different tradeoffs.
+    \item Test cases were single-developer authored in English; crowdsourcing and multilingual data would improve diversity.
+    \item Ground-truth labels are deterministic; some queries admit alternative valid tool calls.
+    \item Privacy is architectural (no external data flow) rather than cryptographic.
+    \item Cloud LLMs were not benchmarked as cloud transmission violates the privacy model; evaluation is also limited to five tools in personal finance.
 \end{itemize}
 
+\vspace{-2pt}
 % ─────────────────────────────────────────────────────────────────────────────
 \section*{Ethics Statement}
 % ─────────────────────────────────────────────────────────────────────────────
@@ -842,8 +888,10 @@ We recognise that even on-device models may produce incorrect
 financial summaries, and advocate for clear user-facing disclaimers in
 production deployments.
 
+\vspace{-6pt}
 % ─────────────────────────────────────────────────────────────────────────────
 \section*{Data and Code Availability}
+\vspace{-3pt}
 % ─────────────────────────────────────────────────────────────────────────────
 
 Code, prompts, benchmark data, and full results will be released on
@@ -854,7 +902,11 @@ configuration details, raw and validated CSV result files, and the
 benchmark runner, plotting scripts, and the exact model GGUFs used in
 this study to ensure complete reproducibility.
 
+\vspace{-2pt}
+\begin{small}
+\setlength{\bibsep}{0pt}
 \bibliography{custom}
+\end{small}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \appendix\onecolumn
@@ -882,6 +934,37 @@ $d_{\text{hol}}$   & $0{-}2$   & Holiday/calendar knowledge required \\
 \caption{Seven features of the complexity scoring function
 (Eq.~\ref{eq:complexity}).}
 \label{tab:complexity_features}
+\end{table}
+
+\section{Known Category Vocabulary}
+\label{sec:category_vocabulary}
+
+The post-hoc parameter validation layer (Section~\ref{sec:validation}) and the LLM prompts rely on a known category vocabulary defined dynamically or in static schema files. Table~\ref{tab:categories} lists the 11 major categories defined in the application alongside the mapped subcategories/aliases from the system configuration (\texttt{categories.json}) that are passed in the \texttt{\{metadata\}} block.
+
+\begin{table}[h]
+\centering
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lp{11.5cm}@{}}
+\toprule
+\textbf{Major Category} & \textbf{Mapped Minor Categories / Subcategories} \\
+\midrule
+Housing and Utilities   & housing, internet bill, electricity bill, gas bill, water \& sewage bill, phone bill \\
+Food                    & grocery, snacks, cafe, caf\'{e}, coffee, bento, beverage, combini meal, dining, eating with friend \\
+Transportation          & commute, ride share, tokyo metro, Tokyo Metro, flight tickets, cable car, bus, shinkansen, car rental, taxi \\
+Accommodation           & stay \\
+Fitness                 & supplements, shoes, sports event, sports watch, sports clothing, sports rental, gym, sports equipment, basketball game, football game, futsal game \\
+Souvenirs/Gifts/Treats  & souvenirs, treat, gift, souvenirs/gifts/treats \\
+Household and Clothing  & clothing, household \\
+Entertainment           & entertainment, nomikai, activities, Activities, arcades \& karaoke, Arcades \& Karaoke, events \& venues, Events \& Venues \\
+Miscellaneous           & medicines, personal care, misc, help, charity, donation, entrance fees, park entrance fees, healthcare \\
+Education               & tuition, books, exam fees, notebooks, textbook \\
+Electronics and Furniture & furniture, electronics \\
+\bottomrule
+\end{tabular}%
+}
+\caption{Known category vocabulary from \texttt{categories.json}.}
+\label{tab:categories}
 \end{table}
 
 \section{Sample Test Cases}

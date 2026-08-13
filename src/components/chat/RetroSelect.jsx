@@ -15,6 +15,7 @@ function getShortModelName(modelName) {
     if (clean.toLowerCase().includes("qwen3.5-0.8b")) return "Qwen3.5 0.8B";
     if (clean.toLowerCase().includes("qwen3.5-2b")) return "Qwen3.5 2B";
     if (clean.toLowerCase().includes("qwen3.5-4b")) return "Qwen3.5 4B";
+    if (clean.toLowerCase().includes("g9v3") || clean.toLowerCase().includes("ai9stars")) return "G9v3 3B";
     return clean;
 }
 

@@ -221,6 +221,10 @@ def plot_time_series(df, category=None, remarks=None, year=None, month=None,
     range_start = None
     range_end = None
     now = pd.Timestamp.now()
+    if 'Date' in data.columns and not data.empty:
+        temp_dates = data['Date'].dropna()
+        if not temp_dates.empty:
+            now = temp_dates.max()
     
     # Time filtering
     if month and not year:
@@ -446,6 +450,10 @@ def plot_distribution(
         data = data[data['major category'] != 'Housing and Utilities']
 
     now = pd.Timestamp.now()
+    if 'Date' in data.columns and not data.empty:
+        temp_dates = data['Date'].dropna()
+        if not temp_dates.empty:
+            now = temp_dates.max()
     range_start, range_end = None, None
 
     # ---- TIME FILTERING (UPGRADED) ----
@@ -927,6 +935,10 @@ def calculate_total(df, category=None, remarks=None, year=None, month=None, day=
         data = data[data['major category'] != 'Housing and Utilities']
     
     now = pd.Timestamp.now()
+    if 'Date' in data.columns and not data.empty:
+        temp_dates = data['Date'].dropna()
+        if not temp_dates.empty:
+            now = temp_dates.max()
     
     # Time filtering
     if month and not year:
@@ -1019,6 +1031,10 @@ def get_top_expenses(df, n=10, category=None, remarks=None,
         data = data[data['major category'] != 'Housing and Utilities']
     
     now = pd.Timestamp.now()
+    if 'Date' in data.columns and not data.empty:
+        temp_dates = data['Date'].dropna()
+        if not temp_dates.empty:
+            now = temp_dates.max()
     
     # Time filtering
     if month and not year:

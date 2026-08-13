@@ -1,6 +1,6 @@
 \documentclass[11pt,twocolumn]{article}
 
-\usepackage[review]{acl}
+\usepackage{acl}
 \usepackage{times}
 \usepackage{latexsym}
 \usepackage[T1]{fontenc}
@@ -336,6 +336,20 @@ This simplifies the task for each model call and provides more
 relevant in-context examples, though it requires two sequential
 inference passes.
 Combined prompt tokens: $\approx$2,700 per query.
+Both architectures inject a dynamically generated category
+vocabulary---11 major categories and $\approx$60 subcategory
+aliases drawn from the user's own dataset
+(Appendix~\ref{sec:category_vocabulary})---into a
+\texttt{\{metadata\}} block within the prompt, grounding category
+parameter extraction in the user's actual expense taxonomy.
+These category names are inherently sensitive: they reveal what
+a user spends money on (e.g., healthcare, dining, donations),
+making their transmission to third-party cloud providers a
+privacy risk.
+In dual-agent mode, only the specialist receives this vocabulary;
+the router operates on pure intent classification without category
+context, further limiting the surface over which sensitive data is
+processed.
 
 \subsection{Post-Hoc Parameter Validation}
 \label{sec:validation}
@@ -467,7 +481,7 @@ of on-device financial assistants with respect to real-user harm.
 EXAONE-4.0-1.2B & EXAONE-4.0 \citeyearpar{lgai2025exaone} & 1.2B & 2.0\,GB \\
 Gemma-3-1B-it   & Gemma-3 \citeyearpar{team2025gemma}     & 1B   & 1.6\,GB \\
 LFM2.5-1.2B     & LFM2.5 \citeyearpar{liquidai2026lfm25}  & 1.2B & 1.4\,GB \\
-MiniCPM5-1B     & MiniCPM \citeyearpar{minicpm2024}       & 1B   & 1.5\,GB \\
+MiniCPM5-1B     & MiniCPM5 \citeyearpar{openbmb2026minicpm5}       & 1B   & 1.5\,GB \\
 Qwen3.5-0.8B    & Qwen3.5 \citeyearpar{qwen2026qwen35}    & 0.8B & 1.3\,GB \\
 Qwen3.5-2B      & Qwen3.5 \citeyearpar{qwen2026qwen35}    & 2B   & 2.1\,GB \\
 \bottomrule
@@ -878,10 +892,6 @@ financial AI accessible on lower capacity devices such as smartphones.
           admit legitimate alternative tool selections.
     \item Test cases were authored by a single developer; crowdsourcing
           or user study collection would improve query diversity.
-    \item We do not evaluate the \emph{downstream correctness} of the
-          financial analytics produced only whether the tool call is
-          correctly formed. Production deployment would require
-          additional safeguards against calculation errors.
     \item Our privacy analysis is architectural (no data leaves the
           device) rather than cryptographic; we do not address model
           inversion or side-channel attacks on the local device itself.
@@ -941,6 +951,37 @@ $d_{\text{hol}}$   & $0{-}2$   & Holiday/calendar knowledge required \\
 \caption{Seven features of the complexity scoring function
 (Eq.~\ref{eq:complexity}).}
 \label{tab:complexity_features}
+\end{table}
+
+\section{Known Category Vocabulary}
+\label{sec:category_vocabulary}
+
+The post-hoc parameter validation layer (Section~\ref{sec:validation}) and the LLM prompts rely on a known category vocabulary defined dynamically or in static schema files. Table~\ref{tab:categories} lists the 11 major categories defined in the application alongside the mapped subcategories/aliases from the system configuration (\texttt{categories.json}) that are passed in the \texttt{\{metadata\}} block.
+
+\begin{table}[h]
+\centering
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lp{11.5cm}@{}}
+\toprule
+\textbf{Major Category} & \textbf{Mapped Minor Categories / Subcategories} \\
+\midrule
+Housing and Utilities   & housing, internet bill, electricity bill, gas bill, water \& sewage bill, phone bill \\
+Food                    & grocery, snacks, cafe, caf\'{e}, coffee, bento, beverage, combini meal, dining, eating with friend \\
+Transportation          & commute, ride share, tokyo metro, Tokyo Metro, flight tickets, cable car, bus, shinkansen, car rental, taxi \\
+Accommodation           & stay \\
+Fitness                 & supplements, shoes, sports event, sports watch, sports clothing, sports rental, gym, sports equipment, basketball game, football game, futsal game \\
+Souvenirs/Gifts/Treats  & souvenirs, treat, gift, souvenirs/gifts/treats \\
+Household and Clothing  & clothing, household \\
+Entertainment           & entertainment, nomikai, activities, Activities, arcades \& karaoke, Arcades \& Karaoke, events \& venues, Events \& Venues \\
+Miscellaneous           & medicines, personal care, misc, help, charity, donation, entrance fees, park entrance fees, healthcare \\
+Education               & tuition, books, exam fees, notebooks, textbook \\
+Electronics and Furniture & furniture, electronics \\
+\bottomrule
+\end{tabular}%
+}
+\caption{Known category vocabulary from \texttt{categories.json}.}
+\label{tab:categories}
 \end{table}
 
 \section{Sample Test Cases}

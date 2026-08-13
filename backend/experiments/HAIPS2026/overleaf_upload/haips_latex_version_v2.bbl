@@ -1,15 +1,21 @@
 \begin{thebibliography}{30}
 \providecommand{\natexlab}[1]{#1}
 
-\bibitem[{Abdin et~al.(2024)Abdin, Aneja, Awadalla et~al.}]{abdin2024phi3}
-Marah Abdin, Jyoti Aneja, Hany Awadalla, and 1 others. 2024.
+\bibitem[{Abdin et~al.(2024)Abdin, Aneja, Awadalla, Awadallah, Awan, Bach,
+  Bahree, Bakhtiari, Behl, Benhaim, Bilenko, Borda, Bucher, and
+  Bubeck}]{abdin2024phi3}
+Marah Abdin, Jyoti Aneja, Hany Awadalla, Ahmed Awadallah, Ammar~Ahmad Awan,
+  Nguyen Bach, Amit Bahree, Arash Bakhtiari, Harkirat Behl, Alon Benhaim, Misha
+  Bilenko, Johan Borda, Ashley~Loren Bucher, and Sébastien Bubeck. 2024.
 \newblock Phi-3 technical report: A highly capable language model locally on
   your phone.
 \newblock \emph{arXiv preprint arXiv:2404.14219}.
 
-\bibitem[{Cao et~al.(2026)Cao, Li, Liu, Cao, Xu, Qian et~al.}]{fintrace2026}
-Yupeng Cao, Haohang Li, Weijin Liu, Wenbo Cao, Anke Xu, Lingfei Qian, and 1
-  others. 2026.
+\bibitem[{Cao et~al.(2026)Cao, Li, Liu, Cao, Xu, Qian, Peng, Tang, Yao, Huang,
+  Subbalakshmi, Zhu, Suchow, and Yu}]{fintrace2026}
+Yupeng Cao, Haohang Li, Weijin Liu, Wenbo Cao, Anke Xu, Lingfei Qian, Xiaozhe
+  Peng, Yuxuan Tang, Zeyi Yao, Heng Huang, K.~P. Subbalakshmi, Xiao Zhu,
+  Jordan~W. Suchow, and Yue Yu. 2026.
 \newblock {FinTrace}: Holistic trajectory-level evaluation of {LLM} tool
   calling for long-horizon financial tasks.
 \newblock \emph{arXiv preprint arXiv:2604.10015}.
@@ -43,17 +49,12 @@ B.~Efron. 1979.
 Georgi Gerganov. 2023.
 \newblock \href {https://github.com/ggerganov/llama.cpp} {llama.cpp}.
 
-\bibitem[{Gunter et~al.(2024)Gunter, Wang, Wang et~al.}]{gunter2024apple}
-Tom Gunter, Zirui Wang, Chong Wang, and 1 others. 2024.
+\bibitem[{Gunter et~al.(2024)Gunter, Wang, Wang, Huang, Zhang, Liang, and
+  {Apple Intelligence Team}}]{gunter2024apple}
+Tom Gunter, Zirui Wang, Chong Wang, Ruoming Huang, Yandong Zhang, Xianzhi
+  Liang, and {Apple Intelligence Team}. 2024.
 \newblock Apple intelligence foundation language models.
 \newblock \emph{arXiv preprint arXiv:2407.21075}.
-
-\bibitem[{Hu et~al.(2024)Hu, Tu, Han, He, Cui, Long et~al.}]{minicpm2024}
-Shengding Hu, Yuge Tu, Xu~Han, Chaoqun He, Ganqu Cui, Xiang Long, and 1 others.
-  2024.
-\newblock {MiniCPM}: Unveiling the potential of small language models with
-  scalable training strategies.
-\newblock \emph{arXiv preprint arXiv:2404.06395}.
 
 \bibitem[{Kavathekar et~al.(2025)Kavathekar, Donakanti, Kumaraguru, and
   Vaidhyanathan}]{kavathekar2025small}
@@ -71,18 +72,19 @@ Ishan Kavathekar, Raghav Donakanti, Ponnurangam Kumaraguru, and Karthik
   and reasoning modes.
 \newblock \emph{arXiv preprint arXiv:2507.11407}.
 
-\bibitem[{Li et~al.(2024)Li, Wen, Wang, Li, Yuan, Liu, Liu, Xu, Wang, Sun
-  et~al.}]{li2024personal}
+\bibitem[{Li et~al.(2024)Li, Wen, Wang, Li, Yuan, Liu, Liu, Xu, Wang, Sun,
+  Zhang, and Liu}]{li2024personal}
 Yuanchun Li, Hao Wen, Weijun Wang, Xiangyu Li, Yizhen Yuan, Guohong Liu,
-  Jiacheng Liu, Wenxing Xu, Xiang Wang, Yi~Sun, and 1 others. 2024.
+  Jiacheng Liu, Wenxing Xu, Xiang Wang, Yi~Sun, Rui Zhang, and Yunxin Liu.
+  2024.
 \newblock Personal {LLM} agents: Insights and survey about the capability,
   efficiency and security.
 \newblock \emph{arXiv preprint arXiv:2401.05459}.
 
-\bibitem[{Lin et~al.(2024)Lin, Wen, Peng, Nie, Liao, Wang
-  et~al.}]{lin2024hammer}
-Qiqiang Lin, Muning Wen, Qiuying Peng, Guanyu Nie, Junwei Liao, Jun Wang, and 1
-  others. 2024.
+\bibitem[{Lin et~al.(2024)Lin, Wen, Peng, Nie, Liao, Wang, Liu, and
+  Hu}]{lin2024hammer}
+Qiqiang Lin, Muning Wen, Qiuying Peng, Guanyu Nie, Junwei Liao, Jun Wang, Ying
+  Liu, and Xiaojun Hu. 2024.
 \newblock Hammer: Robust function-calling for on-device language models via
   function masking.
 \newblock \emph{arXiv preprint arXiv:2410.04587}.
@@ -102,10 +104,10 @@ Zechun Liu, Changsheng Zhao, Forrest Iandola, Chen Lai, Yuandong Tian, Igor
 \newblock In \emph{Proceedings of the 41st International Conference on Machine
   Learning}, pages 32431--32454.
 
-\bibitem[{Liu et~al.(2024{\natexlab{b}})Liu, Hoang, Zhang, Zhu, Lan
-  et~al.}]{liu2024apigen}
-Zuxin Liu, Thai Hoang, Jianguo Zhang, Ming Zhu, Tian Lan, and 1 others.
-  2024{\natexlab{b}}.
+\bibitem[{Liu et~al.(2024{\natexlab{b}})Liu, Hoang, Zhang, Zhu, Lan, Tan, Zhou,
+  Yu, and Hoi}]{liu2024apigen}
+Zuxin Liu, Thai Hoang, Jianguo Zhang, Ming Zhu, Tian Lan, Shirley Tan,
+  Joey~Tianyi Zhou, Philip~S. Yu, and Steven C.~H. Hoi. 2024{\natexlab{b}}.
 \newblock {APIGen}: Automated pipeline for generating verifiable and diverse
   function-calling datasets.
 \newblock \emph{Advances in Neural Information Processing Systems}, 37.
@@ -114,6 +116,11 @@ Zuxin Liu, Thai Hoang, Jianguo Zhang, Ming Zhu, Tian Lan, and 1 others.
 Helen Nissenbaum. 2004.
 \newblock Privacy as contextual integrity.
 \newblock \emph{Washington Law Review}, 79(1):119--158.
+
+\bibitem[{{OpenBMB}(2026)}]{openbmb2026minicpm5}
+{OpenBMB}. 2026.
+\newblock \href {https://github.com/OpenBMB/MiniCPM} {{MiniCPM5-1B}: A {SOTA}
+  1{B} on-device {LLM}}.
 
 \bibitem[{Patil et~al.(2025)Patil, Mao, Yan, Ji, Suresh, Stoica, and
   Gonzalez}]{yan2024bfcl}
@@ -132,10 +139,11 @@ Shishir~G. Patil, Tianjun Zhang, Xin Wang, and Joseph~E. Gonzalez. 2023.
   model connected with massive {API}s}.
 \newblock \emph{arXiv preprint arXiv:2305.15334}.
 
-\bibitem[{Qin et~al.(2024)Qin, Liang, Ye, Zhu, Yan, Lu, Lin, Cong, Tang, Qian
-  et~al.}]{qin2023toolllm}
+\bibitem[{Qin et~al.(2024)Qin, Liang, Ye, Zhu, Yan, Lu, Lin, Cong, Tang, Qian,
+  Zhao, Tian, Xie, Zhou, and Liu}]{qin2023toolllm}
 Yujia Qin, Shihao Liang, Yining Ye, Kunlun Zhu, Lan Yan, Yaxi Lu, Yankai Lin,
-  Xin Cong, Xiangru Tang, Bill Qian, and 1 others. 2024.
+  Xin Cong, Xiangru Tang, Bill Qian, Siyuan Zhao, Runchu Tian, Ruobing Xie, Jie
+  Zhou, and Zhiyuan Liu. 2024.
 \newblock \href {https://arxiv.org/abs/2307.16789} {{ToolLLM}: Facilitating
   large language models to master 16000+ real-world {API}s}.
 \newblock In \emph{Proceedings of the Twelfth International Conference on

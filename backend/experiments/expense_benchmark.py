@@ -90,7 +90,7 @@ from experiments.inference import generate, get_last_usage
 from experiments.models import get_llamacpp_models
 from experiments.memory import free_model_memory
 from utils.llm_input_validation import validate_and_fix_params
-from utils.tool_prompts import get_tool_prompt
+from utils.tool_prompts import get_tool_prompt, build_single_agent_prompt
 from utils.tool_registry import TOOL_ID_TO_NAME
 
 # -----------------------------------------------------------------------------

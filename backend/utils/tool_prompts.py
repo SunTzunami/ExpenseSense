@@ -310,3 +310,82 @@ def get_tool_prompt(tool_name, model_id=None):
         examples=tool_data["examples"]
     )
     return prompt
+
+
+def build_single_agent_prompt(metadata: str, current_date: str, model_id=None) -> str:
+    import os
+    import re
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    router_prompt_path = os.path.join(base_dir, "prompts", "router_prompt.txt")
+    router_prompt_text = ""
+    if os.path.exists(router_prompt_path):
+        try:
+            with open(router_prompt_path, "r", encoding="utf-8") as f:
+                router_prompt_text = f.read()
+        except Exception:
+            pass
+
+    tools_match = re.search(r"(## Available Tools.*?)(?=## Output Format|$)", router_prompt_text, re.DOTALL)
+    available_tools_text = tools_match.group(1).strip() if tools_match else "## Available Tools\n1. plot_time_series (1)\n2. plot_distribution (2)\n3. plot_comparison_bars (3)\n4. calculate_total (4)\n5. get_top_expenses (5)"
+
+    base_instructions_text = BASE_INSTRUCTIONS.replace(
+        "{{\"category\": \"Food\", \"months\": 6}}",
+        "{{\"tool\": 1, \"category\": \"Food\", \"months\": 6}}"
+    )
+    base_rules_match = re.search(r"(.*?)(?=## Available Parameters)", base_instructions_text, re.DOTALL)
+    base_rules = base_rules_match.group(1).strip() if base_rules_match else base_instructions_text
+    base_rules = base_rules.replace("{{", "{").replace("}}", "}")
+
+    tool_map = {
+        "plot_time_series": 1,
+        "plot_distribution": 2,
+        "plot_comparison_bars": 3,
+        "calculate_total": 4,
+        "get_top_expenses": 5
+    }
+
+    combined_examples = []
+    parameters_text = []
+    for tool_name, tool_id in tool_map.items():
+        if tool_name in TOOL_PROMPTS:
+            params = TOOL_PROMPTS[tool_name]["parameters"]
+            parameters_text.append(f"{tool_id}. `{tool_name}`: {params}")
+            
+            examples_str = TOOL_PROMPTS[tool_name]["examples"]
+            def replace_json(match):
+                inner = match.group(1)
+                if not inner.strip():
+                    return f'{{"tool": {tool_id}}}'
+                return f'{{"tool": {tool_id}, {inner}}}'
+            
+            modified_examples = re.sub(r'^\{([^}]*)\}$', replace_json, examples_str, flags=re.MULTILINE)
+            combined_examples.append(f"### Tool {tool_id} ({tool_name}) Examples:\n{modified_examples}")
+
+    all_examples = "\n\n".join(combined_examples)
+    all_parameters = "\n".join(parameters_text)
+
+    prompt = f"""{base_rules}
+
+Your task is to determine which ONE tool is best suited to answer the user's question AND extract the required parameters.
+You must output a single JSON object containing:
+1. "tool": The numeric ID (1-5) of the best tool suited for the query.
+2. The parameters for that tool.
+
+{available_tools_text}
+
+## PARAMETERS DEFINITIONS FOR EACH TOOL
+{all_parameters}
+
+## Examples
+{all_examples}
+
+## Context
+```
+{metadata}
+```
+Currency: JPY
+Today: {current_date}
+
+FINAL REMINDER: Output ONLY the JSON object. NO MARKDOWN, NO BACKTICKS, NO EXPLANATION, NO CODE!
+"""
+    return prompt

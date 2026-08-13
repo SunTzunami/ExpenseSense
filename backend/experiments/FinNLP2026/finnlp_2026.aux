@@ -1,0 +1,224 @@
+\relax 
+\bibstyle{acl_natbib}
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{schick2024toolformer,patil2023gorilla,qin2023toolllm}
+\citation{staab2024memorization,yao2024survey}
+\citation{finmcpbench2026}
+\citation{fintrace2026}
+\citation{chen2024octopus}
+\citation{lin2024hammer}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\def\@LN@column{1}
+\citation{staab2024memorization,yao2024survey}
+\citation{nissenbaum2004privacy}
+\citation{kavathekar2025small}
+\citation{schick2024toolformer}
+\citation{patil2023gorilla}
+\citation{qin2023toolllm}
+\citation{shen2024hugginggpt}
+\citation{tang2024toolalpaca}
+\citation{liu2024apigen}
+\citation{yan2024bfcl}
+\citation{kavathekar2025small}
+\citation{callnavi2025}
+\citation{jhandi2025slafc}
+\citation{liu2024mobilellm}
+\citation{abdin2024phi3}
+\citation{xu2024ondevice}
+\citation{chen2024octopus}
+\citation{lin2024hammer}
+\citation{gunter2024apple}
+\citation{kavathekar2025small}
+\def\@LN@column{2}
+\@writefile{toc}{\contentsline {section}{\numberline {2}On-Device Inference as Privacy Protection}{2}{section.2}\protected@file@percent }
+\newlabel{sec:privacy}{{2}{2}{On-Device Inference as Privacy Protection}{section.2}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Related Work}{2}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Tool-Augmented Language Models.}{2}{section*.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Function-Calling Evaluation.}{2}{section*.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{On-Device Function Calling.}{2}{section*.3}\protected@file@percent }
+\citation{chen2021finqa}
+\citation{yang2023fingpt}
+\citation{finmcpbench2026}
+\citation{fintrace2026}
+\citation{li2024personal}
+\citation{nissenbaum2004privacy}
+\citation{staab2024memorization}
+\def\@LN@column{2}
+\@writefile{toc}{\contentsline {paragraph}{Financial NLP and Tool Calling.}{3}{section*.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Privacy for Financial Language Models.}{3}{section*.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}System Design}{3}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Tool Inventory}{3}{subsection.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Architectural Configurations}{3}{subsection.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Single-Agent Pipeline.}{3}{section*.7}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Tool inventory. The five tools span visualisation (1--3), aggregation (4), and retrieval (5).}}{3}{table.caption.6}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{tab:tools}{{1}{3}{Tool inventory. The five tools span visualisation (1--3), aggregation (4), and retrieval (5)}{table.caption.6}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {paragraph}{Dual-Agent Pipeline.}{3}{section*.8}\protected@file@percent }
+\citation{kavathekar2025small}
+\citation{efron1979bootstrap}
+\citation{lgai2025exaone}
+\citation{team2025gemma}
+\citation{liquidai2026lfm25}
+\citation{openbmb2026minicpm5}
+\citation{qwen2026qwen35}
+\citation{qwen2026qwen35}
+\citation{ai9stars2026g9v33b}
+\citation{llamacpp2023}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Test case distribution by group. Comparison queries are the most parameter-dense and complex.}}{4}{table.caption.9}\protected@file@percent }
+\newlabel{tab:tc_distribution}{{2}{4}{Test case distribution by group. Comparison queries are the most parameter-dense and complex}{table.caption.9}{}}
+\def\@LN@column{2}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Post-Hoc Parameter Validation}{4}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:validation}{{4.3}{4}{Post-Hoc Parameter Validation}{subsection.4.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Evaluation Design}{4}{section.5}\protected@file@percent }
+\newlabel{sec:evaluation}{{5}{4}{Evaluation Design}{section.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Test Suite}{4}{subsection.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Complexity Scoring}{4}{subsection.5.2}\protected@file@percent }
+\newlabel{eq:complexity}{{1}{4}{Complexity Scoring}{equation.1}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Evaluation Metrics}{4}{subsection.5.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Error Taxonomy}{4}{subsection.5.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Models evaluated. Sub-2B models use Q8\_0 GGUF quantization; $^\dagger $G9v3-3B uses Q4\_K\_M. All run via llama.cpp. RAM is average peak RSS.}}{5}{table.caption.10}\protected@file@percent }
+\newlabel{tab:models}{{3}{5}{Models evaluated. Sub-2B models use Q8\_0 GGUF quantization; $^\dagger $G9v3-3B uses Q4\_K\_M. All run via llama.cpp. RAM is average peak RSS}{table.caption.10}{}}
+\def\@LN@column{2}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Experimental Setup}{5}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Models}{5}{subsection.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Hardware and Inference Protocol}{5}{subsection.6.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}Results}{5}{section.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Overall Performance}{5}{subsection.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Key findings (RQ1, RQ2).}{5}{section*.13}\protected@file@percent }
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Per-Tool-Group Analysis}{5}{subsection.7.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Complexity Tier Analysis}{5}{subsection.7.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.4}Error Taxonomy Analysis}{5}{subsection.7.4}\protected@file@percent }
+\newlabel{fig:pareto}{{1a}{6}{Accuracy-latency trade-off. Dual-mode Qwen3.5-0.8B ($\approx $3~s, 89\%) sits on the efficient frontier, offering the best accuracy per unit latency. Single-mode Qwen3.5-2B reaches the highest Task Accuracy (92\%) but at 4$\times $ the latency (12~s)}{figure.caption.11}{}}
+\newlabel{sub@fig:pareto}{{a}{6}{Accuracy-latency trade-off. Dual-mode Qwen3.5-0.8B ($\approx $3~s, 89\%) sits on the efficient frontier, offering the best accuracy per unit latency. Single-mode Qwen3.5-2B reaches the highest Task Accuracy (92\%) but at 4$\times $ the latency (12~s)}{figure.caption.11}{}}
+\newlabel{fig:radar}{{1b}{6}{Task footprint (mean Task Accuracy across all models). The dual architecture (red) uniformly expands coverage over single (blue) on all five task groups, with the largest gains on time series and comparison tools}{figure.caption.11}{}}
+\newlabel{sub@fig:radar}{{b}{6}{Task footprint (mean Task Accuracy across all models). The dual architecture (red) uniformly expands coverage over single (blue) on all five task groups, with the largest gains on time series and comparison tools}{figure.caption.11}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces System-level results. (a) Dual-agent Qwen3.5-0.8B dominates the efficiency frontier for privacy-preserving deployments. (b) Dual-agent decomposition improves coverage across all financial task categories.}}{6}{figure.caption.11}\protected@file@percent }
+\newlabel{fig:overall_visuals}{{1}{6}{System-level results. (a) Dual-agent Qwen3.5-0.8B dominates the efficiency frontier for privacy-preserving deployments. (b) Dual-agent decomposition improves coverage across all financial task categories}{figure.caption.11}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Task Accuracy by complexity tier (L1/L2/L3) per model in dual mode. The Qwen3.5 family degrades gracefully with increasing complexity.}}{6}{figure.caption.15}\protected@file@percent }
+\newlabel{fig:difficulty_plot}{{2}{6}{Task Accuracy by complexity tier (L1/L2/L3) per model in dual mode. The Qwen3.5 family degrades gracefully with increasing complexity}{figure.caption.15}{}}
+\def\@LN@column{2}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.5}Token Efficiency and Validation}{6}{subsection.7.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8}Discussion}{6}{section.8}\protected@file@percent }
+\newlabel{sec:discussion}{{8}{6}{Discussion}{section.8}{}}
+\@writefile{toc}{\contentsline {paragraph}{Privacy through Task Decomposition.}{6}{section*.17}\protected@file@percent }
+\citation{finmcpbench2026}
+\citation{fintrace2026}
+\citation{liu2024apigen}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Main results (validated metrics, \%). \textbf  {Bold} = best per metric within each mode. FSP = Function Selection Precision; ACS = Argument Completeness Score; AVC = Argument Value Correctness; Task Acc = F$_1$-based task accuracy; CR = strict exact-match Correct Ratio. ACS is omitted (N/A) for single-agent configurations. $^\dagger $3B model (Q4\_K\_M), included as a reference point outside the core sub-2B study. Latency and RAM are per-query averages.}}{7}{table.caption.12}\protected@file@percent }
+\newlabel{tab:main_results}{{4}{7}{Main results (validated metrics, \%). \textbf {Bold} = best per metric within each mode. FSP = Function Selection Precision; ACS = Argument Completeness Score; AVC = Argument Value Correctness; Task Acc = F$_1$-based task accuracy; CR = strict exact-match Correct Ratio. ACS is omitted (N/A) for single-agent configurations. $^\dagger $3B model (Q4\_K\_M), included as a reference point outside the core sub-2B study. Latency and RAM are per-query averages}{table.caption.12}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Per-group results in dual mode (validated, \%). T.Acc = Task Accuracy, CR = Correct Ratio.}}{7}{table.caption.14}\protected@file@percent }
+\newlabel{tab:category_results}{{5}{7}{Per-group results in dual mode (validated, \%). T.Acc = Task Accuracy, CR = Correct Ratio}{table.caption.14}{}}
+\def\@LN@column{2}
+\@writefile{toc}{\contentsline {paragraph}{Comparison with Cloud-Scale Tool Calling.}{7}{section*.18}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Model Scale vs.\ Quantization.}{7}{section*.19}\protected@file@percent }
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {paragraph}{Addressing Highly Complex Queries.}{7}{section*.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Real-World Impact: From Analytics to Behaviour Change.}{7}{section*.21}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {9}Conclusion}{7}{section.9}\protected@file@percent }
+\newlabel{fig:case_study_alert}{{3a}{8}{\textbf {Alert} (Jan 2026): Querying snack spending over past 6 months reveals 63 transactions (\textyen 30,088) with peaks near \textyen 1,000, prompting a decision to cut back}{figure.caption.16}{}}
+\newlabel{sub@fig:case_study_alert}{{a}{8}{\textbf {Alert} (Jan 2026): Querying snack spending over past 6 months reveals 63 transactions (\textyen 30,088) with peaks near \textyen 1,000, prompting a decision to cut back}{figure.caption.16}{}}
+\newlabel{fig:case_study_confirm}{{3b}{8}{\textbf {Confirmation} (June 2026): Period comparison confirms an 84.7\% reduction in snack spending (\textyen 38,453 $\to $ \textyen 5,893). Higher average transaction (\textyen 506 $\to $ \textyen 655) confirms fewer purchases were the main reason for reduction in spending}{figure.caption.16}{}}
+\newlabel{sub@fig:case_study_confirm}{{b}{8}{\textbf {Confirmation} (June 2026): Period comparison confirms an 84.7\% reduction in snack spending (\textyen 38,453 $\to $ \textyen 5,893). Higher average transaction (\textyen 506 $\to $ \textyen 655) confirms fewer purchases were the main reason for reduction in spending}{figure.caption.16}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Real-world deployment: private on-device analytics driving behaviour change. Dual-agent Qwen3.5-0.8B (3.3~s) and Qwen3.5-2B (8.7~s) correctly route queries locally. The participant reduced snack spending by 84.7\%. Intermediate views in Figures~\ref {fig:case_mid}--\ref {fig:case_year} (Appendix).}}{8}{figure.caption.16}\protected@file@percent }
+\newlabel{fig:case_study}{{3}{8}{Real-world deployment: private on-device analytics driving behaviour change. Dual-agent Qwen3.5-0.8B (3.3~s) and Qwen3.5-2B (8.7~s) correctly route queries locally. The participant reduced snack spending by 84.7\%. Intermediate views in Figures~\ref {fig:case_mid}--\ref {fig:case_year} (Appendix)}{figure.caption.16}{}}
+\def\@LN@column{2}
+\def\@LN@column{1}
+\bibdata{custom}
+\bibcite{abdin2024phi3}{{1}{2024}{{Abdin et~al.}}{{Abdin, Aneja, Awadalla, Awadallah, Awan, Bach, Bahree, Bakhtiari, Behl, Benhaim, Bilenko, Borda, Bucher, and Bubeck}}}
+\bibcite{ai9stars2026g9v33b}{{2}{2026}{{AI9Stars}}{{}}}
+\bibcite{fintrace2026}{{3}{2026}{{Cao et~al.}}{{Cao, Li, Liu, Cao, Xu, Qian, Peng, Tang, Yao, Huang, Subbalakshmi, Zhu, Suchow, and Yu}}}
+\bibcite{chen2024octopus}{{4}{2024}{{Chen and Li}}{{}}}
+\bibcite{chen2021finqa}{{5}{2021}{{Chen et~al.}}{{Chen, Chen, Smiley, Shah, Borova, Langdon, Moussa, Beane, Huang, Routledge, and Wang}}}
+\bibcite{efron1979bootstrap}{{6}{1979}{{Efron}}{{}}}
+\bibcite{team2025gemma}{{7}{2025}{{Gemma Team}}{{}}}
+\bibcite{llamacpp2023}{{8}{2023}{{Gerganov}}{{}}}
+\bibcite{gunter2024apple}{{9}{2024}{{Gunter et~al.}}{{Gunter, Wang, Wang, Huang, Zhang, Liang, and {Apple Intelligence Team}}}}
+\bibcite{jhandi2025slafc}{{10}{2025}{{Jhandi et~al.}}{{Jhandi, Kazi, Subramanian, and Sendas}}}
+\bibcite{kavathekar2025small}{{11}{2025}{{Kavathekar et~al.}}{{Kavathekar, Donakanti, Kumaraguru, and Vaidhyanathan}}}
+\bibcite{lgai2025exaone}{{12}{2025}{{LG AI Research}}{{}}}
+\bibcite{li2024personal}{{13}{2024}{{Li et~al.}}{{Li, Wen, Wang, Li, Yuan, Liu, Liu, Xu, Wang, Sun, Zhang, and Liu}}}
+\bibcite{lin2024hammer}{{14}{2024}{{Lin et~al.}}{{Lin, Wen, Peng, Nie, Liao, Wang, Liu, and Hu}}}
+\bibcite{liquidai2026lfm25}{{15}{2026}{{Liquid AI}}{{}}}
+\bibcite{liu2024mobilellm}{{16}{2024{a}}{{Liu et~al.}}{{Liu, Zhao, Iandola, Lai, Tian, Fedorov, Xiong, Chang, Shi, Krishnamoorthi, Lai, and Chandra}}}
+\bibcite{liu2024apigen}{{17}{2024{b}}{{Liu et~al.}}{{Liu, Hoang, Zhang, Zhu, Lan, Tan, Zhou, Yu, and Hoi}}}
+\bibcite{nissenbaum2004privacy}{{18}{2004}{{Nissenbaum}}{{}}}
+\bibcite{openbmb2026minicpm5}{{19}{2026}{{OpenBMB}}{{}}}
+\bibcite{yan2024bfcl}{{20}{2025}{{Patil et~al.}}{{Patil, Mao, Yan, Ji, Suresh, Stoica, and Gonzalez}}}
+\bibcite{patil2023gorilla}{{21}{2023}{{Patil et~al.}}{{Patil, Zhang, Wang, and Gonzalez}}}
+\bibcite{qin2023toolllm}{{22}{2024}{{Qin et~al.}}{{Qin, Liang, Ye, Zhu, Yan, Lu, Lin, Cong, Tang, Qian, Zhao, Tian, Xie, Zhou, and Liu}}}
+\bibcite{qwen2026qwen35}{{23}{2026}{{Qwen Team}}{{}}}
+\bibcite{schick2024toolformer}{{24}{2023}{{Schick et~al.}}{{Schick, Dwivedi-Yu, Dess{\`i}, Raileanu, Lomeli, Hambro, Zettlemoyer, Cancedda, and Scialom}}}
+\def\@LN@column{2}
+\def\@LN@column{1}
+\bibcite{shen2024hugginggpt}{{25}{2023}{{Shen et~al.}}{{Shen, Song, Tan, Li, Lu, and Zhuang}}}
+\bibcite{callnavi2025}{{26}{2025}{{Song et~al.}}{{Song, Tang, Lothritz, Ezzini, Klein, Bissyand{\'e}, Boytsov, Ble, and Goujon}}}
+\bibcite{staab2024memorization}{{27}{2024}{{Staab et~al.}}{{Staab, Vero, Balunovi{\'c}, and Vechev}}}
+\bibcite{tang2024toolalpaca}{{28}{2023}{{Tang et~al.}}{{Tang, Deng, Lin, Han, Liang, and Sun}}}
+\bibcite{xu2024ondevice}{{29}{2024}{{Xu et~al.}}{{Xu, Li, Chen, Wang, Gao, Cai, and Ling}}}
+\bibcite{yang2023fingpt}{{30}{2023}{{Yang et~al.}}{{Yang, Liu, and Wang}}}
+\bibcite{yao2024survey}{{31}{2024}{{Yao et~al.}}{{Yao, Duan, Xu, Cai, Sun, and Zhang}}}
+\bibcite{finmcpbench2026}{{32}{2026}{{Zhu et~al.}}{{Zhu, Tian, Li, Wu, Liang, Li, Zhang, Guo, Chen, Liu, and Zhang}}}
+\def\@LN@column{2}
+\def\@LN@column{1}
+\def\@LN@column{2}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Complexity Scoring Features}{11}{appendix.A}\protected@file@percent }
+\newlabel{sec:complexity_appendix}{{A}{11}{Complexity Scoring Features}{appendix.A}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Seven features of the complexity scoring function (Eq.~\ref {eq:complexity}).}}{11}{table.caption.26}\protected@file@percent }
+\newlabel{tab:complexity_features}{{6}{11}{Seven features of the complexity scoring function (Eq.~\ref {eq:complexity})}{table.caption.26}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {B}Known Category Vocabulary}{11}{appendix.B}\protected@file@percent }
+\newlabel{sec:category_vocabulary}{{B}{11}{Known Category Vocabulary}{appendix.B}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Known category vocabulary from \texttt  {categories.json}.}}{11}{table.caption.27}\protected@file@percent }
+\newlabel{tab:categories}{{7}{11}{Known category vocabulary from \texttt {categories.json}}{table.caption.27}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {C}Sample Test Cases}{11}{appendix.C}\protected@file@percent }
+\newlabel{sec:sample_tc}{{C}{11}{Sample Test Cases}{appendix.C}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Sample test cases. Note informal language, abbreviations, and semantic mappings (``metro''$\to $``tokyo metro'', ``groceries''$\to $``grocery'').}}{11}{table.caption.28}\protected@file@percent }
+\newlabel{tab:sample_tc}{{8}{11}{Sample test cases. Note informal language, abbreviations, and semantic mappings (``metro''$\to $``tokyo metro'', ``groceries''$\to $``grocery'')}{table.caption.28}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {section}{\numberline {D}Qualitative Error Examples}{12}{appendix.D}\protected@file@percent }
+\newlabel{sec:error_examples}{{D}{12}{Qualitative Error Examples}{appendix.D}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Representative failure cases for Qwen3.5-2B (dual mode). \texttt  {PARAM\_EXTRA} is the most dangerous failure mode in financial contexts: the spurious \texttt  {months=1} filter silently restricts ``total food spending'' to ``last month's food spending'', returning a plausible but incorrect figure that a user may act on without realising the scope was changed.}}{12}{table.caption.29}\protected@file@percent }
+\newlabel{tab:error_examples}{{9}{12}{Representative failure cases for Qwen3.5-2B (dual mode). \texttt {PARAM\_EXTRA} is the most dangerous failure mode in financial contexts: the spurious \texttt {months=1} filter silently restricts ``total food spending'' to ``last month's food spending'', returning a plausible but incorrect figure that a user may act on without realising the scope was changed}{table.caption.29}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {section}{\numberline {E}Supplementary Figures}{13}{appendix.E}\protected@file@percent }
+\newlabel{sec:supplementary_figures}{{E}{13}{Supplementary Figures}{appendix.E}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Error taxonomy breakdown (\% of test cases) per model and architecture. Single-agent Qwen3.5-2B produces 22.6\% \texttt  {PARAM\_EXTRA} errors (spurious parameters that could lead to silently incorrect financial outputs). Dual-agent eliminates most of these, consolidating residual errors into the more predictable \texttt  {PARAM\_MISSING} category.}}{13}{figure.caption.30}\protected@file@percent }
+\newlabel{fig:error_plot}{{4}{13}{Error taxonomy breakdown (\% of test cases) per model and architecture. Single-agent Qwen3.5-2B produces 22.6\% \texttt {PARAM\_EXTRA} errors (spurious parameters that could lead to silently incorrect financial outputs). Dual-agent eliminates most of these, consolidating residual errors into the more predictable \texttt {PARAM\_MISSING} category}{figure.caption.30}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Task Accuracy (\%) by model $\times $ tool category in dual mode. Qwen3.5 models achieve $>$74\% across all categories, while weaker models show marked gaps in comparison and time series tasks.}}{13}{figure.caption.31}\protected@file@percent }
+\newlabel{fig:category_heatmap}{{5}{13}{Task Accuracy (\%) by model $\times $ tool category in dual mode. Qwen3.5 models achieve $>$74\% across all categories, while weaker models show marked gaps in comparison and time series tasks}{figure.caption.31}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Per-model task footprint across all five task categories (Single vs. Dual mode). The dual-agent architecture provides near-universal improvement across models and tasks.}}{14}{figure.caption.32}\protected@file@percent }
+\newlabel{fig:combined_model_radar_grid}{{6}{14}{Per-model task footprint across all five task categories (Single vs. Dual mode). The dual-agent architecture provides near-universal improvement across models and tasks}{figure.caption.32}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Validation $\Delta $ Heatmap, showing absolute percentage point improvement across metrics after applying post-hoc fuzzy matching.}}{15}{figure.caption.33}\protected@file@percent }
+\newlabel{fig:validation_delta_heatmap}{{7}{15}{Validation $\Delta $ Heatmap, showing absolute percentage point improvement across metrics after applying post-hoc fuzzy matching}{figure.caption.33}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Token efficiency: Task Accuracy vs.\ average prompt tokens per query. Dual-agent configurations (red squares) achieve higher accuracy with fewer total tokens than their single-agent counterparts (blue circles), demonstrating superior context utilisation.}}{16}{figure.caption.34}\protected@file@percent }
+\newlabel{fig:token_efficiency}{{8}{16}{Token efficiency: Task Accuracy vs.\ average prompt tokens per query. Dual-agent configurations (red squares) achieve higher accuracy with fewer total tokens than their single-agent counterparts (blue circles), demonstrating superior context utilisation}{figure.caption.34}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Case study intermediate view: six months \emph  {after} the participant decided to reduce snack spending (queried June~2026). Only 18 transactions totalling \textyen 8,584 remain over six months, with long gaps between purchases, in stark contrast to the dense pattern in Figure~\ref {fig:case_study_alert}.}}{16}{figure.caption.35}\protected@file@percent }
+\newlabel{fig:case_mid}{{9}{16}{Case study intermediate view: six months \emph {after} the participant decided to reduce snack spending (queried June~2026). Only 18 transactions totalling \textyen 8,584 remain over six months, with long gaps between purchases, in stark contrast to the dense pattern in Figure~\ref {fig:case_study_alert}}{figure.caption.35}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Case study full-year view: weekly snack spending over the past year (queried June~2026). The 4-week moving average (dotted line) shows a clear downward trend from peaks of \textyen 3,000+ in mid-2025 to near-zero by early 2026, illustrating the sustained behaviour change following the initial alert in January~2026.}}{17}{figure.caption.36}\protected@file@percent }
+\newlabel{fig:case_year}{{10}{17}{Case study full-year view: weekly snack spending over the past year (queried June~2026). The 4-week moving average (dotted line) shows a clear downward trend from peaks of \textyen 3,000+ in mid-2025 to near-zero by early 2026, illustrating the sustained behaviour change following the initial alert in January~2026}{figure.caption.36}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {section}{\numberline {F}Prompt Templates}{18}{appendix.F}\protected@file@percent }
+\newlabel{sec:prompts}{{F}{18}{Prompt Templates}{appendix.F}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.1}Router Prompt}{18}{subsection.F.1}\protected@file@percent }
+\newlabel{sec:router_prompt}{{F.1}{18}{Router Prompt}{subsection.F.1}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.2}Specialist Base Template}{19}{subsection.F.2}\protected@file@percent }
+\newlabel{sec:specialist_base}{{F.2}{19}{Specialist Base Template}{subsection.F.2}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.3}Specialist Tool Prompts}{20}{subsection.F.3}\protected@file@percent }
+\newlabel{sec:tool_prompts_appendix}{{F.3}{20}{Specialist Tool Prompts}{subsection.F.3}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {F.3.1}plot\_time\_series}{20}{subsubsection.F.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {F.3.2}plot\_distribution}{20}{subsubsection.F.3.2}\protected@file@percent }
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {F.3.3}plot\_comparison\_bars}{21}{subsubsection.F.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {F.3.4}calculate\_total}{21}{subsubsection.F.3.4}\protected@file@percent }
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {F.3.5}get\_top\_expenses}{22}{subsubsection.F.3.5}\protected@file@percent }
+\def\@LN@column{1}
+\gdef \@abspage@last{23}

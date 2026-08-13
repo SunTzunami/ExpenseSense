@@ -159,8 +159,46 @@ def _short(model_id: str) -> str:
         "LFM2-1.2B": "LFM2 1.2B",
         "Qwen3.5-0.8B": "Qwen3.5 0.8B",
         "Qwen3.5-2B": "Qwen3.5 2B",
+        "Qwen3.5-4B-UD": "Qwen3.5 4B",
+        "Qwen3.5-4B": "Qwen3.5 4B",
+        "qwen3.5-4b-ud-iq2_m": "Qwen3.5 4B",
+        "ai9stars_G9v3-3B": "G9v3 3B",
+        "g9v3-3b": "G9v3 3B",
     }
     return name_map.get(name, name)
+
+
+def _model_sort_key(model_id: str):
+    raw_name = str(model_id).lower()
+    short_name = _short(model_id).lower()
+    
+    # G9v3 3B reference model: placed at the very end
+    if "g9v3" in raw_name or "ai9stars" in raw_name or "3b" in short_name:
+        return (99, 3.0, raw_name)
+    
+    # Sub-2B models in standard order by family / size:
+    if "exaone" in raw_name:
+        return (1, 1.2, raw_name)
+    elif "gemma" in raw_name:
+        return (2, 1.0, raw_name)
+    elif "lfm" in raw_name:
+        return (3, 1.2, raw_name)
+    elif "minicpm" in raw_name:
+        return (4, 1.0, raw_name)
+    elif "qwen" in raw_name:
+        if "0.8b" in raw_name or "0.8b" in short_name:
+            return (5, 0.8, raw_name)
+        elif "2b" in raw_name or "2b" in short_name:
+            return (6, 2.0, raw_name)
+        elif "4b" in raw_name or "4b" in short_name:
+            return (7, 4.0, raw_name)
+        return (8, 99.0, raw_name)
+    
+    return (50, 0, raw_name)
+
+
+def sort_models(model_list):
+    return sorted(list(model_list), key=_model_sort_key)
 
 
 def _savefig(fig, out_dir: str, name: str, fmt: str = "png") -> None:
@@ -317,7 +355,7 @@ def generate_plots(df: pd.DataFrame, out_dir: str, mode_filter: Optional[str] = 
 
 
 def _generate_mode_plots(df: pd.DataFrame, out_dir: str, prefix: str) -> None:
-    model_col  = sorted(df["Model"].unique().tolist(), key=_short)
+    model_col  = sort_models(df["Model"].unique())
     color_map  = {m: _PALETTE[i % len(_PALETTE)] for i, m in enumerate(model_col)}
     marker_map = {m: ["o","s","^","D","v","p","P","*","X"][i % 9] for i, m in enumerate(model_col)}
     labels     = [_short(m) for m in model_col]
@@ -816,7 +854,7 @@ def _generate_validation_plots(df: pd.DataFrame, out_dir: str) -> None:
         print("  [skip] No modes found for validation plots.")
         return
 
-    models = sorted(df["Model"].unique())
+    models = sort_models(df["Model"].unique())
     if not models:
         print("  [skip] No models found for validation plots.")
         return
@@ -1017,7 +1055,7 @@ def _generate_error_taxonomy_plot(df: pd.DataFrame, out_dir: str) -> None:
     import matplotlib.patheffects as path_effects
 
     modes = sorted(df["Benchmark_Mode"].unique())
-    plot_models = sorted(df["Model"].unique(), key=_short)
+    plot_models = sort_models(df["Model"].unique())
 
     if not modes:
         return
@@ -1247,7 +1285,7 @@ def _generate_comparison_plots(df: pd.DataFrame, out_dir: str) -> None:
     _savefig(fig, out_dir, "combined_accuracy_by_category")
 
     # Latency comparison
-    all_models = sorted(df["Model"].unique())
+    all_models = sort_models(df["Model"].unique())
     xi = np.arange(len(all_models))
 
     fig, ax = plt.subplots(figsize=(max(4, len(modes) * 1.5), 3.5))
@@ -1325,7 +1363,7 @@ def _generate_combined_bfcl_radar(df: pd.DataFrame, out_dir: str) -> None:
 
 def _generate_model_radar_grid(df: pd.DataFrame, out_dir: str) -> None:
     """A grid of radar plots, one per model, comparing Single vs Dual."""
-    models = sorted(df["Model"].unique())
+    models = sort_models(df["Model"].unique())
     modes  = sorted(df["Benchmark_Mode"].unique())
     if len(modes) < 2:
         return
@@ -1380,7 +1418,7 @@ def _generate_model_radar_grid(df: pd.DataFrame, out_dir: str) -> None:
 def _generate_model_accuracy_by_category(df: pd.DataFrame, out_dir: str) -> None:
     """Accuracy by task category, one subplot per mode, bars grouped by model."""
     modes       = sorted(df["Benchmark_Mode"].unique())
-    plot_models = sorted(df["Model"].unique())
+    plot_models = sort_models(df["Model"].unique())
 
     if not modes:
         print("  [skip] No modes found for model accuracy by category plot.")
@@ -1441,7 +1479,7 @@ def _generate_model_accuracy_by_category(df: pd.DataFrame, out_dir: str) -> None
 def _generate_model_bfcl_radar_comparison(df: pd.DataFrame, out_dir: str) -> None:
     """Radar footprint comparing all models."""
     modes  = sorted(df["Benchmark_Mode"].unique())
-    models = sorted(df["Model"].unique())
+    models = sort_models(df["Model"].unique())
 
     if not modes or len(models) < 1:
         print("  [skip] Not enough models/modes for model BFCL radar comparison.")
@@ -1501,7 +1539,7 @@ def _generate_model_difficulty_breakdown_comparison(df: pd.DataFrame, out_dir: s
     if "TC_Difficulty" not in df.columns:
         return
 
-    models = sorted(df["Model"].unique(), key=_short)
+    models = sort_models(df["Model"].unique())
     levels = [lvl for lvl in ["L1", "L2", "L3"] if lvl in df["TC_Difficulty"].unique()]
 
     if not levels or not models:

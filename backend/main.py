@@ -64,6 +64,7 @@ class AnalyzeRequest(BaseModel):
     router_provider: Optional[str] = "llamacpp"
     specialist_provider: Optional[str] = "llamacpp"
     summarizer_provider: Optional[str] = "llamacpp"
+    agent_mode: Optional[str] = "dual" # "dual" or "single"
 
 class AnalyzeResponse(BaseModel):
     result: Optional[str] = None
@@ -144,87 +145,111 @@ async def analyze_stream(request: AnalyzeRequest):
                 df['category'] = ''
                 df['major category'] = ''
 
-            # 2. Dual-Agent Logic
+            # 2. Agent Execution Logic
             from datetime import datetime
-            from utils.tool_prompts import get_tool_prompt
-
-            current_date_str = datetime.now().strftime("%Y-%m-%d")
-            
-
-            # --- STAGE 1: ROUTER ---
-            target_router = request.router_model if request.router_model else request.model
-            yield _sse_event("status", {
-                "stage": "router",
-                "message": f"Routing query...",
-                "model": target_router,
-                "provider": request.router_provider
-            })
-
-            router_template = load_prompt_template("router_prompt.txt")
-            logger.info(f"--- Stage 1: Router ({target_router}) via {request.router_provider} ---")
-            
-            router_output = generate_text(
-                provider=request.router_provider,
-                model=target_router,
-                messages=[
-                    {'role': 'system', 'content': router_template},
-                    {'role': 'user', 'content': request.prompt}
-                ],
-                options=request.options
-            )
-            # Parse number from router
+            from utils.tool_prompts import get_tool_prompt, build_single_agent_prompt
             from utils.tool_registry import TOOL_ID_TO_NAME
             import re
-            
-            clean_router = router_output.strip().replace("`", "").replace("'", "").replace('"', "")
-            digit_match = re.search(r'[1-5]', clean_router)
-            if digit_match:
-                tool_id = int(digit_match.group(0))
-                tool_name = TOOL_ID_TO_NAME.get(tool_id, "calculate_total")
+
+            current_date_str = datetime.now().strftime("%Y-%m-%d")
+
+            if request.agent_mode == "single":
+                yield _sse_event("status", {
+                    "stage": "single_agent",
+                    "message": "Routing & extracting parameters in Single Agent mode...",
+                    "model": request.model,
+                    "provider": request.specialist_provider
+                })
+
+                single_prompt = build_single_agent_prompt(
+                    metadata=request.metadata,
+                    current_date=current_date_str,
+                    model_id=request.model
+                )
+                logger.info(f"--- Single Agent Mode ({request.model}) via {request.specialist_provider} ---")
+
+                llm_content = generate_text(
+                    provider=request.specialist_provider,
+                    model=request.model,
+                    messages=[
+                        {'role': 'system', 'content': single_prompt},
+                        {'role': 'user', 'content': request.prompt}
+                    ],
+                    options=request.options
+                )
+                router_output = f"Single Agent ({request.model})"
             else:
-                logger.warning(f"Router output did not contain a valid tool ID (1-5): '{router_output}'. Attempting name fallback...")
-                fallback_found = False
-                for name in TOOL_ID_TO_NAME.values():
-                    if name in clean_router:
-                        tool_name = name
-                        fallback_found = True
-                        break
-                if not fallback_found:
+                # --- STAGE 1: ROUTER ---
+                target_router = request.router_model if request.router_model else request.model
+                yield _sse_event("status", {
+                    "stage": "router",
+                    "message": f"Routing query...",
+                    "model": target_router,
+                    "provider": request.router_provider
+                })
+
+                router_template = load_prompt_template("router_prompt.txt")
+                logger.info(f"--- Stage 1: Router ({target_router}) via {request.router_provider} ---")
+
+                router_output = generate_text(
+                    provider=request.router_provider,
+                    model=target_router,
+                    messages=[
+                        {'role': 'system', 'content': router_template},
+                        {'role': 'user', 'content': request.prompt}
+                    ],
+                    options=request.options
+                )
+
+                clean_router = router_output.strip().replace("`", "").replace("'", "").replace('"', "")
+                digit_match = re.search(r'[1-5]', clean_router)
+                if digit_match:
+                    tool_id = int(digit_match.group(0))
+                    tool_name = TOOL_ID_TO_NAME.get(tool_id, "calculate_total")
+                else:
+                    logger.warning(f"Router output did not contain a valid tool ID (1-5): '{router_output}'. Attempting name fallback...")
+                    fallback_found = False
+                    for name in TOOL_ID_TO_NAME.values():
+                        if name in clean_router:
+                            tool_name = name
+                            fallback_found = True
+                            break
+                    if not fallback_found:
+                        tool_name = "calculate_total"
+                logger.info(f"Router decided on tool: {tool_name} (raw output: {router_output.strip()})")
+
+                # --- STAGE 2: SPECIALIST ---
+                tool_prompt_template = get_tool_prompt(tool_name, model_id=request.model)
+                if not tool_prompt_template:
+                    logger.warning(f"Tool '{tool_name}' not found. Falling back to calculate_total.")
                     tool_name = "calculate_total"
-            logger.info(f"Router decided on tool: {tool_name} (raw output: {router_output.strip()})")
+                    tool_prompt_template = get_tool_prompt("calculate_total", model_id=request.model)
 
-            # --- STAGE 2: SPECIALIST ---
-            tool_prompt_template = get_tool_prompt(tool_name, model_id=request.model)
-            if not tool_prompt_template:
-                logger.warning(f"Tool '{tool_name}' not found. Falling back to calculate_total.")
-                tool_name = "calculate_total"
-                tool_prompt_template = get_tool_prompt("calculate_total", model_id=request.model)
+                yield _sse_event("status", {
+                    "stage": "specialist",
+                    "message": f"Generating analysis",
+                    "tool": tool_name,
+                    "model": request.model,
+                    "provider": request.specialist_provider
+                })
 
-            yield _sse_event("status", {
-                "stage": "specialist",
-                "message": f"Generating analysis",
-                "tool": tool_name,
-                "model": request.model,
-                "provider": request.specialist_provider
-            })
+                system_prompt = tool_prompt_template.replace(
+                    "{metadata}", request.metadata
+                ).replace(
+                    "{current_date}", current_date_str
+                )
+                logger.info(f"System prompt for Specialist:\n{system_prompt}")
 
-            system_prompt = tool_prompt_template.replace(
-                "{metadata}", request.metadata
-            ).replace(
-                "{current_date}", current_date_str
-            )
-            logger.info(f"System prompt for Specialist:\n{system_prompt}")
-
-            logger.info(f"--- Stage 2: Specialist ({request.model}) via {request.specialist_provider} for {tool_name} ---")
-            llm_content = generate_text(
-                provider=request.specialist_provider,
-                model=request.model,
-                messages=[
-                    {'role': 'system', 'content': system_prompt},
-                    {'role': 'user', 'content': request.prompt}
-                ],
-                options=request.options
-            )
+                logger.info(f"--- Stage 2: Specialist ({request.model}) via {request.specialist_provider} for {tool_name} ---")
+                llm_content = generate_text(
+                    provider=request.specialist_provider,
+                    model=request.model,
+                    messages=[
+                        {'role': 'system', 'content': system_prompt},
+                        {'role': 'user', 'content': request.prompt}
+                    ],
+                    options=request.options
+                )
 
             # Extract json
             raw_code = llm_content.strip()
@@ -235,8 +260,8 @@ async def analyze_stream(request: AnalyzeRequest):
                 json_str = json_str.split("```")[1].split("```")[0].strip()
             elif json_str.startswith("`") and json_str.endswith("`"):
                 json_str = json_str.strip("`").strip()
-                
-            logger.info(f"Specialist raw output: {raw_code}")
+
+            logger.info(f"LLM raw output: {raw_code}")
             logger.info(f"Extracted JSON string: {json_str}")
 
             params = {}
@@ -248,7 +273,7 @@ async def analyze_stream(request: AnalyzeRequest):
             except Exception as json_err:
                 logger.error(f"JSON parsing failed: {json_err}. Trying regex fallback...")
                 # Regex fallback parsing
-                for key in ["category", "year", "month", "day", "start_year", "start_month", "end_year", "end_month", "months", "ignore_rent", "remarks", "n", "min_amount", "y1", "m1", "d1", "y2", "m2", "d2", "sm1", "em1", "sm2", "em2", "ey1", "ey2"]:
+                for key in ["tool", "category", "year", "month", "day", "start_year", "start_month", "end_year", "end_month", "months", "ignore_rent", "remarks", "n", "min_amount", "y1", "m1", "d1", "y2", "m2", "d2", "sm1", "em1", "sm2", "em2", "ey1", "ey2"]:
                     pattern = r'["\']?' + re.escape(key) + r'["\']?\s*[:=]\s*["\']?([^"\'\s,}]+)["\']?'
                     match = re.search(pattern, json_str)
                     if match:
@@ -262,6 +287,21 @@ async def analyze_stream(request: AnalyzeRequest):
                         elif val.lower() != 'none' and val.lower() != 'null':
                             params[key] = val
                 logger.info(f"Regex fallback parsed params: {params}")
+
+            if request.agent_mode == "single":
+                tool_val = params.pop("tool", None)
+                tool_name = "calculate_total"
+                if isinstance(tool_val, int) or (isinstance(tool_val, str) and str(tool_val).isdigit()):
+                    t_id = int(tool_val)
+                    tool_name = TOOL_ID_TO_NAME.get(t_id, "calculate_total")
+                elif isinstance(tool_val, str) and tool_val in TOOL_ID_TO_NAME.values():
+                    tool_name = tool_val
+                else:
+                    for name in TOOL_ID_TO_NAME.values():
+                        if name in json_str or name in raw_code:
+                            tool_name = name
+                            break
+                logger.info(f"Single Agent tool selection: {tool_name}")
 
             # --- STAGE 2.5: VALIDATE & FIX PARAMS ---
             params, validation_warning = validate_and_fix_params(params, df)

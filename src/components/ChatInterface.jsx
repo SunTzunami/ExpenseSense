@@ -23,6 +23,7 @@ export default function ChatInterface({ data, visible, currency, onStatusChange 
     const [isLoading, setIsLoading] = useState(false);
     const [selectedCodeModel, setSelectedCodeModel] = useState('');
     const [selectedRouterModel, setSelectedRouterModel] = useState('');
+    const [agentMode, setAgentMode] = useState(() => localStorage.getItem('agent_mode') || 'dual');
     const [isConnected, setIsConnected] = useState(false);
     const [backendConnected, setBackendConnected] = useState(false);
     const [connectionError, setConnectionError] = useState(null);
@@ -48,6 +49,10 @@ export default function ChatInterface({ data, visible, currency, onStatusChange 
     useEffect(() => {
         if (onStatusChange) onStatusChange({ loading: isLoading, unreadCount });
     }, [isLoading, unreadCount, onStatusChange]);
+
+    useEffect(() => {
+        if (agentMode) localStorage.setItem('agent_mode', agentMode);
+    }, [agentMode]);
 
     const [temperature, setTemperature] = useState(0.0);
     const [topP, setTopP] = useState(0.1);
@@ -148,6 +153,7 @@ export default function ChatInterface({ data, visible, currency, onStatusChange 
                 currency,
                 model: selectedCodeModel,
                 routerModel: selectedRouterModel,
+                agentMode: agentMode,
                 routerProvider: 'llamacpp',
                 specialistProvider: 'llamacpp',
                 options: { temperature, top_p: topP, top_k: topK }
@@ -371,8 +377,65 @@ export default function ChatInterface({ data, visible, currency, onStatusChange 
                             <span>{backendConnected ? 'Connected' : 'Offline'}</span>
                         </div>
 
-                        {/* Router model */}
+                        {/* Agent Mode Toggle */}
                         <div>
+                            <div style={{
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                color: 'var(--text-muted)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.04em',
+                                marginBottom: '6px',
+                            }}>
+                                Agent Mode
+                            </div>
+                            <div style={{
+                                display: 'flex',
+                                background: 'var(--bg-surface-2)',
+                                padding: '3px',
+                                borderRadius: '8px',
+                                border: '1px solid var(--border-light)',
+                                gap: '4px'
+                            }}>
+                                <button
+                                    onClick={() => setAgentMode('dual')}
+                                    style={{
+                                        flex: 1,
+                                        padding: '5px 6px',
+                                        fontSize: '11px',
+                                        fontWeight: 600,
+                                        borderRadius: '6px',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        background: agentMode === 'dual' ? 'var(--accent)' : 'transparent',
+                                        color: agentMode === 'dual' ? '#fff' : 'var(--text-secondary)',
+                                        transition: 'all 0.15s ease'
+                                    }}
+                                >
+                                    Dual Agent
+                                </button>
+                                <button
+                                    onClick={() => setAgentMode('single')}
+                                    style={{
+                                        flex: 1,
+                                        padding: '5px 6px',
+                                        fontSize: '11px',
+                                        fontWeight: 600,
+                                        borderRadius: '6px',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        background: agentMode === 'single' ? 'var(--accent)' : 'transparent',
+                                        color: agentMode === 'single' ? '#fff' : 'var(--text-secondary)',
+                                        transition: 'all 0.15s ease'
+                                    }}
+                                >
+                                    Single Agent
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Router model */}
+                        <div style={{ opacity: agentMode === 'single' ? 0.45 : 1, transition: 'opacity 0.2s' }}>
                             <div style={{
                                 fontSize: '11px',
                                 fontWeight: 600,
@@ -388,13 +451,14 @@ export default function ChatInterface({ data, visible, currency, onStatusChange 
                                 onChange={setSelectedRouterModel}
                                 options={llamacppModels}
                                 width="100%"
+                                disabled={agentMode === 'single'}
                             />
                             <p style={{ margin: '5px 0 0', fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                                Routes queries to the correct tool
+                                {agentMode === 'single' ? 'Disabled in Single Agent mode' : 'Routes queries to the correct tool'}
                             </p>
                         </div>
 
-                        {/* Specialist model */}
+                        {/* Specialist / Single Model */}
                         <div>
                             <div style={{
                                 fontSize: '11px',
@@ -404,7 +468,7 @@ export default function ChatInterface({ data, visible, currency, onStatusChange 
                                 letterSpacing: '0.04em',
                                 marginBottom: '6px',
                             }}>
-                                Specialist Model
+                                {agentMode === 'single' ? 'Single Agent Model' : 'Specialist Model'}
                             </div>
                             <RetroSelect
                                 value={selectedCodeModel}
@@ -413,7 +477,7 @@ export default function ChatInterface({ data, visible, currency, onStatusChange 
                                 width="100%"
                             />
                             <p style={{ margin: '5px 0 0', fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                                Generates analysis parameters
+                                {agentMode === 'single' ? 'Handles routing & parameter extraction in 1 shot' : 'Generates analysis parameters'}
                             </p>
                         </div>
 
@@ -493,31 +557,53 @@ export default function ChatInterface({ data, visible, currency, onStatusChange 
 
 function WorkflowIndicator({ status, elapsed }) {
     const stages = status || [];
+    const singleAgentInfo = stages.find(s => s.stage === 'single_agent');
     const routerInfo = stages.find(s => s.stage === 'router');
     const specialistInfo = stages.find(s => s.stage === 'specialist');
     const executingInfo = stages.find(s => s.stage === 'executing');
 
-    let routerCls = 'pending', routerText = 'Router: pending';
-    if (routerInfo) {
-        if (specialistInfo || executingInfo) { routerCls = 'done'; routerText = `Router → ${specialistInfo?.tool || routerInfo?.tool || 'tool'}`; }
-        else { routerCls = 'running'; routerText = 'Router: classifying…'; }
+    let steps = [];
+
+    if (singleAgentInfo || (!routerInfo && !specialistInfo && executingInfo)) {
+        let saCls = 'pending', saText = 'Single Agent: pending';
+        if (singleAgentInfo) {
+            if (executingInfo) {
+                saCls = 'done';
+                saText = `Single Agent → ${executingInfo.tool || singleAgentInfo.tool || 'extracted'}`;
+            } else {
+                saCls = 'running';
+                saText = 'Single Agent: analyzing query…';
+            }
+        }
+        let valCls = 'pending', valText = 'Executor: pending';
+        if (executingInfo) { valCls = 'running'; valText = 'Executor: running…'; }
+
+        steps = [[saCls, saText], [valCls, valText]];
+    } else {
+        let routerCls = 'pending', routerText = 'Router: pending';
+        if (routerInfo) {
+            if (specialistInfo || executingInfo) { routerCls = 'done'; routerText = `Router → ${specialistInfo?.tool || routerInfo?.tool || 'tool'}`; }
+            else { routerCls = 'running'; routerText = 'Router: classifying…'; }
+        }
+
+        let specCls = 'pending', specText = 'Specialist: pending';
+        if (specialistInfo) {
+            if (executingInfo) { specCls = 'done'; specText = 'Specialist: done'; }
+            else { specCls = 'running'; specText = 'Specialist: generating…'; }
+        } else if (routerInfo) { specCls = 'running'; specText = 'Specialist: waiting…'; }
+
+        let valCls = 'pending', valText = 'Executor: pending';
+        if (executingInfo) { valCls = 'running'; valText = 'Executor: running…'; }
+        else if (specialistInfo) { valText = 'Executor: waiting…'; }
+
+        steps = [[routerCls, routerText], [specCls, specText], [valCls, valText]];
     }
-
-    let specCls = 'pending', specText = 'Specialist: pending';
-    if (specialistInfo) {
-        if (executingInfo) { specCls = 'done'; specText = 'Specialist: done'; }
-        else { specCls = 'running'; specText = 'Specialist: generating…'; }
-    } else if (routerInfo) { specCls = 'running'; specText = 'Specialist: waiting…'; }
-
-    let valCls = 'pending', valText = 'Executor: pending';
-    if (executingInfo) { valCls = 'running'; valText = 'Executor: running…'; }
-    else if (specialistInfo) { valText = 'Executor: waiting…'; }
 
     const icon = (cls) => cls === 'done' ? '✓' : cls === 'running' ? '…' : '·';
 
     return (
         <div style={{ fontFamily: 'var(--font-sans)', minWidth: '220px' }}>
-            {[[routerCls, routerText], [specCls, specText], [valCls, valText]].map(([cls, text], i) => (
+            {steps.map(([cls, text], i) => (
                 <div key={i} className="workflow-step">
                     <span className={`step-status ${cls}`}>{icon(cls)}</span>
                     <span style={{ color: cls === 'running' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '13px' }}>{text}</span>

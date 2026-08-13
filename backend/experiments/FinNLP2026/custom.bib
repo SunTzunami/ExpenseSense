@@ -1,0 +1,403 @@
+% Bibliography for SpendSight paper — verified against actual publications
+% Corrections log:
+%   1. qwen2025qwen3 → REPLACED with qwen2026qwen35 (Qwen3.5 blog, Feb 2026)
+%      The paper uses Qwen3.5-0.8B and Qwen3.5-2B, which are the Qwen3.5 family
+%      (released Feb 2026), NOT covered by the Qwen3 technical report (2505.09388).
+%      VERIFIED (Aug 2026 pass): blog exists at qwen.ai/blog?id=qwen3.5, dated
+%      Feb 2026; widely cited by concurrent 2026 papers with this exact entry. OK.
+%   2. patil2023gorilla → Changed from inproceedings (NeurIPS, volume 37) to
+%      article (arXiv preprint). Gorilla was never published at NeurIPS.
+%   3. lgai2025exaone → Fixed author field to use double braces {{LG AI Research}}
+%      to prevent BibTeX from parsing it as a person name.
+%      VERIFIED (Aug 2026 pass): matches LG AI Research's own canonical BibTeX
+%      entry on the official HF model cards and GitHub repo exactly. OK.
+%   4. qin2023toolllm → Fixed booktitle to ICLR 2024 (correct venue).
+%   5. minicpm2024 → RENAMED to openbmb2026minicpm5 and REPOINTED (Aug 2026 pass).
+%      The paper benchmarks "MiniCPM5-1B", a distinct 2026 model generation
+%      (OpenBMB/MiniCPM5 series) that has NO arXiv technical report. The old
+%      entry cited the original MiniCPM 1.0 report (arXiv:2404.06395, Apr 2024),
+%      which covers the 1.2B/2.4B MiniCPM 1.0/2.0 checkpoints — a different,
+%      earlier model family. This is the same class of mismatch already fixed
+%      for Qwen3→Qwen3.5 above. Repointed to the official MiniCPM5 GitHub repo
+%      (github.com/OpenBMB/MiniCPM), which is the only citable primary source.
+%      IMPORTANT FOR .tex FILE: replace all \citeyearpar{minicpm2024} /
+%      \cite*{minicpm2024} with \citeyearpar{openbmb2026minicpm5} / equivalent.
+%   6. liquidai2026lfm25 → FIXED (Aug 2026 pass). Old entry was a vague
+%      placeholder ("LFM2.5 Technical Report", Liquid AI Blog, no URL, no
+%      specific title match). No unified "LFM2.5 Technical Report" exists;
+%      LFM2.5 was announced via a dedicated launch blog post. Repointed to the
+%      verified launch post with correct title, month, and URL.
+%
+% NOTE FOR .tex FILE: Replace all \cit*{qwen2025qwen3} with \cit*{qwen2026qwen35}
+%   in Table 2 (model family column) and anywhere else it appears. [Already done
+%   in the .tex under review.]
+%   ALSO replace all \cit*{minicpm2024} with \cit*{openbmb2026minicpm5}.
+
+% ── Tool-augmented LLMs ──────────────────────────────────────────────────────
+
+% FIX #1: Gorilla is an arXiv preprint, never published at NeurIPS.
+% The original entry had booktitle={Advances in Neural Information Processing
+% Systems}, volume={37}, year={2024}, which is fabricated.
+@article{patil2023gorilla,
+  title={Gorilla: Large Language Model Connected with Massive {API}s},
+  author={Patil, Shishir G. and Zhang, Tianjun and Wang, Xin and Gonzalez, Joseph E.},
+  journal={arXiv preprint arXiv:2305.15334},
+  year={2023},
+  url={https://arxiv.org/abs/2305.15334},
+}
+
+@inproceedings{schick2024toolformer,
+  title={Toolformer: Language Models Can Teach Themselves to Use Tools},
+  author={Schick, Timo and Dwivedi-Yu, Jane and Dess{\`i}, Roberto and Raileanu, Roberta
+          and Lomeli, Maria and Hambro, Eric and Zettlemoyer, Luke
+          and Cancedda, Nicola and Scialom, Thomas},
+  booktitle={Advances in Neural Information Processing Systems},
+  volume={36},
+  year={2023},
+}
+
+% FIX #2: ToolLLM was published at ICLR 2024, not a vague "12th ICLR".
+% The booktitle has been corrected.
+@inproceedings{qin2023toolllm,
+  title={{ToolLLM}: Facilitating Large Language Models to Master 16000+ Real-world {API}s},
+  author={Qin, Yujia and Liang, Shihao and Ye, Yining and Zhu, Kunlun and Yan, Lan
+          and Lu, Yaxi and Lin, Yankai and Cong, Xin and Tang, Xiangru and Qian, Bill
+          and Zhao, Siyuan and Tian, Runchu and Xie, Ruobing and Zhou, Jie and Liu, Zhiyuan},
+  booktitle={Proceedings of the Twelfth International Conference on Learning
+             Representations ({ICLR} 2024)},
+  year={2024},
+  url={https://arxiv.org/abs/2307.16789},
+}
+
+@inproceedings{shen2024hugginggpt,
+  title={{HuggingGPT}: Solving {AI} Tasks with {ChatGPT} and its Friends in {Hugging Face}},
+  author={Shen, Yongliang and Song, Kaitao and Tan, Xu and Li, Dongsheng
+          and Lu, Weiming and Zhuang, Yueting},
+  booktitle={Advances in Neural Information Processing Systems},
+  volume={36},
+  year={2023},
+}
+
+@article{tang2024toolalpaca,
+  title={{ToolAlpaca}: Generalized Tool Learning for Language Models with 3000 Simulated Cases},
+  author={Tang, Qiaoyu and Deng, Ziliang and Lin, Hongyu and Han, Xianpei
+          and Liang, Qiao and Sun, Le},
+  journal={arXiv preprint arXiv:2306.05301},
+  year={2023},
+}
+
+% ── Function-Calling Evaluation ──────────────────────────────────────────────
+
+% VERIFIED (Aug 2026 pass): PMLR 267:48371-48392, ICML 2025 (July 13, 2025).
+% Matches proceedings.mlr.press/v267/patil25a.html exactly.
+@inproceedings{yan2024bfcl,
+  title={The {Berkeley} Function Calling Leaderboard ({BFCL}): From Tool Use to Agentic
+         Evaluation of Large Language Models},
+  author={Patil, Shishir G. and Mao, Huanzhi and Yan, Fanjia and Ji, Charlie Cheng-Jie
+          and Suresh, Vishnu and Stoica, Ion and Gonzalez, Joseph E.},
+  booktitle={Proceedings of the 42nd International Conference on Machine Learning},
+  pages={48371--48392},
+  year={2025},
+  url={https://proceedings.mlr.press/v267/patil25a.html},
+}
+
+% VERIFIED (Aug 2026 pass): EASE 2025, pp. 1117-1126, DOI matches ACM record
+% (doi.org/10.1145/3756681.3757001) exactly.
+@inproceedings{kavathekar2025small,
+  title={Small Models, Big Tasks: An Exploratory Empirical Study on Small Language
+         Models for Function Calling},
+  author={Kavathekar, Ishan and Donakanti, Raghav and Kumaraguru, Ponnurangam
+          and Vaidhyanathan, Karthik},
+  booktitle={Proceedings of the 29th International Conference on Evaluation and
+             Assessment in Software Engineering},
+  pages={1117--1126},
+  year={2025},
+  doi={10.1145/3756681.3757001},
+}
+
+% VERIFIED (Aug 2026 pass): EASE 2025, DOI matches ACM record
+% (doi.org/10.1145/3756681.3756975) and arXiv:2501.05255 exactly.
+@inproceedings{callnavi2025,
+  title={{CallNavi}: A Challenge and Empirical Study on {LLM} Function Calling and Routing},
+  author={Song, Yewei and Tang, Xunzhu and Lothritz, Cedric and Ezzini, Saad
+          and Klein, Jacques and Bissyand{\'e}, Tegawend{\'e} F. and Boytsov, Andrey
+          and Ble, Ulrick and Goujon, Anne},
+  booktitle={Proceedings of the 29th International Conference on Evaluation and
+             Assessment in Software Engineering},
+  year={2025},
+  doi={10.1145/3756681.3756975},
+  url={https://arxiv.org/abs/2501.05255},
+}
+
+% ── Small/On-Device Models ───────────────────────────────────────────────────
+
+@inproceedings{liu2024mobilellm,
+  title={{MobileLLM}: Optimizing Sub-Billion Parameter Language Models for On-Device
+         Use Cases},
+  author={Liu, Zechun and Zhao, Changsheng and Iandola, Forrest and Lai, Chen
+          and Tian, Yuandong and Fedorov, Igor and Xiong, Yunyang and Chang, Ernie
+          and Shi, Yangyang and Krishnamoorthi, Raghuraman and Lai, Liangzhen
+          and Chandra, Vikas},
+  booktitle={Proceedings of the 41st International Conference on Machine Learning},
+  pages={32431--32454},
+  year={2024},
+  url={https://proceedings.mlr.press/v235/liu24ce.html},
+}
+
+@article{xu2024ondevice,
+  title={On-Device Language Models: A Comprehensive Review},
+  author={Xu, Jiajun and Li, Zhiyuan and Chen, Wei and Wang, Qun and Gao, Xin and Cai, Qi and Ling, Ziyuan},
+  journal={arXiv preprint arXiv:2409.00088},
+  year={2024},
+}
+
+% ── Financial NLP ────────────────────────────────────────────────────────────
+
+@inproceedings{chen2021finqa,
+  title={{FinQA}: A Dataset of Numerical Reasoning over Financial Data},
+  author={Chen, Zhiyu and Chen, Wenhu and Smiley, Charese and Shah, Sameena
+          and Borova, Iana and Langdon, Dylan and Moussa, Reema and Beane, Matt
+          and Huang, Ting-Hao and Routledge, Bryan and Wang, William Yang},
+  booktitle={Proceedings of the 2021 Conference on Empirical Methods in Natural
+             Language Processing},
+  pages={3697--3711},
+  year={2021},
+  doi={10.18653/v1/2021.emnlp-main.300},
+}
+
+@inproceedings{yang2023fingpt,
+  title={{FinGPT}: Open-Source Financial Large Language Models},
+  author={Yang, Hongyang and Liu, Xiao-Yang and Wang, Christina Dan},
+  booktitle={International Symposium on Large Language Models for Financial Services
+             ({FinLLM} 2023) at {IJCAI} 2023},
+  year={2023},
+  url={https://arxiv.org/abs/2306.06031},
+}
+
+@article{li2024personal,
+  title={Personal {LLM} Agents: Insights and Survey about the Capability, Efficiency
+         and Security},
+  author={Li, Yuanchun and Wen, Hao and Wang, Weijun and Li, Xiangyu and Yuan, Yizhen
+          and Liu, Guohong and Liu, Jiacheng and Xu, Wenxing and Wang, Xiang
+          and Sun, Yi and Zhang, Rui and Liu, Yunxin},
+  journal={arXiv preprint arXiv:2401.05459},
+  year={2024},
+}
+
+% ── Model Technical Reports ──────────────────────────────────────────────────
+
+% VERIFIED (Aug 2026 pass): matches Semantic Scholar / arXiv canonical record
+% (author={{Gemma Team}}, arXiv:2503.19786, submitted 25 Mar 2025) exactly.
+@article{team2025gemma,
+  title={Gemma 3 Technical Report},
+  author={{Gemma Team}},
+  journal={arXiv preprint arXiv:2503.19786},
+  year={2025},
+}
+
+% FIX #3: Replaced qwen2025qwen3 (Qwen3 report, arXiv:2505.09388) with
+% qwen2026qwen35 (Qwen3.5 blog post, Feb 2026).
+% The paper benchmarks Qwen3.5-0.8B and Qwen3.5-2B, which are part of the
+% Qwen3.5 family released in February 2026 — a distinct series not covered by
+% the Qwen3 technical report (which covers Qwen3-0.6B through Qwen3-235B).
+% The official citation from the Qwen3.5 model cards is the blog post below.
+% VERIFIED (Aug 2026 pass): blog is live at this URL, dated Feb 17, 2026, and is
+% cited with this exact howpublished/URL by multiple concurrent 2026 papers.
+@misc{qwen2026qwen35,
+  title={{Qwen3.5}: Towards Native Multimodal Agents},
+  author={{Qwen Team}},
+  howpublished={Qwen Blog},
+  month={February},
+  year={2026},
+  url={https://qwen.ai/blog?id=qwen3.5},
+}
+
+% FIX #4: Fixed author field to use double braces to prevent BibTeX from
+% interpreting "LG AI Research" as "First Last" form.
+% VERIFIED (Aug 2026 pass): matches LG AI Research's own canonical BibTeX entry
+% published on the official HF model cards / GitHub repo verbatim.
+@article{lgai2025exaone,
+  title={{EXAONE} 4.0: Unified Large Language Models Integrating Non-reasoning and Reasoning Modes},
+  author={{LG AI Research}},
+  journal={arXiv preprint arXiv:2507.11407},
+  year={2025},
+}
+
+% ── Inference Infrastructure ─────────────────────────────────────────────────
+
+@misc{llamacpp2023,
+  title={llama.cpp},
+  author={Gerganov, Georgi},
+  year={2023},
+  url={https://github.com/ggerganov/llama.cpp},
+}
+
+% ── Statistics ───────────────────────────────────────────────────────────────
+
+@article{efron1979bootstrap,
+  title={Bootstrap Methods: Another Look at the Jackknife},
+  author={Efron, B.},
+  journal={The Annals of Statistics},
+  volume={7},
+  number={1},
+  pages={1--26},
+  year={1979},
+}
+
+% VERIFIED (Aug 2026 pass): arXiv:2603.24943, authors and abstract match exactly
+% ("This paper introduces FinMCP-Bench... financial model context protocols").
+@article{finmcpbench2026,
+  title={{FinMCP-Bench}: Benchmarking {LLM} Agents for Real-World Financial Tool Use under the Model Context Protocol},
+  author={Zhu, Jie and Tian, Yimin and Li, Boyang and Wu, Kehao and Liang, Zhongzhi and Li, Junhui and Zhang, Xianyin and Guo, Lifan and Chen, Feng and Liu, Yong and Zhang, Chi},
+  journal={arXiv preprint arXiv:2603.24943},
+  year={2026}
+}
+
+% ── On-Device Function Calling ───────────────────────────────────────────────
+
+@article{chen2024octopus,
+  title={Octopus v2: On-device language model for super agent},
+  author={Chen, Wei and Li, Zhiyuan},
+  journal={arXiv preprint arXiv:2404.01744},
+  year={2024},
+}
+
+@article{lin2024hammer,
+  title={Hammer: Robust Function-Calling for On-Device Language Models via Function Masking},
+  author={Lin, Qiqiang and Wen, Muning and Peng, Qiuying and Nie, Guanyu and Liao, Junwei and Wang, Jun and Liu, Ying and Hu, Xiaojun},
+  journal={arXiv preprint arXiv:2410.04587},
+  year={2024},
+}
+
+@article{liu2024apigen,
+  title={{APIGen}: Automated Pipeline for Generating Verifiable and Diverse Function-Calling Datasets},
+  author={Liu, Zuxin and Hoang, Thai and Zhang, Jianguo and Zhu, Ming and Lan, Tian and Tan, Shirley and Zhou, Joey Tianyi and Yu, Philip S. and Hoi, Steven C. H.},
+  journal={Advances in Neural Information Processing Systems},
+  volume={37},
+  year={2024},
+}
+
+@article{gunter2024apple,
+  title={Apple Intelligence Foundation Language Models},
+  author={Gunter, Tom and Wang, Zirui and Wang, Chong and Huang, Ruoming and Zhang, Yandong and Liang, Xianzhi and {Apple Intelligence Team}},
+  journal={arXiv preprint arXiv:2407.21075},
+  year={2024},
+}
+
+% ── Financial Tool-Calling Benchmarks ────────────────────────────────────────
+
+% VERIFIED (Aug 2026 pass): arXiv:2604.10015, full author list confirmed via
+% arXiv listing (Cao, Li, Liu, Cao, Xu, Qian, Peng, Tang, Yao, Huang,
+% Subbalakshmi, Zhu, Suchow, Yu — 14 authors total). Listed fully to prevent
+% acl_natbib from miscalculating author count and printing "and 1 others".
+@article{fintrace2026,
+  title={{FinTrace}: Holistic Trajectory-Level Evaluation of {LLM} Tool Calling for Long-Horizon Financial Tasks},
+  author={Cao, Yupeng and Li, Haohang and Liu, Weijin and Cao, Wenbo and Xu, Anke and Qian, Lingfei and Peng, Xiaozhe and Tang, Yuxuan and Yao, Zeyi and Huang, Heng and Subbalakshmi, K. P. and Zhu, Xiao and Suchow, Jordan W. and Yu, Yue},
+  journal={arXiv preprint arXiv:2604.10015},
+  year={2026},
+}
+
+% ── Small Language Model Reports ─────────────────────────────────────────────
+
+@article{abdin2024phi3,
+  title={Phi-3 Technical Report: A Highly Capable Language Model Locally on Your Phone},
+  author={Abdin, Marah and Aneja, Jyoti and Awadalla, Hany and Awadallah, Ahmed and Awan, Ammar Ahmad and Bach, Nguyen and Bahree, Amit and Bakhtiari, Arash and Behl, Harkirat and Benhaim, Alon and Bilenko, Misha and Borda, Johan and Bucher, Ashley Loren and Bubeck, Sébastien},
+  journal={arXiv preprint arXiv:2404.14219},
+  year={2024},
+}
+
+% ── MiniCPM5 ─────────────────────────────────────────────────────────────────
+
+% FIX #5 (Aug 2026 pass): RENAMED from minicpm2024 / REPOINTED.
+% The old entry cited the original MiniCPM 1.0 technical report
+% (arXiv:2404.06395, Hu et al. 2024), which describes the 1.2B/2.4B MiniCPM
+% 1.0/2.0 checkpoints. This paper benchmarks "MiniCPM5-1B", which is the first
+% checkpoint of the separate, much newer OpenBMB MiniCPM5 series (2026) — no
+% arXiv technical report exists for MiniCPM5 as of the verification date; it is
+% documented via the official GitHub repository and Hugging Face model card
+% only. Citing arXiv:2404.06395 for MiniCPM5-1B is a version/generation
+% mismatch, the same category of error already caught and fixed for
+% Qwen3→Qwen3.5 elsewhere in this file.
+% IMPORTANT FOR .tex FILE: replace \citeyearpar{minicpm2024} with
+% \citeyearpar{openbmb2026minicpm5} in the model family table.
+@misc{openbmb2026minicpm5,
+  title={{MiniCPM5-1B}: A {SOTA} 1{B} On-Device {LLM}},
+  author={{OpenBMB}},
+  howpublished={GitHub repository},
+  year={2026},
+  url={https://github.com/OpenBMB/MiniCPM},
+  note={Accessed: 2026-08-04},
+}
+
+% ── Privacy and Contextual Integrity ─────────────────────────────────────────
+
+@article{nissenbaum2004privacy,
+  title={Privacy as Contextual Integrity},
+  author={Nissenbaum, Helen},
+  journal={Washington Law Review},
+  volume={79},
+  number={1},
+  pages={119--158},
+  year={2004},
+}
+
+@inproceedings{staab2024memorization,
+  title={Beyond Memorization: Violating Privacy Via Inference with Large Language Models},
+  author={Staab, Robin and Vero, Mark and Balunovi{\'c}, Mislav and Vechev, Martin},
+  booktitle={Proceedings of the 12th International Conference on Learning Representations},
+  year={2024},
+}
+
+@article{yao2024survey,
+  title={A Survey on Large Language Model ({LLM}) Security and Privacy: The Good, The Bad, and The Ugly},
+  author={Yao, Yifan and Duan, Jinhao and Xu, Kaidi and Cai, Yuanfang and Sun, Zhibo and Zhang, Yue},
+  journal={High-Confidence Computing},
+  volume={4},
+  number={2},
+  pages={100211},
+  year={2024},
+}
+
+% ── Small LM Agentic Tool Calling ────────────────────────────────────────────
+
+% VERIFIED (Aug 2026 pass): arXiv:2512.15943, authors and affiliation (Amazon
+% Web Services) confirmed via arXiv listing and Semantic Scholar record.
+@article{jhandi2025slafc,
+  title={Small Language Models for Efficient Agentic Tool Calling: Outperforming Large Models with Targeted Fine-tuning},
+  author={Jhandi, Polaris and Kazi, Owais and Subramanian, Shreyas and Sendas, Neel},
+  journal={arXiv preprint arXiv:2512.15943},
+  year={2025},
+}
+
+% ── LFM2.5 ───────────────────────────────────────────────────────────────────
+
+% FIX #6 (Aug 2026 pass): the previous entry ("LFM2.5 Technical Report", Liquid
+% AI Blog, no URL) does not correspond to any actual Liquid AI publication.
+% There is no unified "LFM2.5 Technical Report"; Liquid AI released the
+% LFM2.5 family (including LFM2.5-1.2B, used in this paper) via a dedicated
+% launch blog post in January 2026, with individual follow-up posts for later
+% variants (LFM2.5-350M, LFM2.5-8B-A1B, etc., which postdate this paper's
+% evaluation and are not the model used here). Repointed to the verified launch
+% announcement.
+@misc{liquidai2026lfm25,
+  title={Introducing {LFM2.5}: The Next Generation of On-Device {AI}},
+  author={{Liquid AI}},
+  howpublished={Liquid AI Blog},
+  month={January},
+  year={2026},
+  url={https://www.liquid.ai/blog/introducing-lfm2-5-the-next-generation-of-on-device-ai},
+}
+
+% ── Additional models (G9v3-3B comparison) ────────────────────────────────────
+
+% VERIFIED (Aug 2026 pass): ai9stars/G9v3-3B is live on Hugging Face, released
+% 23 Jul 2026, dense 3B causal LM for local/resource-constrained deployment;
+% Artificial Analysis lists it as leading open-weight models <4B on their
+% Intelligence Index (16.1, vs. category median 3) as of the verification date.
+@misc{ai9stars2026g9v33b,
+  title        = {G9v3-3B},
+  author       = {{AI9Stars}},
+  year         = {2026},
+  howpublished = {\url{https://huggingface.co/ai9stars/G9v3-3B}},
+  note         = {Accessed: 2026-08-04},
+}

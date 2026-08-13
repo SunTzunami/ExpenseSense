@@ -127,6 +127,7 @@ export async function runPython(code, data, optionsArg = {}) {
                 router_provider: optionsArg.routerProvider || 'llamacpp',
                 specialist_provider: optionsArg.specialistProvider || 'llamacpp',
                 summarizer_provider: optionsArg.summarizerProvider || 'llamacpp',
+                agent_mode: optionsArg.agentMode || optionsArg.agent_mode || 'dual',
                 options
             })
         });
@@ -177,6 +178,7 @@ export async function runPythonStream(code, data, optionsArg = {}, onStatus = nu
                 router_provider: optionsArg.routerProvider || 'llamacpp',
                 specialist_provider: optionsArg.specialistProvider || 'llamacpp',
                 summarizer_provider: optionsArg.summarizerProvider || 'llamacpp',
+                agent_mode: optionsArg.agentMode || optionsArg.agent_mode || 'dual',
                 options
             })
         });

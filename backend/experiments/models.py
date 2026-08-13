@@ -20,7 +20,7 @@ MODEL_REGISTRY: dict[str, dict[str, Any]] = {
         "family": "EXAONE-4.0",
         "arch": "Dense transformer",
         "backend": "llamacpp",
-        "supports_thinking": True,
+        "supports_thinking": False,
         "ram_gb": 1.5,
     },
 
@@ -56,7 +56,7 @@ MODEL_REGISTRY: dict[str, dict[str, Any]] = {
         "family": "MiniCPM",
         "arch": "Dense transformer",
         "backend": "llamacpp",
-        "supports_thinking": True,
+        "supports_thinking": False,
         "ram_gb": 1.1,
     },
 
@@ -68,7 +68,7 @@ MODEL_REGISTRY: dict[str, dict[str, Any]] = {
         "family": "Qwen3.5",
         "arch": "Dense transformer",
         "backend": "llamacpp",
-        "supports_thinking": True,
+        "supports_thinking": False,
         "ram_gb": 0.9,
     },
 
@@ -79,8 +79,20 @@ MODEL_REGISTRY: dict[str, dict[str, Any]] = {
         "family": "Qwen3.5",
         "arch": "Dense transformer",
         "backend": "llamacpp",
-        "supports_thinking": True,
+        "supports_thinking": False,
         "ram_gb": 2.2,
+    },
+
+    # G9v3
+    "g9v3-3b-q4": {
+        "id": "ai9stars_G9v3-3B-Q4_K_M.gguf",
+        "params": "3B",
+        "quant": "Q4_K_M",
+        "family": "G9v3",
+        "arch": "Dense transformer",
+        "backend": "llamacpp",
+        "supports_thinking": False,
+        "ram_gb": 2.0,
     },
 
 
