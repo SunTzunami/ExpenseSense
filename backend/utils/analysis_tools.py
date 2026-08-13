@@ -86,7 +86,9 @@ CATEGORY_MAPPINGS = {
     'bus': 'Transportation', 'shinkansen': 'Transportation', 'taxi': 'Transportation',
     'souvenirs': 'Souvenirs/Gifts/Treats', 'treat': 'Souvenirs/Gifts/Treats',
     'gift': 'Souvenirs/Gifts/Treats', 'entertainment': 'Entertainment',
-    'nomikai': 'Entertainment', 'education': 'Education'
+    'nomikai': 'Entertainment', 'education': 'Education', 'conference fees': 'Education',
+    'reserved seating': 'Transportation', 'visa fees': 'Miscellaneous', 'footbal game': 'Fitness',
+    'karaoke': 'Entertainment', 'onsen': 'Entertainment', 'snack': 'Food', 'tokyo metro0': 'Transportation'
 }
 
 def get_shared_layout(title_text):

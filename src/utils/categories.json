@@ -80,6 +80,14 @@
     "books": "Education",
     "exam fees": "Education",
     "notebooks": "Education",
-    "textbook": "Education"
+    "textbook": "Education",
+    "conference fees": "Education",
+    "reserved seating": "Transportation",
+    "visa fees": "Miscellaneous",
+    "footbal game": "Fitness",
+    "karaoke": "Entertainment",
+    "onsen": "Entertainment",
+    "snack": "Food",
+    "tokyo metro0": "Transportation"
   }
 }
