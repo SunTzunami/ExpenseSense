@@ -31,14 +31,14 @@
 \maketitle
 
 \begin{abstract}
-Personal finance data - detailed records of when, where, and how a user spends money - is among the most sensitive information individuals possess, making cloud-based LLM inference undesirable for many users.
+Personal finance data---detailed records of when, where, and how a user spends money---is among the most sensitive information individuals possess, making cloud-based LLM inference undesirable for many users.
 Yet natural-language personal finance assistants currently require transmitting these queries to cloud-hosted
 LLMs, exposing users to data retention and third-party data flows.
 We introduce \textbf{ExpenseSense}, a personal finance Q\&A assistant that runs entirely on-device, ensuring that no financial
 records, query text, or model outputs leave the user's device.
 To evaluate whether this privacy architecture is practically viable,
 we benchmark on-device tool calling using a 115-question test suite
-across six sub-2B quantized SLMs (0.8B-2B), comparing single-agent
+across six sub-2B quantized SLMs (0.8B--2B), comparing single-agent
 (joint routing and parameter extraction) against dual-agent
 (router-specialist) architectures.
 The dual-agent advantage is metric-specific:
@@ -127,15 +127,15 @@ The deployment of LLMs in personal finance exposes a structural
 tension: the same conversational interface that makes financial
 analytics accessible to users also makes their sensitive
 behavioral data accessible to cloud providers.
-When a user types "how much did I spend on therapy last month?" into
+When a user types ``how much did I spend on therapy last month?'' into
 a cloud-hosted assistant, they are not merely querying a
-database-they transmit evidence of a health condition, a temporal 
+database---they transmit evidence of a health condition, a temporal 
 pattern, and financial commitment to a third-party infrastructure 
 they did not choose and cannot audit. The query is a disclosure.
 
 \citet{staab2024memorization} demonstrated that LLMs can infer
-sensitive personal attributes-including location, income, and
-demographic characteristics-from seemingly innocuous texts, and
+sensitive personal attributes---including location, income, and
+demographic characteristics---from seemingly innocuous texts, and
 \citet{yao2024survey} catalog privacy risks including data leakage,
 memorization, and inference attacks.
 The implication for personal financial assistants is direct: even if the
@@ -162,8 +162,8 @@ leave for external infrastructure.
 The key challenge is that on-device inference with sub-2B models has
 historically been unreliable for structured tool calling
 \citep{kavathekar2025small}.
-Our work demonstrates that architectural decomposition-separating
-intent classification from parameter extraction-bridges this
+Our work demonstrates that architectural decomposition---separating
+intent classification from parameter extraction---bridges this
 reliability gap, making private on-device inference not merely
 possible but practical.
 
@@ -193,7 +193,7 @@ AVC, Task Accuracy, and Correct Ratio) to evaluate small model
 function calling; we adopt these metrics
 directly.
 CallNavi \citep{callnavi2025} proposed a two-stage router+specialist
-approach-similar to our dual-agent design-but evaluates models
+approach---similar to our dual-agent design---but evaluates models
 $\geq$7B on general-purpose APIs.
 In contrast, we focus on sub-2B models for domain-specific,
 single-turn personal finance related tasks.
@@ -234,7 +234,7 @@ privacy when they cross contextual norms, even when no explicit PII is
 transmitted.
 \citet{staab2024memorization} demonstrated that LLMs act as inference
 engines, reconstructing sensitive personal attributes from ordinary
-text- a threat particularly acute when personal finance queries are routed
+text---a threat particularly acute when personal finance queries are routed
 through cloud providers.
 \citet{yao2024survey} surveys the resulting landscape of data
 leakage, memorization, and inference risks in deployed LLM systems.
@@ -480,51 +480,6 @@ observations.
 
 \subsection{Overall Performance}
 
-Table~\ref{tab:main_results} presents the full results.
-Figure~\ref{fig:overall_visuals} shows the accuracy-latency Pareto
-frontier and the error taxonomy breakdown.
-
-\begin{figure*}[t]
-  \centering
-  \includegraphics[width=0.7\textwidth]{error_taxonomy_breakdown.png}
-  \caption{Error taxonomy breakdown (\% of test cases) per model
-  and architecture. Single-agent Qwen3.5-2B (right panel) produces
-  22.6\% \texttt{PARAM\_EXTRA} errors- spurious parameters that
-  could lead to incorrect computations. Dual-agent (left)
-  eliminates most of these, consolidating residual errors into the
-  more predictable \texttt{PARAM\_MISSING} category.}
-  \label{fig:error_plot}
-\end{figure*}
-
-\begin{figure*}[t]
-  \centering
-  \begin{subfigure}[b]{0.49\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{tradeoff_pareto.png}
-    \caption{Accuracy-latency Pareto frontier. The dual-mode
-    Qwen3.5-0.8B (orange square, $\approx$3~s, 89\%) sits on the
-    efficient frontier, offering the best accuracy per unit latency.
-    Single-mode Qwen3.5-2B reaches the highest Task Accuracy (92\%)
-    but at 4$\times$ the latency (12~s).}
-    \label{fig:pareto}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[b]{0.49\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{combined_bfcl_radar.png}
-    \caption{Task footprint (mean Task Accuracy across all models).
-    The dual architecture (red) uniformly expands coverage over
-    single (blue) on all five task groups, with the largest gains on
-    time series and comparison tools.}
-    \label{fig:radar}
-  \end{subfigure}
-  \caption{System-level results. (a) Dual-agent Qwen3.5-0.8B
-  dominates the efficiency frontier for privacy-preserving
-  deployments. (b) Dual-agent decomposition improves coverage across
-  all task categories.}
-  \label{fig:overall_visuals}
-\end{figure*}
-
 \begin{table*}[t]
 \centering
 \small
@@ -560,6 +515,52 @@ output format makes isolated argument coverage less meaningful.
 Latency and RAM are per-query averages.}
 \label{tab:main_results}
 \end{table*}
+
+Table~\ref{tab:main_results} presents the full results.
+Figure~\ref{fig:overall_visuals} shows the accuracy-latency Pareto
+frontier and task coverage radar chart, while Figure~\ref{fig:error_plot}
+shows the error taxonomy breakdown.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.7\textwidth]{error_taxonomy_breakdown.png}
+  \caption{Error taxonomy breakdown (\% of test cases) per model
+  and architecture. Single-agent Qwen3.5-2B (right panel) produces
+  22.6\% \texttt{PARAM\_EXTRA} errors---spurious parameters that
+  could lead to incorrect computations. Dual-agent (left)
+  eliminates most of these, consolidating residual errors into the
+  more predictable \texttt{PARAM\_MISSING} category.}
+  \label{fig:error_plot}
+\end{figure*}
+
+\begin{figure*}[t]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{tradeoff_pareto.png}
+    \caption{Accuracy-latency Pareto frontier. The dual-mode
+    Qwen3.5-0.8B (orange square, $\approx$3~s, 89\%) sits on the
+    efficient frontier, offering the best accuracy per unit latency.
+    Single-mode Qwen3.5-2B reaches the highest Task Accuracy (92\%)
+    but at 4$\times$ the latency (12~s).}
+    \label{fig:pareto}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{combined_bfcl_radar.png}
+    \caption{Task footprint (mean Task Accuracy across all models).
+    The dual architecture (red) uniformly expands coverage over
+    single (blue) on all five task groups, with the largest gains on
+    time series and comparison tools.}
+    \label{fig:radar}
+  \end{subfigure}
+  \caption{System-level results. (a) Dual-agent Qwen3.5-0.8B
+  dominates the efficiency frontier for privacy-preserving
+  deployments. (b) Dual-agent decomposition improves coverage across
+  all task categories.}
+  \label{fig:overall_visuals}
+\end{figure*}
 
 \paragraph{Key findings (RQ1, RQ2).}
 \textbf{(1)} Sub-2B SLMs can reliably call tools to perform personal finance analytics
@@ -684,8 +685,8 @@ at 8.0\%.
 The human-facing implications of this shift are significant.
 A \texttt{PARAM\_EXTRA} error is a silent corruption: when a model
 adds a spurious \texttt{months=1} filter to the query ``how much did I
-spend on food?'', the system returns an answer- last month's food
-spending- that looks correct but answers a different question.
+spend on food?'', the system returns an answer---last month's food
+spending---that looks correct but answers a different question.
 A user relying on this figure for tax preparation, expense reporting,
 or budgeting receives a plausible but wrong number, with no indication
 that the scope was silently restricted.
@@ -819,14 +820,14 @@ All configurations keep user data entirely on-device.
 
 \paragraph{Case Study.}
 Figure~\ref{fig:case_study} shows an authentic usage session of ExpenseSense.
-As a real-world deployment test in February 2026, an author used the system to query their own personal finance data in informal language-``can ya plot spending
+As a real-world deployment test in February 2026, an author used the system to query their own personal finance data in informal language---``can ya plot spending
 on snacks for past X months?''. The dual-agent Qwen3.5-0.8B
 pipeline correctly routed this to \texttt{plot\_time\_series} and extracted
-the parameters \texttt{\{category: snacks, months: 14\}} - all in 6 seconds.
+the parameters \texttt{\{category: snacks, months: 14\}}---all in 6 seconds.
 As shown in the plot, the resulting visualization revealed a clear trend in weekly
 snack expenditure. By surfacing this data locally, the author was able to reflect on their habits and successfully reduce their spending over time (from peaks of \textyen3,000--4,000 to under
-\textyen1,000). Crucially, this entire interaction- query, inference, and
-plotting - remained strictly on the user's device; no sensitive data was transmitted
+\textyen1,000). Crucially, this entire interaction---query, inference, and
+plotting---remained strictly on the user's device; no sensitive data was transmitted
 externally at any point. Connecting technical mechanisms to human needs, this demonstrates how private, local analytics can directly support personal budgeting workflows.
 
 \vspace{-5pt}
@@ -903,10 +904,16 @@ benchmark runner, plotting scripts, and the exact model GGUFs used in
 this study to ensure complete reproducibility.
 
 \vspace{-2pt}
-\begin{small}
-\setlength{\bibsep}{0pt}
+\begingroup
+\small
+\let\oldthebibliography\thebibliography
+\renewcommand{\thebibliography}[1]{%
+  \oldthebibliography{#1}%
+  \setlength{\itemsep}{0.5pt plus 0.5pt}%
+  \setlength{\parskip}{0pt}%
+}
 \bibliography{custom}
-\end{small}
+\endgroup
 
 % ─────────────────────────────────────────────────────────────────────────────
 \appendix\onecolumn
